@@ -18,20 +18,12 @@ const ago = unix => {const s=Math.max(0,Math.floor(Date.now()/1000-unix));return
 const authState = { user: null, token: localStorage.getItem('vietsafe_token') };
 
 // === Tile providers ===
-// Nền chính: Stadia Maps "Alidade Smooth" (dữ liệu OSM, nền xám nhạt để lớp đoạn đường nổi rõ).
-// Gói free 200.000 tile/tháng, phi thương mại. Chạy trên localhost/127.0.0.1 không cần key.
-// Deploy lên domain thật: đăng ký domain tại https://client.stadiamaps.com hoặc điền API key vào STADIA_API_KEY.
-// Nếu Stadia lỗi, tự chuyển sang tile OSM, rồi mới rơi xuống sơ đồ ngoại tuyến.
-const STADIA_API_KEY = '';
 const TILE_PROVIDERS = {
-  stadia: { url:'https://tiles.stadiamaps.com/tiles/alidade_smooth/{z}/{x}/{y}{r}.png'+(STADIA_API_KEY?`?api_key=${encodeURIComponent(STADIA_API_KEY)}`:''),
-    attr:'&copy; <a href="https://www.stadiamaps.com/" target="_blank" rel="noopener">Stadia Maps</a> &copy; <a href="https://openmaptiles.org/" target="_blank" rel="noopener">OpenMapTiles</a> &copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a>', maxZoom:20 },
   osm: { url:'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', attr:'&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a>', maxZoom:19 },
+  // To use TrackAsia: replace YOUR_KEY with your API key from https://track-asia.com
+  // trackasia: { url:'https://tiles.track-asia.com/tiles/v3/{z}/{x}/{y}.png?key=YOUR_KEY', attr:'&copy; <a href="https://track-asia.com">TrackAsia</a> &copy; OpenStreetMap', maxZoom:19 }
 };
-const TILE_ORDER = ['stadia','osm'];
-// Khóa vùng nhìn trong Hà Nội: tránh kéo bản đồ ra vùng biển đảo mà tile toàn cầu ghi nhãn không theo quy ước Việt Nam.
-const HANOI_BOUNDS = [[20.90,105.65],[21.15,106.02]];
-let tileProviderIndex = 0;
+const activeTileConfig = TILE_PROVIDERS.osm;
 
 async function api(path, options={}) {
   const controller=new AbortController();
@@ -48,35 +40,18 @@ async function api(path, options={}) {
 const post = (path, body) => api(path,{method:'POST',body:JSON.stringify(body)});
 function toast(message) {$('#toast').textContent=message;$('#toast').hidden=false;clearTimeout(toastTimer);toastTimer=setTimeout(()=>$('#toast').hidden=true,5200);}
 
-const FOOTNOTE_ONLINE='Mạng đường giản lược · Không dùng để dẫn đường thực tế';
-const FOOTNOTE_OFFLINE='Sơ đồ ngoại tuyến · Mạng đường giản lược · Không dùng để dẫn đường';
-function buildTileLayer(key) {
-  const cfg=TILE_PROVIDERS[key];
-  const layer=L.tileLayer(cfg.url,{maxZoom:cfg.maxZoom,attribution:cfg.attr});
-  layer.on('tileerror',()=>{if(++tileErrorCount>=6 && map.hasLayer(layer)) switchTileProvider();});
-  return layer;
-}
-// Hết nhà cung cấp tile thì rơi xuống sơ đồ ngoại tuyến (nền lưới CSS + hồ vẽ tay).
-function switchTileProvider() {
-  map.removeLayer(baseTiles);tileErrorCount=0;
-  if(++tileProviderIndex<TILE_ORDER.length){baseTiles=buildTileLayer(TILE_ORDER[tileProviderIndex]);baseTiles.addTo(map);return;}
-  tileProviderIndex=0;baseTiles=buildTileLayer(TILE_ORDER[0]);
-  setBaseTiles(false);$('#base-tiles').checked=false;toast('Không tải được bản đồ nền. Đang hiển thị sơ đồ ngoại tuyến.');
-}
-function setBaseTiles(on) {
-  if(on){if(!map.hasLayer(baseTiles)){tileErrorCount=0;baseTiles.addTo(map);}map.removeLayer(geographyLayer);$('#map-footnote').textContent=FOOTNOTE_ONLINE;}
-  else{if(map.hasLayer(baseTiles))map.removeLayer(baseTiles);geographyLayer.addTo(map);$('#map-footnote').textContent=FOOTNOTE_OFFLINE;}
-}
-let geographyLayer;
 function initializeMap() {
-  map=L.map('map',{zoomControl:false,minZoom:12,maxZoom:18,maxBounds:HANOI_BOUNDS,maxBoundsViscosity:1}).setView([21.025,105.830],13);
+  map=L.map('map',{zoomControl:false,minZoom:11,maxZoom:18}).setView([21.025,105.830],13);
   L.control.zoom({position:'bottomright'}).addTo(map);
-  baseTiles=buildTileLayer(TILE_ORDER[tileProviderIndex]);
+  baseTiles=L.tileLayer(activeTileConfig.url,{
+    maxZoom:activeTileConfig.maxZoom,attribution:activeTileConfig.attr});
+  baseTiles.on('tileerror',()=>{if(++tileErrorCount>=6 && map.hasLayer(baseTiles)){
+    map.removeLayer(baseTiles);$('#base-tiles').checked=false;$('#map-footnote').textContent='Sơ đồ ngoại tuyến · Mạng đường giản lược · Không dùng để dẫn đường';toast('Không tải được bản đồ nền. Đang hiển thị sơ đồ ngoại tuyến.');
+  }});
   baseTiles.addTo(map);
-  // Hồ vẽ tay chỉ dùng cho sơ đồ ngoại tuyến; trên nền tile thật hồ đã được vẽ đúng hình.
-  geographyLayer=L.layerGroup();
+  const geography=L.layerGroup().addTo(map);
   const lakes=[['Hồ Tây',[[21.043,105.825],[21.048,105.817],[21.058,105.812],[21.070,105.819],[21.073,105.835],[21.060,105.842],[21.048,105.839]]],['Hồ Hoàn Kiếm',[[21.0313,105.852],[21.0300,105.8537],[21.026,105.8537],[21.0252,105.8518],[21.028,105.8509]]],['Hồ Bảy Mẫu',[[21.0135,105.8443],[21.0134,105.8470],[21.009,105.8477],[21.0074,105.8460],[21.008,105.8444]]],['Hồ Thủ Lệ',[[21.0335,105.8006],[21.0339,105.8060],[21.0308,105.8078],[21.0300,105.8028]]]];
-  for(const [name,shape] of lakes)L.polygon(shape,{color:'#b7d1d0',fillColor:'#c7dddd',fillOpacity:.8,weight:1,interactive:false}).addTo(geographyLayer).bindTooltip(name,{permanent:true,direction:'center',className:'water-label'});
+  for(const [name,shape] of lakes)L.polygon(shape,{color:'#b7d1d0',fillColor:'#c7dddd',fillOpacity:.8,weight:1,interactive:false}).addTo(geography).bindTooltip(name,{permanent:true,direction:'center',className:'water-label'});
   placeLayer=L.layerGroup().addTo(map);
   roadLayer=L.layerGroup().addTo(map);
   routeLayer=L.layerGroup().addTo(map);
@@ -98,6 +73,7 @@ async function refresh() {
     $('.status-dot').style.background='#49a68b';
     if(first) populateControls();
     updateDashboard();
+    updateAlertBanner();
     if(state.view==='reports') await loadReports();
   } catch(e) {
     state.connected=false;$('#connection-error').hidden=false;
@@ -362,7 +338,7 @@ $('#search-form').addEventListener('submit',e=>{e.preventDefault();searchLocatio
 $('#map-search').addEventListener('input',()=>{clearTimeout(searchTimer);searchTimer=setTimeout(searchLocation,300);});
 $('#toggle-layers').addEventListener('click',()=>$('#layer-menu').hidden=!$('#layer-menu').hidden);
 $$('[data-layer]').forEach(el=>el.addEventListener('change',()=>{state.layers[el.dataset.layer]=el.checked;if(state.data)renderMap();}));
-$('#base-tiles').addEventListener('change',e=>setBaseTiles(e.target.checked));
+$('#base-tiles').addEventListener('change',e=>{if(e.target.checked){tileErrorCount=0;baseTiles.addTo(map);$('#map-footnote').textContent='Mạng đường giản lược · Không dùng để dẫn đường thực tế';}else{map.removeLayer(baseTiles);$('#map-footnote').textContent='Sơ đồ ngoại tuyến · Mạng đường giản lược · Không dùng để dẫn đường';}});
 $('#fit-map').addEventListener('click',()=>{if(state.data)map.fitBounds(state.data.nodes.map(n=>[n.lat,n.lng]),{padding:[40,55]});});
 $('#my-location').addEventListener('click',()=>geolocate());
 $('#open-report').addEventListener('click',openReport);
@@ -466,10 +442,118 @@ $('#show-login').addEventListener('click',()=>{$('#register-dialog').close();$('
 $('#dismiss-alert').addEventListener('click',()=>$('#alert-banner').hidden=true);
 document.addEventListener('click',e=>{if(!e.target.closest('#user-menu')&&!e.target.closest('#auth-button'))$('#user-menu').hidden=true;});
 
-// Hook alert banner into refresh cycle
-const _originalRefresh = refresh;
-refresh = async function() { await _originalRefresh(); updateAlertBanner(); };
+// === Rescue view handlers ===
+const rescueServices = {
+  motorbike: {
+    name: 'Cứu Hộ Xe Máy 247',
+    hotline: '0944.883.288',
+    tel: 'tel:0944883288',
+    url: 'https://cuuhoxemay247.com/'
+  },
+  car: {
+    name: 'Cứu Hộ Ô Tô 24h',
+    hotline: '0967.119.119',
+    tel: 'tel:0967119119',
+    url: 'https://cuuho24h.vn/'
+  },
+  truck: {
+    name: 'Trung Tâm Cứu Hộ Giao Thông 116',
+    hotline: '0896.116.116',
+    tel: 'tel:0896116116',
+    url: 'https://trungtamcuuho116.vn/dich-vu-cuu-ho-giao-thong-116/'
+  }
+};
+
+const rescueProblemTypes = {
+  flood_dead: 'Chết máy do ngập nước',
+  hydro: 'Nghi ngờ thủy kích trong nước sâu',
+  battery: 'Hỏng bình ắc quy / Không đề nổ',
+  tire: 'Hỏng / Nổ lốp giữa đường',
+  accident: 'Va chạm / Tai nạn giao thông'
+};
+
+const rescueLocBtn = $('#rescue-loc-btn');
+if (rescueLocBtn) {
+  rescueLocBtn.addEventListener('click', () => {
+    if (!navigator.geolocation) {
+      toast('Trình duyệt không hỗ trợ định vị GPS.');
+      return;
+    }
+    rescueLocBtn.disabled = true;
+    rescueLocBtn.innerHTML = 'Đang định vị GPS…';
+    navigator.geolocation.getCurrentPosition(
+      pos => {
+        const lat = pos.coords.latitude;
+        const lng = pos.coords.longitude;
+        let nearestName = '';
+        if (state.data && state.data.roads) {
+          let minDist = Infinity;
+          for (const r of state.data.roads) {
+            const d = Math.hypot((r.start_lat + r.end_lat)/2 - lat, (r.start_lng + r.end_lng)/2 - lng);
+            if (d < minDist) { minDist = d; nearestName = r.name; }
+          }
+        }
+        const text = nearestName ? `Gần ${nearestName} (Tọa độ: ${lat.toFixed(4)}, ${lng.toFixed(4)})` : `Tọa độ: ${lat.toFixed(5)}, ${lng.toFixed(5)}`;
+        $('#rescue-address').value = text;
+        rescueLocBtn.disabled = false;
+        rescueLocBtn.innerHTML = `${icon('target')}Lấy vị trí GPS hiện tại`;
+        toast('Đã định vị thành công: ' + text);
+      },
+      err => {
+        rescueLocBtn.disabled = false;
+        rescueLocBtn.innerHTML = `${icon('target')}Lấy vị trí GPS hiện tại`;
+        toast('Không thể lấy vị trí GPS: ' + (err.message || 'Quyền truy cập bị từ chối'));
+      },
+      { enableHighAccuracy: true, timeout: 8000 }
+    );
+  });
+}
+
+const rescueForm = $('#rescue-request-form');
+if (rescueForm) {
+  rescueForm.addEventListener('submit', e => {
+    e.preventDefault();
+    const vehicle = $('#rescue-vehicle').value;
+    const typeKey = $('#rescue-type').value;
+    const address = $('#rescue-address').value.trim();
+    const phone = $('#rescue-phone').value.trim();
+    const note = $('#rescue-note').value.trim();
+    const srv = rescueServices[vehicle] || rescueServices.car;
+    const probLabel = rescueProblemTypes[typeKey] || 'Sự cố ngập nước';
+
+    const resultBox = $('#rescue-form-result');
+    resultBox.hidden = false;
+    resultBox.innerHTML = `
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
+        <span style="display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;border-radius:50%;background:#087f72;color:white;flex-shrink:0;">${icon('check')}</span>
+        <div>
+          <strong style="font-size:14px;color:#087f72;display:block;">Đã tiếp nhận yêu cầu ứng cứu!</strong>
+          <span style="font-size:11px;color:#537365;">Đơn vị phụ trách đề xuất: <b>${esc(srv.name)}</b></span>
+        </div>
+      </div>
+      <div style="font-size:11px;line-height:1.6;background:white;padding:10px 12px;border-radius:8px;border:1px solid #d0e7dc;margin-bottom:12px;color:#354e43;">
+        <div>📍 <b>Vị trí:</b> ${esc(address)}</div>
+        <div>📞 <b>SĐT liên hệ:</b> ${esc(phone)}</div>
+        <div>⚠️ <b>Tình trạng:</b> ${esc(probLabel)}${note ? ' (' + esc(note) + ')' : ''}</div>
+      </div>
+      <div style="display:flex;gap:10px;flex-wrap:wrap;">
+        <a href="${srv.tel}" class="button primary" style="background:#de4c3c!important;flex:1;min-height:38px;justify-content:center;text-decoration:none;">
+          ${icon('phone')}Bấm gọi Hotline: ${srv.hotline}
+        </a>
+        <a href="${srv.url}" target="_blank" rel="noopener" class="button secondary" style="min-height:38px;justify-content:center;text-decoration:none;">
+          ${icon('external')}Mở website
+        </a>
+      </div>
+      <div style="margin-top:10px;font-size:10px;color:#6b8577;line-height:1.5;">
+        💡 <b>Lưu ý an toàn:</b> Nhấn nút <i>"Bấm gọi Hotline"</i> để tổng đài viên điều xe cứu hộ gần nhất tiếp cận hiện trường nhanh nhất (15–20 phút).
+      </div>
+    `;
+
+    toast(`Đã tiếp nhận! Vui lòng gọi hotline ${srv.hotline} để được cứu hộ hỗ trợ tức thì.`);
+  });
+}
 
 // === Init ===
 if(typeof L==='undefined'){$('#connection-error').hidden=false;$('#connection-error').textContent='Thiếu thư viện bản đồ local. Kiểm tra thư mục public/vendor.';}
 else{initializeMap();checkAuth();refresh();setInterval(refresh,10000);}
+
