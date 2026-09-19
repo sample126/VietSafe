@@ -18,12 +18,20 @@ const ago = unix => {const s=Math.max(0,Math.floor(Date.now()/1000-unix));return
 const authState = { user: null, token: localStorage.getItem('vietsafe_token') };
 
 // === Tile providers ===
+// Nền chính: Stadia Maps "Alidade Smooth" (dữ liệu OSM, nền xám nhạt để lớp đoạn đường nổi rõ).
+// Gói free 200.000 tile/tháng, phi thương mại. Chạy trên localhost/127.0.0.1 không cần key.
+// Deploy lên domain thật: đăng ký domain tại https://client.stadiamaps.com hoặc điền API key vào STADIA_API_KEY.
+// Nếu Stadia lỗi, tự chuyển sang tile OSM, rồi mới rơi xuống sơ đồ ngoại tuyến.
+const STADIA_API_KEY = '';
 const TILE_PROVIDERS = {
+  stadia: { url:'https://tiles.stadiamaps.com/tiles/alidade_smooth/{z}/{x}/{y}{r}.png'+(STADIA_API_KEY?`?api_key=${encodeURIComponent(STADIA_API_KEY)}`:''),
+    attr:'&copy; <a href="https://www.stadiamaps.com/" target="_blank" rel="noopener">Stadia Maps</a> &copy; <a href="https://openmaptiles.org/" target="_blank" rel="noopener">OpenMapTiles</a> &copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a>', maxZoom:20 },
   osm: { url:'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', attr:'&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a>', maxZoom:19 },
-  // To use TrackAsia: replace YOUR_KEY with your API key from https://track-asia.com
-  // trackasia: { url:'https://tiles.track-asia.com/tiles/v3/{z}/{x}/{y}.png?key=YOUR_KEY', attr:'&copy; <a href="https://track-asia.com">TrackAsia</a> &copy; OpenStreetMap', maxZoom:19 }
 };
-const activeTileConfig = TILE_PROVIDERS.osm;
+const TILE_ORDER = ['stadia','osm'];
+// Khóa vùng nhìn trong Hà Nội: tránh kéo bản đồ ra vùng biển đảo mà tile toàn cầu ghi nhãn không theo quy ước Việt Nam.
+const HANOI_BOUNDS = [[20.90,105.65],[21.15,106.02]];
+let tileProviderIndex = 0;
 
 async function api(path, options={}) {
   const controller=new AbortController();
@@ -40,18 +48,35 @@ async function api(path, options={}) {
 const post = (path, body) => api(path,{method:'POST',body:JSON.stringify(body)});
 function toast(message) {$('#toast').textContent=message;$('#toast').hidden=false;clearTimeout(toastTimer);toastTimer=setTimeout(()=>$('#toast').hidden=true,5200);}
 
+const FOOTNOTE_ONLINE='Mạng đường giản lược · Không dùng để dẫn đường thực tế';
+const FOOTNOTE_OFFLINE='Sơ đồ ngoại tuyến · Mạng đường giản lược · Không dùng để dẫn đường';
+function buildTileLayer(key) {
+  const cfg=TILE_PROVIDERS[key];
+  const layer=L.tileLayer(cfg.url,{maxZoom:cfg.maxZoom,attribution:cfg.attr});
+  layer.on('tileerror',()=>{if(++tileErrorCount>=6 && map.hasLayer(layer)) switchTileProvider();});
+  return layer;
+}
+// Hết nhà cung cấp tile thì rơi xuống sơ đồ ngoại tuyến (nền lưới CSS + hồ vẽ tay).
+function switchTileProvider() {
+  map.removeLayer(baseTiles);tileErrorCount=0;
+  if(++tileProviderIndex<TILE_ORDER.length){baseTiles=buildTileLayer(TILE_ORDER[tileProviderIndex]);baseTiles.addTo(map);return;}
+  tileProviderIndex=0;baseTiles=buildTileLayer(TILE_ORDER[0]);
+  setBaseTiles(false);$('#base-tiles').checked=false;toast('Không tải được bản đồ nền. Đang hiển thị sơ đồ ngoại tuyến.');
+}
+function setBaseTiles(on) {
+  if(on){if(!map.hasLayer(baseTiles)){tileErrorCount=0;baseTiles.addTo(map);}map.removeLayer(geographyLayer);$('#map-footnote').textContent=FOOTNOTE_ONLINE;}
+  else{if(map.hasLayer(baseTiles))map.removeLayer(baseTiles);geographyLayer.addTo(map);$('#map-footnote').textContent=FOOTNOTE_OFFLINE;}
+}
+let geographyLayer;
 function initializeMap() {
-  map=L.map('map',{zoomControl:false,minZoom:11,maxZoom:18}).setView([21.025,105.830],13);
+  map=L.map('map',{zoomControl:false,minZoom:12,maxZoom:18,maxBounds:HANOI_BOUNDS,maxBoundsViscosity:1}).setView([21.025,105.830],13);
   L.control.zoom({position:'bottomright'}).addTo(map);
-  baseTiles=L.tileLayer(activeTileConfig.url,{
-    maxZoom:activeTileConfig.maxZoom,attribution:activeTileConfig.attr});
-  baseTiles.on('tileerror',()=>{if(++tileErrorCount>=6 && map.hasLayer(baseTiles)){
-    map.removeLayer(baseTiles);$('#base-tiles').checked=false;$('#map-footnote').textContent='Sơ đồ ngoại tuyến · Mạng đường giản lược · Không dùng để dẫn đường';toast('Không tải được bản đồ nền. Đang hiển thị sơ đồ ngoại tuyến.');
-  }});
+  baseTiles=buildTileLayer(TILE_ORDER[tileProviderIndex]);
   baseTiles.addTo(map);
-  const geography=L.layerGroup().addTo(map);
+  // Hồ vẽ tay chỉ dùng cho sơ đồ ngoại tuyến; trên nền tile thật hồ đã được vẽ đúng hình.
+  geographyLayer=L.layerGroup();
   const lakes=[['Hồ Tây',[[21.043,105.825],[21.048,105.817],[21.058,105.812],[21.070,105.819],[21.073,105.835],[21.060,105.842],[21.048,105.839]]],['Hồ Hoàn Kiếm',[[21.0313,105.852],[21.0300,105.8537],[21.026,105.8537],[21.0252,105.8518],[21.028,105.8509]]],['Hồ Bảy Mẫu',[[21.0135,105.8443],[21.0134,105.8470],[21.009,105.8477],[21.0074,105.8460],[21.008,105.8444]]],['Hồ Thủ Lệ',[[21.0335,105.8006],[21.0339,105.8060],[21.0308,105.8078],[21.0300,105.8028]]]];
-  for(const [name,shape] of lakes)L.polygon(shape,{color:'#b7d1d0',fillColor:'#c7dddd',fillOpacity:.8,weight:1,interactive:false}).addTo(geography).bindTooltip(name,{permanent:true,direction:'center',className:'water-label'});
+  for(const [name,shape] of lakes)L.polygon(shape,{color:'#b7d1d0',fillColor:'#c7dddd',fillOpacity:.8,weight:1,interactive:false}).addTo(geographyLayer).bindTooltip(name,{permanent:true,direction:'center',className:'water-label'});
   placeLayer=L.layerGroup().addTo(map);
   roadLayer=L.layerGroup().addTo(map);
   routeLayer=L.layerGroup().addTo(map);
@@ -335,7 +360,7 @@ $('#search-form').addEventListener('submit',e=>{e.preventDefault();searchLocatio
 $('#map-search').addEventListener('input',()=>{clearTimeout(searchTimer);searchTimer=setTimeout(searchLocation,300);});
 $('#toggle-layers').addEventListener('click',()=>$('#layer-menu').hidden=!$('#layer-menu').hidden);
 $$('[data-layer]').forEach(el=>el.addEventListener('change',()=>{state.layers[el.dataset.layer]=el.checked;if(state.data)renderMap();}));
-$('#base-tiles').addEventListener('change',e=>{if(e.target.checked){tileErrorCount=0;baseTiles.addTo(map);$('#map-footnote').textContent='Mạng đường giản lược · Không dùng để dẫn đường thực tế';}else{map.removeLayer(baseTiles);$('#map-footnote').textContent='Sơ đồ ngoại tuyến · Mạng đường giản lược · Không dùng để dẫn đường';}});
+$('#base-tiles').addEventListener('change',e=>setBaseTiles(e.target.checked));
 $('#fit-map').addEventListener('click',()=>{if(state.data)map.fitBounds(state.data.nodes.map(n=>[n.lat,n.lng]),{padding:[40,55]});});
 $('#my-location').addEventListener('click',()=>geolocate());
 $('#open-report').addEventListener('click',openReport);
