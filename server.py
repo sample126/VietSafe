@@ -9,6 +9,7 @@ import hashlib
 import json
 import math
 import mimetypes
+import os
 from pathlib import Path
 import secrets
 import sqlite3
@@ -375,19 +376,26 @@ class Handler(BaseHTTPRequestHandler):
 
 
 def main():
-    parser=argparse.ArgumentParser(description='VietSafe local demo')
-    parser.add_argument('--port',type=int,default=8765)
-    parser.add_argument('--host',type=str,default='127.0.0.1')
-    args=parser.parse_args()
+    default_port = int(os.environ.get('PORT', 8765))
+    default_host = os.environ.get('HOST', '0.0.0.0')
+    parser = argparse.ArgumentParser(description='VietSafe local demo')
+    parser.add_argument('--port', type=int, default=default_port)
+    parser.add_argument('--host', type=str, default=default_host)
+    args = parser.parse_args()
     init_db()
-    try: server=ThreadingHTTPServer((args.host,args.port),Handler)
+    try:
+        server = ThreadingHTTPServer((args.host, args.port), Handler)
     except OSError:
-        print(f'Port {args.port} unavailable. Open http://127.0.0.1:{args.port} or use --port 8766.');raise SystemExit(1)
-    print(f'VietSafe is running at http://127.0.0.1:{args.port}',flush=True)
-    print('Local demo only. Press Ctrl+C to stop.',flush=True)
-    try: server.serve_forever()
-    except KeyboardInterrupt: pass
-    finally: server.server_close()
+        print(f'Port {args.port} unavailable. Open http://{args.host}:{args.port} or use --port 8766.')
+        raise SystemExit(1)
+    print(f'VietSafe is running at http://{args.host}:{args.port}', flush=True)
+    print('Local demo only. Press Ctrl+C to stop.', flush=True)
+    try:
+        server.serve_forever()
+    except KeyboardInterrupt:
+        pass
+    finally:
+        server.server_close()
 
 
 if __name__=='__main__': main()
