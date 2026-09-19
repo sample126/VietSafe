@@ -229,15 +229,17 @@ function renderForecast() {
 
 function renderSources() {
   const sources=[
+    ['cloud','Vệ tinh NASA GPM (IMERG)','Dữ liệu viễn thám NASA','blue','Lượng mưa radar viễn thám toàn cầu chu kỳ 30 phút, độ phân giải 0.1° (~10km). Đón đầu hướng di chuyển mây dông trước khi mưa chạm đất.','Tải mở hoàn toàn qua cổng NASA Earthdata Search (search.earthdata.nasa.gov) bằng Python script (thư viện earthaccess).'],
+    ['water','NASA SMAP & NASADEM (TWI)','Độ ẩm đất & Địa hình NASA','teal','Chỉ số độ ẩm bão hòa đất (SMAP) & Chỉ số trũng địa hình (Topographic Wetness Index - TWI 30m). Xác định các điểm tụ nước tự nhiên.','Khai thác DEM 30m từ NASA SRTM/NASADEM tính TWI; nạp độ ẩm đất SMAP làm biến điều kiện bão hòa dòng chảy mặt.'],
     ['chart','Bộ mô phỏng giao thông','Đang chạy tại máy','teal','36 đoạn đường, 25 nút. Cập nhật mỗi 10 giây theo kịch bản.','—'],
     ['report','Phản ánh cộng đồng','Lưu thật tại máy','teal','Vị trí, mô tả, ảnh lưu trong SQLite. Cần xác minh thủ công.','—'],
-    ['cloud','API Thời tiết (OpenWeather / NCHMF)','Sẵn sàng tích hợp','orange','Lượng mưa thực, dự báo 3 giờ tới. 3 kịch bản mô phỏng hiện tại.','Đăng ký API key OpenWeatherMap miễn phí (1000 calls/ngày) hoặc crawl bản tin NCHMF.'],
+    ['cloud','API Khí tượng (NCHMF / OpenWeather)','Sẵn sàng tích hợp','orange','Lượng mưa trạm mặt đất, dự báo 3 giờ tới. 3 kịch bản mô phỏng hiện tại.','Đăng ký API key OpenWeatherMap miễn phí (1000 calls/ngày) hoặc crawl bản tin NCHMF.'],
     ['car','VOV Giao thông','Chưa kết nối','gray','Bản tin ùn tắc, tai nạn, đường bị ảnh hưởng theo thời gian thực.','Xin phép API/RSS từ VOV. Hoặc crawl vovgiaothong.vn + NLP trích xuất tên đường, loại sự kiện.'],
     ['water','Hệ thống thoát nước Hà Nội','Chưa kết nối','gray','Mực nước, điểm ngập, vận hành trạm bơm tại các trạm quan trắc.','Hợp tác với Cty TNHH MTV Thoát nước HN. Lấy dữ liệu qua API/SFTP định kỳ.'],
     ['layers','Camera giao thông (AI)','Chưa kết nối','gray','Ước lượng mật độ, phát hiện xe dừng bất thường qua RTSP stream.','Tích hợp RTSP từ hệ thống camera Sở GTVT. YOLO + ByteTrack phân tích.'],
     ['water','Google Flood Hub','Có thể tham khảo','orange','Dự báo lũ lụt Google cho khu vực sông Hồng, sông Tô Lịch.','API công khai tại sites.research.google/floods. Dữ liệu dự báo ngập vùng sông.'],
-    ['alert','Mạng xã hội (Facebook, Zalo)','Chưa kết nối','gray','Bài viết công khai từ các nhóm cộng đồng giao thông Hà Nội.','Thu thập bài viết công khai. NLP phân loại và trích xuất vị trí.'],
     ['route','HERE Traffic / TomTom','Chưa kết nối','gray','Lưu lượng giao thông thời gian thực từ API thương mại.','Freemium: HERE 250K calls/tháng. TomTom có tier miễn phí tương tự.'],
+    ['alert','Mạng xã hội (Facebook, Zalo)','Chưa kết nối','gray','Bài viết công khai từ các nhóm cộng đồng giao thông Hà Nội.','Thu thập bài viết công khai. NLP phân loại và trích xuất vị trí.'],
     ['pin','Cảm biến IoT ngập','Chưa kết nối','gray','Cảm biến siêu âm đo mực nước tại các điểm ngập trọng điểm.','Triển khai cảm biến tại 10–15 điểm ngập. Truyền dữ liệu qua LoRa/4G.'],
   ];
   $('#source-grid').innerHTML=sources.map(([i,n,s,c,d,plan])=>`<article class="source-card">${icon(i)}<h3>${n}</h3><span class="tag tag-${c}">${s}</span><p>${d}</p>${plan!=='—'?`<p class="source-plan"><strong>Kế hoạch thu thập:</strong> ${plan}</p>`:''}</article>`).join('');

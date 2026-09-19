@@ -1,4 +1,4 @@
-﻿# VietSafe AI — Bản Đồ Cảnh Báo Ngập, Ùn Tắc & Sự Cố Giao Thông Thời Gian Thực
+# VietSafe AI — Bản Đồ Cảnh Báo Ngập, Ùn Tắc & Sự Cố Giao Thông Thời Gian Thực
 
 > **Đề tài dự thi Cuộc thi Dữ liệu vì Cuộc sống — Data for Life 2026**  
 > *Bản mẫu thực nghiệm giải pháp (Proof-of-Concept / MVP) hỗ trợ dự báo sớm 30–60 phút và gợi ý tuyến tránh rủi ro.*
@@ -43,34 +43,35 @@
 ## 🏛️ Kiến trúc hệ thống & Mô hình dự báo
 
 ```
-                          ┌───────────────────────────┐
-                          │   Nguồn dữ liệu đa tầng   │
-                          │ • Lượng mưa (Khí tượng)   │
-                          │ • Địa hình (Độ trũng)     │
-                          │ • Phản ánh cộng đồng (Ảnh)│
-                          │ • Mạng đường bộ (Đồ thị)  │
-                          └─────────────┬─────────────┘
-                                        │
-                                        ▼
-    ┌───────────────────────────────────────────────────────────────────────┐
-    │                       MÔ HÌNH DỰ BÁO 2 TẦNG                           │
-    │                                                                       │
-    │  [Tầng 1 - Bản thử nghiệm Web]                                        │
-    │  • Spatial-Rule Baseline (spatial-rule-demo-1.0):                    │
-    │    Mô hình quy tắc không-thời gian giải thích được (Explainable AI), │
-    │    chạy nhẹ trên CPU không đòi hỏi GPU/Kafka.                         │
-    │                                                                       │
-    │  [Tầng 2 - Đề xuất hệ sinh thái sản xuất]                             │
-    │  • T-GCN (Temporal Graph Convolutional Network):                     │
-    │    GCN học tương quan không gian mạng đường + GRU học chuỗi thời gian.│
-    └───────────────────────────────────┬───────────────────────────────────┘
-                                        │
-                                        ▼
-    ┌───────────────────────────────────────────────────────────────────────┐
-    │                           GIAO DIỆN WEB                               │
-    │   • Bản đồ cảnh báo thời gian thực  • Điều hướng né ngập thông minh   │
-    │   • Biểu đồ dự báo 30-60 phút       • Tiếp nhận & duyệt phản ánh     │
-    └───────────────────────────────────────────────────────────────────────┘
+                          ┌────────────────────────────────────────────────────────┐
+                          │         Nguồn dữ liệu đa tầng & Viễn thám NASA          │
+                          │ • Lượng mưa vệ tinh radar NASA GPM (IMERG 30 phút)     │
+                          │ • Độ ẩm đất bão hòa NASA SMAP & Địa hình NASA SRTM DEM │
+                          │ • Phản ánh cộng đồng (Ảnh hiện trường) + Trạm quan trắc│
+                          │ • Mạng đường bộ (Đồ thị không gian OpenStreetMap)      │
+                          └───────────────────────────┬────────────────────────────┘
+                                                      │
+                                                      ▼
+    ┌─────────────────────────────────────────────────────────────────────────────────┐
+    │                           MÔ HÌNH DỰ BÁO 2 TẦNG                                 │
+    │                                                                                 │
+    │  [Tầng 1 - Bản thử nghiệm Web PoC / MVP]                                        │
+    │  • Spatial-Rule Baseline (spatial-rule-demo-1.0):                              │
+    │    Mô hình quy tắc không-thời gian giải thích được (Explainable AI),            │
+    │    chạy nhẹ trên CPU không đòi hỏi GPU/Kafka.                                   │
+    │                                                                                 │
+    │  [Tầng 2 - Đề tài Nghiên cứu Khoa học Data for Life]                           │
+    │  • T-GCN (Temporal Graph Convolutional Network) + Physics-Informed AI:          │
+    │    GCN học tương quan không gian mạng đường + GRU học chuỗi thời gian,          │
+    │    tích hợp đặc trưng viễn thám NASA GPM, SMAP và chỉ số trũng địa hình TWI.    │
+    └─────────────────────────────────────────┬───────────────────────────────────────┘
+                                              │
+                                              ▼
+    ┌─────────────────────────────────────────────────────────────────────────────────┐
+    │                                GIAO DIỆN WEB                                    │
+    │   • Bản đồ cảnh báo thời gian thực        • Điều hướng né ngập thông minh       │
+    │   • Biểu đồ dự báo 30-60 phút             • Tiếp nhận & duyệt phản ánh          │
+    └─────────────────────────────────────────────────────────────────────────────────┘
 ```
 
 ---
