@@ -255,8 +255,11 @@ class Handler(BaseHTTPRequestHandler):
                                  lng=sum(c[1] for c in r['coordinates'])/2,kind='road') for r in ROADS if term in normalize(r['name'])]
                 return self.respond({'results':matches[:12]})
             if u.path=='/api/routes':
+                priority=q.get('priority',['safe'])[0]
+                avoid_flood=q.get('avoid_flood',['1'])[0] not in ('0','false','False')
                 return self.respond(calculate_routes(snapshot(),q.get('origin',[''])[0],q.get('destination',[''])[0],
-                                                     int(q.get('horizon',['0'])[0]),q.get('vehicle',['motorbike'])[0]))
+                                                     int(q.get('horizon',['0'])[0]),q.get('vehicle',['motorbike'])[0],
+                                                     priority,avoid_flood))
             if u.path=='/api/export/predictions':
                 user = self.get_current_user()
                 if not user or user['role'] != 'admin':

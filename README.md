@@ -155,3 +155,18 @@ python -m unittest discover tests
 
 * Phát triển bởi Đội ngũ **VietSafe AI** cho cuộc thi **Data for Life 2026**.
 * Mã nguồn phát hành theo giấy phép [MIT License](LICENSE).
+
+## Bản đồ nâng cấp + T-GCN thử nghiệm
+
+Bản tích hợp này giữ nguyên backend VietSafe và bổ sung trực tiếp lên giao diện gốc:
+
+- Bản đồ Hà Nội với nguồn tile dự phòng, không gọi trực tiếp `tile.openstreetmap.org`; nếu các nguồn trực tuyến lỗi sẽ chuyển sang sơ đồ Hà Nội ngoại tuyến.
+- Timeline bản đồ: Hiện tại, +15, +30, +45, +60 phút và chế độ phát dự báo.
+- Lớp Heatmap nguy cơ, vùng ngập dự báo, Camera, cảm biến IoT và điểm cứu hộ.
+- SOS từ bản đồ, lọc cảnh báo theo bán kính và theo dõi hành trình.
+- Tìm tuyến theo ưu tiên An toàn nhất / Nhanh nhất / Cân bằng và tùy chọn tránh vùng ngập cao. Các tùy chọn này đã được nối với `/api/routes`.
+- Lớp T-GCN thử nghiệm: dự báo tốc độ/nguy cơ 15–60 phút, Risk Score theo đoạn/tuyến, cảnh báo sớm và mô phỏng tự đề xuất đổi tuyến.
+
+Các file giao diện bổ sung nằm tại `public/enhancements.css`, `public/enhancements.js` và `public/tgcn.js`.
+
+> Lưu ý: phần T-GCN hiện mô phỏng logic và UI dựa trên snapshot/forecast hiện có; MAE/RMSE/MAPE và độ tin cậy hiển thị trong giao diện chưa phải kết quả của một mô hình T-GCN đã huấn luyện thực tế.

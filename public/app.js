@@ -18,17 +18,24 @@ const ago = unix => {const s=Math.max(0,Math.floor(Date.now()/1000-unix));return
 const authState = { user: null, token: localStorage.getItem('vietsafe_token') };
 
 // === Tile providers ===
-// Nền chính: Stadia Maps "Alidade Smooth" (dữ liệu OSM, nền xám nhạt để lớp đoạn đường nổi rõ).
-// Gói free 200.000 tile/tháng, phi thương mại. Chạy trên localhost/127.0.0.1 không cần key.
-// Deploy lên domain thật: đăng ký domain tại https://client.stadiamaps.com hoặc điền API key vào STADIA_API_KEY.
-// Nếu Stadia lỗi, tự chuyển sang tile OSM, rồi mới rơi xuống sơ đồ ngoại tuyến.
-const STADIA_API_KEY = '';
+// KHÔNG gọi trực tiếp tile.openstreetmap.org trong prototype.
+// Máy chủ tile chuẩn của OpenStreetMap là hạ tầng cộng đồng và có thể trả 403 khi
+// môi trường preview/proxy không đáp ứng chính sách sử dụng tile. Dữ liệu nền vẫn là
+// OpenStreetMap, nhưng được render bởi các máy chủ cộng đồng khác và luôn giữ attribution.
+// Nếu cả hai nguồn trực tuyến lỗi, VietSafe tự chuyển sang sơ đồ Hà Nội ngoại tuyến.
 const TILE_PROVIDERS = {
-  stadia: { url:'https://tiles.stadiamaps.com/tiles/alidade_smooth/{z}/{x}/{y}{r}.png'+(STADIA_API_KEY?`?api_key=${encodeURIComponent(STADIA_API_KEY)}`:''),
-    attr:'&copy; <a href="https://www.stadiamaps.com/" target="_blank" rel="noopener">Stadia Maps</a> &copy; <a href="https://openmaptiles.org/" target="_blank" rel="noopener">OpenMapTiles</a> &copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a>', maxZoom:20 },
-  osm: { url:'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', attr:'&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a>', maxZoom:19 },
+  osmde: {
+    url:'https://tile.openstreetmap.de/{z}/{x}/{y}.png',
+    attr:'&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap contributors</a> · tiles: <a href="https://www.openstreetmap.de/" target="_blank" rel="noopener">OSM Deutschland</a>',
+    maxZoom:19
+  },
+  osmfr: {
+    url:'https://{s}.tile.openstreetmap.fr/hot/{z}/{x}/{y}.png',
+    attr:'&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap contributors</a> · tiles: <a href="https://www.openstreetmap.fr/" target="_blank" rel="noopener">OpenStreetMap France</a>',
+    maxZoom:19
+  }
 };
-const TILE_ORDER = ['stadia','osm'];
+const TILE_ORDER = ['osmde','osmfr'];
 // Khóa vùng nhìn trong Hà Nội: tránh kéo bản đồ ra vùng biển đảo mà tile toàn cầu ghi nhãn không theo quy ước Việt Nam.
 const HANOI_BOUNDS = [[20.90,105.65],[21.15,106.02]];
 let tileProviderIndex = 0;
@@ -52,16 +59,16 @@ const FOOTNOTE_ONLINE='Mạng đường giản lược · Không dùng để d�
 const FOOTNOTE_OFFLINE='Sơ đồ ngoại tuyến · Mạng đường giản lược · Không dùng để dẫn đường';
 function buildTileLayer(key) {
   const cfg=TILE_PROVIDERS[key];
-  const layer=L.tileLayer(cfg.url,{maxZoom:cfg.maxZoom,attribution:cfg.attr});
+  const layer=L.tileLayer(cfg.url,{maxZoom:cfg.maxZoom,attribution:cfg.attr,crossOrigin:true,updateWhenIdle:true,keepBuffer:3});
   layer.on('tileerror',()=>{if(++tileErrorCount>=6 && map.hasLayer(layer)) switchTileProvider();});
   return layer;
 }
 // Hết nhà cung cấp tile thì rơi xuống sơ đồ ngoại tuyến (nền lưới CSS + hồ vẽ tay).
 function switchTileProvider() {
   map.removeLayer(baseTiles);tileErrorCount=0;
-  if(++tileProviderIndex<TILE_ORDER.length){baseTiles=buildTileLayer(TILE_ORDER[tileProviderIndex]);baseTiles.addTo(map);return;}
+  if(++tileProviderIndex<TILE_ORDER.length){baseTiles=buildTileLayer(TILE_ORDER[tileProviderIndex]);baseTiles.addTo(map);toast('Nguồn bản đồ chính không phản hồi. VietSafe đang chuyển sang nguồn bản đồ dự phòng.');return;}
   tileProviderIndex=0;baseTiles=buildTileLayer(TILE_ORDER[0]);
-  setBaseTiles(false);$('#base-tiles').checked=false;toast('Không tải được bản đồ nền. Đang hiển thị sơ đồ ngoại tuyến.');
+  setBaseTiles(false);$('#base-tiles').checked=false;toast('Không tải được các nguồn bản đồ trực tuyến. VietSafe đã chuyển sang sơ đồ Hà Nội ngoại tuyến.');
 }
 function setBaseTiles(on) {
   if(on){if(!map.hasLayer(baseTiles)){tileErrorCount=0;baseTiles.addTo(map);}map.removeLayer(geographyLayer);$('#map-footnote').textContent=FOOTNOTE_ONLINE;}
@@ -69,14 +76,39 @@ function setBaseTiles(on) {
 }
 let geographyLayer;
 function initializeMap() {
-  map=L.map('map',{zoomControl:false,minZoom:12,maxZoom:18,maxBounds:HANOI_BOUNDS,maxBoundsViscosity:1}).setView([21.025,105.830],13);
+  map=L.map('map',{zoomControl:false,minZoom:12,maxZoom:18,maxBounds:HANOI_BOUNDS,maxBoundsViscosity:1}).setView([21.0285,105.8420],13);
   L.control.zoom({position:'bottomright'}).addTo(map);
   baseTiles=buildTileLayer(TILE_ORDER[tileProviderIndex]);
-  baseTiles.addTo(map);
   // Hồ vẽ tay chỉ dùng cho sơ đồ ngoại tuyến; trên nền tile thật hồ đã được vẽ đúng hình.
   geographyLayer=L.layerGroup();
+  // Nền Hà Nội ngoại tuyến: dùng khi tile trực tuyến không tải được.
+  // Mục tiêu là người xem vẫn nhận ra rõ khu vực Hà Nội thay vì một nền trống.
+  const districts=[
+    ['Tây Hồ',[[21.044,105.795],[21.083,105.799],[21.085,105.856],[21.050,105.855]]],
+    ['Cầu Giấy',[[21.001,105.780],[21.044,105.784],[21.047,105.819],[21.005,105.822]]],
+    ['Ba Đình',[[21.020,105.813],[21.047,105.814],[21.049,105.846],[21.021,105.846]]],
+    ['Hoàn Kiếm',[[21.013,105.840],[21.043,105.840],[21.043,105.866],[21.014,105.868]]],
+    ['Đống Đa',[[20.994,105.808],[21.025,105.809],[21.026,105.844],[20.996,105.846]]],
+    ['Hai Bà Trưng',[[20.990,105.838],[21.021,105.839],[21.022,105.872],[20.992,105.873]]]
+  ];
+  for(const [name,shape] of districts){
+    L.polygon(shape,{color:'#d7dfdb',fillColor:'#f6f8f6',fillOpacity:.72,weight:1,interactive:false}).addTo(geographyLayer);
+    const lat=shape.reduce((a,p)=>a+p[0],0)/shape.length,lng=shape.reduce((a,p)=>a+p[1],0)/shape.length;
+    L.marker([lat,lng],{interactive:false,icon:L.divIcon({className:'district-label',html:`<span>${name}</span>`,iconSize:[90,22],iconAnchor:[45,11]})}).addTo(geographyLayer);
+  }
   const lakes=[['Hồ Tây',[[21.043,105.825],[21.048,105.817],[21.058,105.812],[21.070,105.819],[21.073,105.835],[21.060,105.842],[21.048,105.839]]],['Hồ Hoàn Kiếm',[[21.0313,105.852],[21.0300,105.8537],[21.026,105.8537],[21.0252,105.8518],[21.028,105.8509]]],['Hồ Bảy Mẫu',[[21.0135,105.8443],[21.0134,105.8470],[21.009,105.8477],[21.0074,105.8460],[21.008,105.8444]]],['Hồ Thủ Lệ',[[21.0335,105.8006],[21.0339,105.8060],[21.0308,105.8078],[21.0300,105.8028]]]];
-  for(const [name,shape] of lakes)L.polygon(shape,{color:'#b7d1d0',fillColor:'#c7dddd',fillOpacity:.8,weight:1,interactive:false}).addTo(geographyLayer).bindTooltip(name,{permanent:true,direction:'center',className:'water-label'});
+  for(const [name,shape] of lakes)L.polygon(shape,{color:'#8ebfc0',fillColor:'#b9dada',fillOpacity:.9,weight:1.2,interactive:false}).addTo(geographyLayer).bindTooltip(name,{permanent:true,direction:'center',className:'water-label'});
+  const axes=[
+    [[21.0313,105.8006],[21.0318,105.8247],[21.0274,105.8355],[21.0263,105.8417],[21.0285,105.8521],[21.0272,105.8600]],
+    [[21.0182,105.8053],[21.0163,105.8132],[21.0126,105.8211],[21.0181,105.8290],[21.0184,105.8393],[21.0200,105.8475],[21.0242,105.8571]],
+    [[21.0435,105.8220],[21.0366,105.8310],[21.0374,105.8382],[21.0400,105.8489]],
+    [[21.0030,105.8200],[21.0064,105.8292],[21.0095,105.8352],[21.0078,105.8422],[21.0102,105.8482]]
+  ];
+  for(const line of axes)L.polyline(line,{color:'#c7cfcb',weight:5,opacity:.9,interactive:false}).addTo(geographyLayer);
+  // Ưu tiên bản đồ nền Hà Nội trực tuyến; sơ đồ trên chỉ là dự phòng.
+  baseTiles.addTo(map);
+  $('#base-tiles').checked=true;
+  $('#map-footnote').textContent='Bản đồ Hà Nội · '+FOOTNOTE_ONLINE;
   placeLayer=L.layerGroup().addTo(map);
   roadLayer=L.layerGroup().addTo(map);
   routeLayer=L.layerGroup().addTo(map);
@@ -581,4 +613,3 @@ if (rescueForm) {
 // === Init ===
 if(typeof L==='undefined'){$('#connection-error').hidden=false;$('#connection-error').textContent='Thiếu thư viện bản đồ local. Kiểm tra thư mục public/vendor.';}
 else{initializeMap();checkAuth();refresh();setInterval(refresh,10000);}
-

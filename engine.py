@@ -94,13 +94,15 @@ def build_snapshot(scenario='rain', reports=(), now=None):
                 forecast_notice='Điểm nguy cơ theo quy tắc minh họa; không phải xác suất hoặc kết quả AI đã huấn luyện.')
 
 
-def calculate_routes(snapshot, origin, destination, horizon=0, vehicle='motorbike'):
+def calculate_routes(snapshot, origin, destination, horizon=0, vehicle='motorbike', priority='safe', avoid_flood=True):
     if origin not in NODES or destination not in NODES:
         raise ValueError('Hãy chọn điểm đi và đến trong khu vực thử nghiệm.')
     if origin == destination:
         raise ValueError('Điểm đi và điểm đến phải khác nhau.')
     if horizon not in (0, 30, 60) or vehicle not in ('motorbike', 'car'):
         raise ValueError('Thời điểm hoặc phương tiện không hợp lệ.')
+    if priority not in ('safe', 'fast', 'balanced'):
+        raise ValueError('Ưu tiên tìm tuyến không hợp lệ.')
     roads = {s['id']:s for s in snapshot['roads']}
     graph = {n:[] for n in NODES}
     for r in roads.values():
@@ -124,17 +126,21 @@ def calculate_routes(snapshot, origin, destination, horizon=0, vehicle='motorbik
                 # Use forecast for estimated edge arrival, conservatively rounded upward.
                 at=min(60, horizon+elapsed)
                 f=next((f for f in r['forecast'] if f['horizon']>=at),r['forecast'][-1])
-                if f['flood_risk'] >= (82 if vehicle=='motorbike' else 88):
+                # Luôn chặn mức ngập cực kỳ nguy hiểm; khi bật avoid_flood thì dùng ngưỡng bảo thủ hơn.
+                flood_limit = (76 if vehicle=='motorbike' else 84) if avoid_flood else (92 if vehicle=='motorbike' else 95)
+                if f['flood_risk'] >= flood_limit:
                     continue
                 minutes=r['length_km']/max(3,f['speed'])*60
-                penalty=(f['risk']/100)**2 * r['length_km'] * (20 if policy=='cautious' else 1)
+                multiplier={'cautious':20,'balanced':7,'fast':1}[policy]
+                penalty=(f['risk']/100)**2 * r['length_km'] * multiplier
                 new=cost+minutes+penalty
                 if new<best.get(nxt,float('inf')):
                     best[nxt]=new
                     heapq.heappush(queue,(new,elapsed+minutes,nxt,edgepath+[rid],nodepath+[nxt]))
         return None
     result=[]
-    for policy in ('cautious','fast'):
+    order={'safe':('cautious','balanced','fast'),'fast':('fast','balanced','cautious'),'balanced':('balanced','cautious','fast')}[priority]
+    for policy in order:
         solved=solve(policy)
         if not solved:
             continue
@@ -142,7 +148,8 @@ def calculate_routes(snapshot, origin, destination, horizon=0, vehicle='motorbik
         if any(r['road_ids']==ids for r in result):
             continue
         traversed=[roads[i] for i in ids]
-        result.append(dict(id=policy,title='Ưu tiên ít rủi ro' if policy=='cautious' else 'Ưu tiên thời gian',
+        titles={'cautious':'An toàn nhất','balanced':'Cân bằng','fast':'Nhanh nhất'}
+        result.append(dict(id=policy,title=titles[policy],
                            road_ids=ids, coordinates=[[NODES[n]['lat'],NODES[n]['lng']] for n in nodes],
                            distance_km=round(sum(r['length_km'] for r in traversed),1), eta_minutes=round(elapsed,1),
                            max_risk=max(r['forecast'][horizon//15]['risk'] for r in traversed),
