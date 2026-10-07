@@ -1,0 +1,192 @@
+/* dialogs.css - Hộp thoại (dialog), form gửi phản ánh, banner chọn vị trí, toast */
+
+dialog {
+  border: 1px solid #e2ebe4;
+  border-radius: 15px;
+  box-shadow: 0 24px 80px #12372535;
+  padding: 27px;
+  width: 560px;
+  max-width: calc(100vw - 32px);
+  max-height: 92vh;
+  overflow: auto;
+  color: var(--ink);
+}
+
+dialog::backdrop {
+  background: #14393060;
+  backdrop-filter: blur(3px);
+}
+
+.dialog-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.dialog-heading h2 {
+  font-size: 22px;
+  font-weight: 600;
+}
+
+.dialog-intro {
+  color: #8a9c8e;
+  font-size: 12px;
+  margin: 0 0 20px;
+}
+
+#report-form > label {
+  font-size: 11px;
+  margin-top: 15px;
+  color: #6d8475;
+}
+
+.report-types {
+  display: flex;
+  gap: 9px;
+}
+
+.report-types label {
+  flex: 1;
+}
+
+.report-types input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.report-types span {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  padding: 12px 5px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  font-size: 11px;
+  font-weight: 500;
+  color: #8d9f91;
+}
+
+.report-types input:checked + span {
+  border-color: #75b49a;
+  background: #ecf6ef;
+  color: var(--teal);
+}
+
+.report-types input:focus-visible + span {
+  outline: 2px solid var(--teal);
+}
+
+.report-types svg {
+  width: 16px;
+  height: 16px;
+}
+
+.location-actions {
+  display: flex;
+  gap: 9px;
+  flex-wrap: wrap;
+  margin-top: 8px;
+}
+
+.location-actions button {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 5px 0;
+  font-size: 10px;
+  color: var(--teal);
+}
+
+.location-actions svg {
+  width: 13px;
+  height: 13px;
+}
+
+.field-hint {
+  font-size: 10px;
+  color: #97a798;
+  margin: 5px 0;
+}
+
+.field-hint.valid {
+  color: var(--teal);
+}
+
+.optional {
+  font-weight: 400;
+  color: #9aaa9d;
+}
+
+.dialog-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 22px;
+  gap: 16px;
+  border-top: 1px solid var(--line);
+  padding-top: 20px;
+}
+
+.dialog-footer > span {
+  font-size: 10px;
+  color: #91a293;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  max-width: 225px;
+}
+
+.dialog-footer svg {
+  width: 16px;
+  height: 16px;
+}
+
+.form-error {
+  background: #fff0e9;
+  color: #ac5b44;
+  font-size: 12px;
+  border-radius: 6px;
+  padding: 9px 12px;
+  margin-top: 12px;
+}
+
+.pick-banner {
+  position: absolute;
+  left: 50%;
+  bottom: 85px;
+  transform: translateX(-50%);
+  z-index: 700;
+  background: var(--teal);
+  color: white;
+  border-radius: 7px;
+  padding: 11px;
+  font-size: 12px;
+  width: max-content;
+  max-width: 90%;
+  box-shadow: var(--shadow);
+}
+
+.pick-banner button {
+  color: white;
+  text-decoration: underline;
+  margin-left: 12px;
+}
+
+.toast {
+  position: fixed;
+  bottom: 25px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 2000;
+  background: #183f34;
+  color: white;
+  box-shadow: 0 6px 24px #17322d30;
+  padding: 14px 22px;
+  border-radius: 10px;
+  font-size: 12px;
+  max-width: 90vw;
+}

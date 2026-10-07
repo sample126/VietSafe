@@ -1,0 +1,256 @@
+/* rescue.css - Trang Ứng cứu: hotline, form điều phối, cẩm nang an toàn */
+
+.rescue-online-tag {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  color: #c94436;
+  background: #fff1ef;
+  padding: 6px 12px;
+  border-radius: 20px;
+  font-weight: 600;
+  border: 1px solid #f9cac5;
+}
+
+.rescue-hotline-bar {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.hotline-box {
+  background: white;
+  border: 1.5px solid var(--line);
+  border-radius: 12px;
+  padding: 16px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  box-shadow: 0 3px 10px #087f7208;
+}
+
+.hotline-box.bike-box {
+  border-color: #b9e2d5;
+  background: #f8fdfb;
+}
+
+.hotline-box.car-box {
+  border-color: #bed6fc;
+  background: #f7faff;
+}
+
+.hotline-box.heavy-box {
+  border-color: #fbc7be;
+  background: #fff9f8;
+}
+
+.hotline-icon {
+  width: 42px;
+  height: 42px;
+  border-radius: 10px;
+  display: grid;
+  place-items: center;
+  background: white;
+  box-shadow: 0 2px 6px #00000010;
+  flex-shrink: 0;
+}
+
+.bike-box .hotline-icon {
+  color: var(--teal);
+}
+
+.car-box .hotline-icon {
+  color: var(--blue);
+}
+
+.heavy-box .hotline-icon {
+  color: var(--red);
+}
+
+.hotline-content {
+  flex: 1;
+  min-width: 0;
+}
+
+.hotline-content span {
+  display: block;
+  font-size: 11px;
+  color: #7a8b8e;
+  font-weight: 500;
+}
+
+.hotline-content strong {
+  display: block;
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--ink);
+  letter-spacing: -0.5px;
+}
+
+.hotline-content small {
+  display: block;
+  font-size: 10px;
+  color: #8d9a9b;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.phone-btn {
+  padding: 9px 14px;
+  min-height: 36px;
+  font-size: 11px;
+  background: #de4c3c !important;
+}
+
+.phone-btn:hover {
+  background: #bf3829 !important;
+}
+
+.rescue-main-grid {
+  display: grid;
+  grid-template-columns: 1.2fr 1fr;
+  gap: 24px;
+}
+
+.rescue-services-col h3 {
+  font-size: 16px;
+  margin-bottom: 16px;
+  color: var(--ink);
+}
+
+.rescue-card {
+  background: white;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 20px;
+  margin-bottom: 16px;
+}
+
+.rescue-card-top {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 10px;
+  flex-wrap: wrap;
+}
+
+.rescue-card-top h4 {
+  font-size: 16px;
+  margin: 0;
+  font-weight: 650;
+}
+
+.service-link {
+  font-size: 11px;
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--teal);
+}
+
+.service-link svg {
+  width: 13px;
+  height: 13px;
+}
+
+.rescue-card p {
+  font-size: 12px;
+  color: #6b8575;
+  line-height: 1.6;
+  margin-bottom: 12px;
+}
+
+.rescue-info-row {
+  display: grid;
+  gap: 6px;
+  font-size: 11px;
+  color: #87988d;
+  margin-bottom: 16px;
+  background: #f9fbf9;
+  padding: 10px 12px;
+  border-radius: 8px;
+}
+
+.rescue-side-col {
+  display: grid;
+  gap: 20px;
+}
+
+.rescue-form-box {
+  background: #f8faf8;
+  border: 1px solid #e2ede5;
+  border-radius: 12px;
+  padding: 22px;
+}
+
+.form-box-head h3 {
+  font-size: 16px;
+  margin-bottom: 4px;
+}
+
+.form-box-head p {
+  font-size: 11px;
+  color: #8b9c8e;
+  margin-bottom: 16px;
+}
+
+.rescue-loc-row {
+  margin: 6px 0 10px;
+}
+
+.rescue-loc-row button {
+  font-size: 11px;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.safety-box {
+  background: #fffbf0;
+  border: 1.5px solid #f6dfa9;
+  border-radius: 12px;
+  padding: 20px;
+}
+
+.safety-box h4 {
+  font-size: 13px;
+  color: #8c6218;
+  margin-bottom: 12px;
+  font-weight: 700;
+}
+
+.safety-box ol {
+  margin: 0;
+  padding-left: 18px;
+  font-size: 11px;
+  color: #7a6230;
+  line-height: 1.7;
+}
+
+.safety-box li {
+  margin-bottom: 8px;
+}
+
+.safety-box li:last-child {
+  margin-bottom: 0;
+}
+
+.safety-box strong {
+  color: #574013;
+}
+
+.rescue-form-result {
+  margin-top: 14px;
+  padding: 12px;
+  border-radius: 8px;
+  font-size: 12px;
+  line-height: 1.6;
+  background: #eaf5f0;
+  border: 1px solid #c8e5d7;
+  color: #357158;
+}

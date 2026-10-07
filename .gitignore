@@ -1,36 +1,32 @@
-﻿# Byte-compiled / optimized / DLL files
+# Python
 __pycache__/
 *.py[cod]
-*$py.class
-
-# Caches and virtual environments
 .venv/
-env/
 venv/
-ENV/
 .pytest_cache/
+.ruff_cache/
 .coverage
 htmlcov/
 
-# Local databases and runtime data
-data/*.sqlite3*
-data/*.db
-*.sqlite3
+# Node (chỉ là công cụ phát triển)
+node_modules/
+
+# Dữ liệu chạy cục bộ (giữ thư mục, bỏ nội dung)
+data/*
+!data/.gitkeep
+*.sqlite3*
 *.db
 *.log
 
-# Large binary tools (downloaded automatically when needed)
+# Tệp nhị phân lớn tải tự động khi cần
 cloudflared.exe
 *.exe
 
-# OS generated files
+# Hệ điều hành / IDE
 .DS_Store
 Thumbs.db
 desktop.ini
-
-# IDE & Editor files
 .vscode/
 .idea/
 *.swp
-*.swo
 *~
