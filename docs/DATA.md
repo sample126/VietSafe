@@ -1,6 +1,9 @@
-# Module Data — Data-01: Data Contract
+# Module Data — Data Contract và kiến trúc Data-02
 
-**Trạng thái: đề xuất v0.1.0, chưa được nối vào runtime.** Ngày review: 2026-10-08.
+**Contract: draft v0.1.0, chưa nối vào runtime web.** Data-02 đã có package offline,
+semantic validator, demo pipeline và kiểm thử; xem [mục 12](#12-data-02--implementation-offline).
+Các quyết định graph/timestep/target vận hành vẫn chờ nhóm Forecast duyệt.
+Ngày review: 2026-10-08. Mục 1–11 giữ bối cảnh và thiết kế Data-01; mục 12 mô tả implementation hiện tại.
 Một đoạn đường + một thời điểm = một observation. JSON Schema và ví dụ:
 [road-observation.schema.json](schemas/road-observation.schema.json),
 [road-observation.example.json](examples/road-observation.example.json).
@@ -255,7 +258,7 @@ nếu identity/time vẫn hợp lệ. Cross-field checks bắt buộc:
    method simulated. Không dùng demo làm nhãn ground truth thật.
 
 JSON Schema kiểm tra cấu trúc, range, UTC format, grid timestamp và depth/status; các quan hệ khác,
-lineage resolution, score, uniqueness dataset và as-of cần semantic validator ở Data-02.
+lineage resolution, score, uniqueness dataset và as-of do semantic validator Data-02 kiểm tra.
 Không tuyên bố JSON Schema tự kiểm tra được mọi quy tắc trên.
 
 ## 8. Đầu ra cho Forecast và T-GCN
@@ -347,7 +350,7 @@ băng, semantic validator, manifest/version conventions và ranh giới adapter.
 khung + test offline; OSM/DEM/GPM/SMAP vẫn để Data-03..06. Trước khi viết adapter/runtime,
 nhóm Data + Forecast + Routing thống nhất các mục cần duyệt ở trên.
 
-### Kết quả review Data-01
+### Kết quả review Data-01 (lịch sử, không phải số test Data-02)
 
 - `python -m unittest discover tests -v`: 17 tests đạt trên baseline main + docs mới.
 - Chạy `tests/test_auth.py:main()` bằng harness trỏ `server.DB_PATH` sang SQLite tạm:
@@ -375,3 +378,266 @@ version vận hành cho dự án:
   [ARCHITECTURE](https://github.com/sample126/VietSafe/blob/9734fb36c6896346ad0bac5c7feebfc7c4392f7b/docs/ARCHITECTURE.md),
   [BACKEND](https://github.com/sample126/VietSafe/blob/9734fb36c6896346ad0bac5c7feebfc7c4392f7b/docs/BACKEND.md),
   [DEVELOPMENT](https://github.com/sample126/VietSafe/blob/9734fb36c6896346ad0bac5c7feebfc7c4392f7b/docs/DEVELOPMENT.md).
+
+
+## 12. Data-02 — implementation offline
+
+### 12.1. Baseline và phạm vi
+
+PR [#2](https://github.com/sample126/VietSafe/pull/2) **open, chưa merged** ở lần kiểm tra.
+Baseline: `init_folder_structure@9734fb36c6896346ad0bac5c7feebfc7c4392f7b`.
+Branch mới: `data/02-architecture`; cherry-pick Data-01 từ `9990bbacdfa8b7fede3180bca3539e599d062e38`.
+Không merge PR #2, không sửa main và không đưa kiến trúc mới vào `docs/data-module`.
+
+Baseline có một lỗi test: `backend/tests/helpers.py` import `report_limiter` từ file
+`vietsafe.web.api` đã bị tách. Sửa đúng một import sang
+`vietsafe.web.controllers.report_controller`; sau đó 51 test backend cũ pass.
+Không sửa các hàm xử lý reports/rate limit/HTTP. Đây là thay đổi ngoài package Data duy nhất
+ở Python cũ, cần để khôi phục test suite đúng kiến trúc baseline.
+
+### 12.2. Module architecture và folder structure
+
+| Đường dẫn trong `backend/vietsafe/data_pipeline/` | Trách nhiệm |
+| --- | --- |
+| `config.py` | DataPaths và các đường dẫn; import không tạo file/thư mục |
+| `models.py` | RoadObservation, SourceMetadata, QualityFlag; JSON boundary, không ép kiểu/mất null |
+| `registry.py` | RoadSegment, RoadRegistry, lookup, fingerprint và canonical JSON |
+| `validation.py` | Cấu trúc v0.1.0 + semantic rules + dataset uniqueness; structured errors |
+| `quality.py` | Feature lists, enum reasons/wire codes, policy coverage-v0.1 |
+| `exceptions.py` | ValidationIssue, DataValidationError, ReleaseExistsError |
+| `manifest.py` | Manifest, checksum, publication có khóa và chống overwrite |
+| `adapters/demo.py` | Đọc mạng demo và tạo observation giả lập có provenance |
+| `pipeline.py` | run_pipeline: registry → observation → validate → manifest → tùy chọn publish |
+| `__main__.py` | CLI offline với input thời gian/version/commit tường minh |
+| `ingestion/`, `processing/`, `features/` | Ranh giới mở rộng; hiện chỉ có `__init__.py`, chưa có collector/processing thật |
+
+Các package có `__init__.py`; không thêm hook vào `service`, HTTP hay frontend.
+Luồng tương lai: Raw → Ingestion → Processing/Alignment → Features → Validation → Release.
+Data-02 chỉ thực thi adapter demo, validation và release; chưa có downstream adapter
+cho Forecast/Routing/Map. Không gọi Forecast để tạo ground truth.
+
+### 12.3. Data directories và config
+
+`data/` có `raw/`, `interim/`, `processed/`, `manifests/`, `registry/`, `fixtures/`.
+Dùng `.gitkeep`; fixture duy nhất là `data/fixtures/demo-request.json` có thời gian cố định.
+Road registry demo được đọc qua adapter, không chép lại 36 đường vào fixture thứ hai.
+
+Config hỗ trợ `DATA_ROOT`, `RAW_DIR`, `INTERIM_DIR`, `PROCESSED_DIR`, `MANIFEST_DIR`,
+`NETWORK_REGISTRY_DIR`, `FIXTURE_DIR`. Mặc định root là `<repo>/data`, tính từ `__file__`
+bằng pathlib. `VIETSAFE_DATA_ROOT` hoặc CLI `--data-root` đổi toàn bộ root;
+`DataPaths.from_env()` đọc env ở lúc gọi. Relative override được resolve từ CWD.
+Không đụng `VIETSAFE_DB` hoặc cấu hình của runtime web.
+
+`DataPaths.ensure_directories()` chỉ gọi khi chủ động publish, không tự chạy lúc import.
+Docker có thể dùng volume ghi được làm data root; chưa sửa Dockerfile và chưa chạy
+kiểm thử trên Windows/Docker trong task này. Code dùng stdlib/pathlib và Python >=3.10.
+
+Gitignore cho phép fixture JSON nhỏ, `registry/*.example.json`, `manifests/*.example.json`
+và `.gitkeep`; bỏ qua raw/output/lock/staging cùng raster, Parquet, PBF, cache, `.env`,
+credentials, private keys. Không commit file release do CLI sinh ra. JSON fixture vẫn cần
+review kích thước/nội dung trước commit; gitignore không phải công cụ phát hiện secrets.
+
+### 12.4. Road Registry
+
+```python
+from vietsafe.data_pipeline.adapters.demo import load_demo_registry
+registry = load_demo_registry()
+road = registry.get("HN-017")  # RoadSegment; ID không có -> None
+```
+
+Registry giữ `road_id`, `network_version`, `source_type`, `source_id`, `name`,
+`coordinates` (lat,lon), `endpoint_a`, `endpoint_b`, `length_km`, `directionality`.
+Dữ liệu demo đọc từ `core.network.ROADS`, giữ nguyên `HN-001`..`HN-036` và `both`.
+Kiểm tra ID duy nhất, version đồng nhất, tên/lineage/endpoints không trống, length dương,
+geometry hợp lệ/không suy biến và directionality. Lookup được index trong bộ nhớ;
+copy sang tuple để không làm thay đổi lists của runtime.
+
+`network_version = hanoi-demo-<16 ký tự SHA-256 của ROADS canonical>`; hiện là
+`hanoi-demo-d1bfac3198c0f477`. Manifest giữ **đầy đủ** SHA-256 registry.
+Test khóa version này: nếu mạng demo đổi phải review mapping/version và cập nhật test
+có chủ đích. Sorting registry không đổi fingerprint. Registry abstraction hỗ trợ both,
+forward, reverse nhưng Data-02 không tạo mạng có hướng hoặc adjacency T-GCN.
+Điểm đại diện dùng nửa chiều dài polyline với metric xấp xỉ địa phương cho mạng demo;
+không coi đây là thuật toán geodesic production trên toàn cầu.
+
+### 12.5. RoadObservation và validation
+
+`RoadObservation` là frozen dataclass đủ 24 field của schema v0.1.0; SourceMetadata và
+QualityFlag cũng là dataclass. Collections dùng tuple. `to_dict` trả bản sao,
+`from_dict`/`from_json` kiểm tra boundary; `None` ↔ JSON null, không fill 0.
+JSON duplicate keys, NaN/Infinity bị từ chối. Không nhận bool thay cho numeric feature.
+Datetime canonical là chuỗi UTC Z; không tự đoán timezone/chuyển offset.
+
+```python
+from vietsafe.data_pipeline.validation import validate_observation, require_valid
+errors = validate_observation(observation, registry, source_catalog=catalog)
+# errors: list[ValidationIssue]; mỗi issue có to_dict()
+require_valid(records, registry, source_catalog=catalog)  # ném DataValidationError nếu sai
+```
+
+Ví dụ error:
+
+```json
+{"field":"rainfall_30m","code":"NEGATIVE_VALUE","message":"rainfall_30m must be >= 0","severity":"error"}
+```
+
+Rules hiện thực:
+
+- Đúng field bắt buộc, không extra field; schema/version/ID/mode hợp lệ; kiểu và range
+  của toàn bộ feature, metadata và flags theo dictionary; số hữu hạn; soil [0,1], slope [0,90),
+  free-flow >0, traffic/rain/depth/history không âm; history là số nguyên.
+- ID tồn tại trong registry, network version khớp, điểm representative khớp (tolerance
+  1e-6 độ); observed không được dùng registry mang source_type demo.
+- Ngày/giờ lịch hợp lệ, UTC Z giây nguyên, grid 30 phút của **draft v0.1.0**,
+  as_of >= timestamp; không nhận naive datetime. Timestep khác cần contract được duyệt,
+  không có tùy chọn âm thầm bỏ kiểm tra v0.1.0.
+- Rain accumulation không giảm khi mở rộng cửa sổ; depth/status nhất quán.
+  True + depth null được phép; 0 depth + null status bị từ chối.
+- Nguồn cover đúng một lần mọi non-null feature/tọa độ; null cần missing/stale/rejected/conflict;
+  null không mang eligible source. Cấm flag missing/rejected trên giá trị còn non-null.
+- observed_at <= timestamp; observed_at <= available_at <= as_of; dynamic cần TTL,
+  valid_until phải lớn hơn timestamp; version nguồn không được là latest.
+- Source ref phải resolve trong catalog **offline** do caller cung cấp; kiểm metadata,
+  danh sách field, SHA-256 của input recipe/value payload, giá trị và registry checksum.
+  Ref trong ví dụ Data-01 `example-only:*` không tự trở thành provenance hợp lệ.
+- Demo chỉ nhận provider demo/method simulated; observed cấm simulated. simulated,
+  carry_forward, imputed cần flag tương ứng. Tính lại quality_score coverage-v0.1.
+- Dataset không rỗng, không trùng `(road_id,timestamp)`, một dataset version/mode.
+  Manifest kiểm created_at >= mọi as_of và code_commit là SHA đầy đủ.
+
+Không clamp, không impute, không sửa record để làm test pass. Boundary checker là code
+stdlib chuyên cho v0.1.0, không phải thư viện JSON Schema tổng quát; schema JSON vẫn là
+hợp đồng trao đổi. Tests đối chiếu shape/vocabulary; review thêm JSON Schema bằng công
+cụ dev độc lập được, không thêm dependency vào runtime.
+
+Catalog Data-02 là lineage cho **demo recipe**, gồm input values/registry hash cùng
+source metadata, checksum, retrieval time và license. Đây không phải xác minh vật lý của
+NASA, provider QA, spatial/temporal coverage hoặc report review audit. Adapter thật sẽ
+cần raw-file checksums, QC và audit đúng nguồn ở các task sau; chưa cho phép dùng pipeline
+này như pipeline observed production. Flags hoặc score không chứng minh dữ liệu là thật.
+
+### 12.6. Quality flags không đổi wire contract
+
+| Reason nội bộ | `quality_flags[].code` v0.1.0 |
+| --- | --- |
+| MISSING_GPM, MISSING_SMAP, MISSING_TRAFFIC, MISSING_FEATURE | missing |
+| STALE_SOURCE | stale |
+| OUT_OF_RANGE | rejected |
+| INTERPOLATED | imputed |
+| LOW_SPATIAL_COVERAGE | proxy |
+| DEMO_VALUE | simulated |
+
+Tên reason được ghi ở đầu `detail`, ví dụ `DEMO_VALUE: ...`; không thêm field/code JSON
+mới. FlagCode còn có conflict, carried_forward. Chưa triển khai interpolation hay spatial
+coverage thực chỉ vì đã định nghĩa tên flag. `LOW_SPATIAL_COVERAGE` dùng cho proxy còn
+được giữ lại; khi không đủ điều kiện sử dụng phải null + rejected/missing theo policy nguồn.
+
+### 12.7. Demo adapter và pipeline
+
+Adapter không lấy NASA/OSM và không gọi simulation/forecast. Nó đọc mạng demo có sẵn,
+tạo một bin khô giả lập: speed giữ bằng 80% free_speed trong bin, depth=0, status=false.
+Tất cả giá trị này mang DEMO_VALUE. Road `seed_event=unknown` giữ speed/depth/status null;
+free_flow_speed vẫn là static demo. Rain/SMAP/terrain/history đều null với lý do.
+Đây là fixture chứng minh kỹ thuật, **không phải** snapshot scenario đang hiển thị trên web.
+
+Chạy từ `backend/` (Python standard library, không pip install):
+
+```bash
+python -m vietsafe.data_pipeline --dataset-version vietsafe-data-0.1.0-demo --timestamp 2026-10-08T02:30:00Z --as-of 2026-10-08T02:30:00Z --created-at 2026-10-08T02:30:00Z --code-commit <SHA-40-KY-TU>
+```
+
+Lấy SHA thật bằng `git rev-parse HEAD`, dùng checkout sạch; thay placeholder trước chạy.
+CLI không tự lấy giờ máy, tạo random ID hoặc tải Internet. Mặc định chỉ in summary JSON,
+không ghi file. Thêm `--write --data-root <thu-muc-ghi-duoc>` để phát hành local release.
+Cùng inputs (kể cả timestamp/as_of/created_at/version), registry, config và code thì
+observations, manifest và checksums phải giống nhau. Test chạy với SHA giả có ghi rõ
+chỉ dùng trong unittest; không dùng SHA đó cho evaluation release thật.
+
+Các bước `run_pipeline`: load registry → generate observations + catalog → validate
+cả dataset → create manifest → tùy chọn publish → trả PipelineResult/summary.
+Invalid dataset không tạo output directories. Pipeline không được gọi bởi HTTP service.
+
+### 12.8. Manifest, versioning và lưu release
+
+Manifest chứa schema/dataset/network version, created_at, code_commit, data_mode,
+source catalog (product/version/retrieval/license/checksum/recipe), record_count,
+road_count, time range, bbox/CRS, quality stats, processing parameters, artifact paths
+và SHA-256. `content_sha256` hash canonical manifest trước khi thêm chính field hash.
+Tên/đường dẫn trong manifest tương đối, không chứa đường dẫn máy người chạy.
+
+Đặt version có ý nghĩa, ví dụ `vietsafe-data-0.1.0-demo`, sau đó
+`vietsafe-data-0.1.1-demo` khi nội dung thay đổi. Validator vẫn nhận cú pháp version
+của Data-01 (không ép mọi dataset phải có prefix mới). Không dùng final/final2/final_new.
+
+Với `--write`:
+
+- `processed/<dataset_version>/observations.jsonl`: thứ tự cố định theo road_id/timestamp.
+- `processed/<dataset_version>/registry.json`: registry snapshot đầy đủ của release.
+- `manifests/<dataset_version>.json`: manifest và marker phát hành cuối cùng.
+
+`registry/` để dành catalog/cache registry độc lập trong tương lai; release hiện đóng
+băng một bản registry ngay trong bundle để dễ tái lập. Manifest bao phủ spatial extent
+của registry, temporal extent của records; chưa tính phần trăm coverage raster.
+
+Publisher kiểm tra lại manifest với content trước ghi; dùng lock O_EXCL theo version,
+staging riêng, từ chối khi version/marker đã tồn tại và không overwrite kể cả nội dung
+trùng. Hai writer cùng version chỉ một writer thành công. Khi exception, dọn output do
+chính lần gọi đó tạo; không xóa release/lock của writer khác. Khi crash/mất điện có thể
+còn lock hoặc bundle chưa commit: không tự dùng lại version; phải kiểm tra thủ công.
+Consumer chỉ đọc release có manifest hoàn chỉnh, không còn lock, và checksum khớp.
+Chưa có object-store transaction hoặc distributed lock; đây là publisher filesystem MVP.
+
+### 12.9. Testing và giới hạn đã biết
+
+Chạy từ `backend/`:
+
+```bash
+python -m unittest discover -s tests/data -t . -v
+python -m unittest discover -s tests -t . -v
+```
+
+Từ root repo (dev tools đã cài riêng):
+
+```bash
+ruff check backend
+ruff format --check backend
+npm ci --ignore-scripts
+npm run test:frontend
+git diff --check
+```
+
+Data tests gồm registry/model, semantic rules, provenance/timestamps/quality, demo adapter,
+manifest, write-once/lock/concurrent publication/rollback, CLI và deterministic outputs.
+Test sockets bị chặn để chứng minh pipeline demo không gọi Internet; DB/web không bị
+pipeline sửa. Mọi output test nằm trong TemporaryDirectory, không ghi vào data thật.
+
+Kết quả Data-02: Data tests **63/63**, toàn bộ backend **114/114** (gồm 51 test cũ),
+frontend **34/34**. Bộ legacy ở root cũng đạt **17/17** unittest và **13/13** auth/API
+checks; auth chạy với SQLite trong TemporaryDirectory, không dùng database người dùng.
+Đã kiểm tra độc lập **36/36** demo observations bằng JSON Schema Draft 2020-12 và
+format checker; công cụ JSON Schema chỉ cài ngoài repository để review, không thêm
+runtime dependency. Schema/example Data-01 giữ nguyên.
+
+`npm run lint` hiện lỗi vì **baseline thiếu
+eslint.config.***; không thêm cấu hình frontend trong Data-02. Backend Ruff check/format
+chạy độc lập theo pyproject hiện có. Không tuyên bố đã kiểm thử Windows/Docker thực tế.
+
+### 12.10. Thêm source mới sau Data-02
+
+1. Chốt provider/product/run/version/license, availability, units/QC và raw metadata;
+   implement collector trong `ingestion/` với I/O tách khỏi model/validator.
+2. Pin raw bytes/checksum + processing config. Alignment vào `processing/`, đặc trưng
+   vào `features/`; không dùng HTTP controller hoặc Forecast làm nơi ETL.
+3. Dùng adapter đưa về RoadObservation v0.1.0, source catalog/raw lineage đầy đủ;
+   model không fill null mặc định. Bổ sung validator nguồn và fixture offline trước download thật.
+4. Bổ sung manifest raw-file references/coverage có thể kiểm chứng; không coi input/value
+   recipe của demo là đủ chứng cứ cho dữ liệu vệ tinh production.
+5. Chạy unit tests và compatibility tests; chỉ phát hành version mới sau validate.
+
+**PROPOSED DATA CONTRACT CHANGE: None.** Schema JSON, field names/units, null policy
+và wire quality codes của Data-01 không thay đổi. Enum nội bộ, catalog và manifest là
+implementation bổ sung bên ngoài observation. Đề xuất schema mới phải được ghi rõ trước sửa.
+
+Các quyết định cần Forecast duyệt vẫn là directed/undirected graph, timestep sau draft,
+labels/horizons, availability/latency và gates dùng dữ liệu. Data-02 không quyết định
+chúng thay nhóm Forecast, không tạo T-GCN adjacency hoặc thay API snapshot/routes/reports.

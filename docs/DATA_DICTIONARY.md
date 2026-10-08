@@ -93,5 +93,5 @@ training, không khẳng định HN-001 thực sự có cao độ/ngập như v�
 chỉ dùng trong fixture, chưa có manifest thật; production validator phải từ chối unresolved ref.
 
 JSON Schema Draft 2020-12 cần bật `format` checking để bắt ngày không hợp lệ.
-Cross-field checks và dataset checks nằm ở DATA.md; Data-02 mới triển khai semantic
-validator chính thức, không đổi runtime API trong Data-01.
+Cross-field checks và dataset checks đã được triển khai offline ở Data-02; xem
+[DATA.md mục 12](DATA.md#12-data-02--implementation-offline). Schema và runtime API không đổi.

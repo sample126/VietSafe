@@ -14,9 +14,46 @@ node_modules/
 # Dữ liệu chạy cục bộ (giữ thư mục, bỏ nội dung)
 data/*
 !data/.gitkeep
+!data/raw/
+!data/interim/
+!data/processed/
+!data/manifests/
+!data/registry/
+!data/fixtures/
+data/raw/*
+data/interim/*
+data/processed/*
+data/manifests/*
+data/registry/*
+data/fixtures/*
+!data/*/.gitkeep
+!data/fixtures/*.json
+!data/registry/*.example.json
+!data/manifests/*.example.json
 *.sqlite3*
 *.db
 *.log
+
+# Production geospatial data, cache and secrets (never fixture exceptions)
+*.tif
+*.tiff
+*.hgt
+*.hdf
+*.h5
+*.nc
+*.parquet
+*.pbf
+*.osm
+*.zip
+*.tmp
+.cache/
+.env
+.env.*
+!.env.example
+credentials*.json
+*service-account*.json
+*.pem
+*.key
 
 # Tệp nhị phân lớn tải tự động khi cần
 cloudflared.exe
