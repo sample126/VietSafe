@@ -1,0 +1,20 @@
+[project]
+name = "vietsafe"
+version = "1.1.0"
+description = "VietSafe AI - bản đồ cảnh báo ngập lụt, ùn tắc và sự cố giao thông (MVP mô phỏng)"
+requires-python = ">=3.10"
+# Chạy ứng dụng KHÔNG cần thư viện ngoài. Chỉ có công cụ phát triển (xem requirements-dev.txt).
+dependencies = []
+
+[tool.ruff]
+line-length = 100
+target-version = "py310"
+src = ["backend"]
+
+[tool.ruff.format]
+quote-style = "double"
+
+[tool.ruff.lint]
+# E/F: lỗi cơ bản; I: sắp xếp import; B: bẫy phổ biến; UP: cú pháp Python hiện đại
+select = ["E", "F", "I", "B", "UP"]
+ignore = ["E501"]  # độ dài dòng do `ruff format` lo

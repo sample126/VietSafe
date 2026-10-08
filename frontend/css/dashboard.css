@@ -1,0 +1,134 @@
+/* dashboard.css - Thông báo mất kết nối, thẻ thống kê, thời tiết, bố cục workspace */
+
+.connection-error {
+  padding: 12px;
+  background: #fff0ed;
+  border: 1px solid #eaae9e;
+  color: #a34635;
+  border-radius: 8px;
+  margin-bottom: 15px;
+}
+
+.stats {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 17px;
+  margin-bottom: 22px;
+}
+
+.stat-card {
+  border: 1px solid var(--line);
+  border-radius: 11px;
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  padding: 18px;
+  background: white;
+  text-align: left;
+  position: relative;
+  overflow: hidden;
+}
+
+.stat-card:hover {
+  border-color: #c7d9d0;
+}
+
+.stat-icon {
+  width: 41px;
+  height: 41px;
+  display: grid;
+  place-items: center;
+  border-radius: 10px;
+  flex-shrink: 0;
+}
+
+.stat-icon svg {
+  width: 21px;
+  height: 21px;
+}
+
+.blue {
+  background: #edf3ff;
+  color: var(--blue);
+}
+
+.orange {
+  background: #fff5e7;
+  color: #dc963c;
+}
+
+.red {
+  background: #fef0ed;
+  color: var(--red);
+}
+
+.teal {
+  background: #e9f5f2;
+  color: var(--teal);
+}
+
+.stat-card div > span {
+  font-size: 11px;
+  font-weight: 500;
+  color: #83918f;
+  display: block;
+}
+
+.stat-card strong {
+  display: block;
+  font-size: 28px;
+  font-weight: 650;
+  letter-spacing: -1px;
+  line-height: 1.5;
+}
+
+.stat-card strong em {
+  font-style: normal;
+  font-size: 12px;
+  font-weight: 400;
+  letter-spacing: 0;
+  margin-left: 5px;
+  color: var(--muted);
+}
+
+.stat-card small {
+  font-size: 10px;
+  color: #94a09e;
+  display: block;
+  white-space: nowrap;
+}
+
+.stat-link {
+  position: absolute;
+  right: 14px;
+  top: 17px;
+  color: #b7c5c0;
+  font-size: 15px;
+}
+
+.weather-decoration {
+  position: absolute;
+  right: 16px;
+  bottom: 18px;
+  font-size: 48px;
+  color: #e7f1ef;
+  transform: rotate(-15deg);
+}
+
+.workspace {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 320px;
+  gap: 21px;
+  align-items: stretch;
+}
+
+.map-card,
+.event-panel,
+.route-panel,
+.insight-card,
+.section-card {
+  background: white;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  overflow: hidden;
+}

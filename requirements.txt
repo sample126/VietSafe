@@ -1,6 +1,9 @@
-﻿# VietSafe Core runs entirely on Python standard library (Python 3.10+)
-# No external dependencies required for running the core server!
+# VietSafe: phần chạy ứng dụng chỉ dùng thư viện chuẩn của Python (yêu cầu Python 3.10+).
+# Không có thư viện nào cần cài để chạy máy chủ.
 
-# Optional development and testing dependencies:
+# Công cụ phát triển và kiểm thử tùy chọn (không cần để chạy ứng dụng):
 # pytest>=7.0.0
 # python-docx>=1.1.0
+# ruff   - format và lint backend, cấu hình trong pyproject.toml    ->  pip install ruff
+# Test backend dùng unittest có sẵn trong Python, không cần pytest.
+# Công cụ cho frontend (Prettier, ESLint, jsdom) khai báo trong package.json   ->  npm install

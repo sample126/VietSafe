@@ -1,8 +1,14 @@
-﻿services:
+services:
   - type: web
     name: vietsafe-ai
     env: python
     buildCommand: ""
-    startCommand: "python server.py --host 0.0.0.0 --port $PORT"
+    startCommand: "cd backend && python -m vietsafe --host 0.0.0.0 --port $PORT"
     plan: free
     autoDeploy: true
+    envVars:
+      # Đặt mật khẩu tài khoản demo trước khi công khai (xem docs/BACKEND.md, mục Cấu hình).
+      - key: VIETSAFE_ADMIN_PASSWORD
+        sync: false
+      - key: VIETSAFE_CITIZEN_PASSWORD
+        sync: false

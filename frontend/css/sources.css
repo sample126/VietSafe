@@ -1,0 +1,102 @@
+/* sources.css - Trang Nguồn dữ liệu: lưới nguồn, điều khiển kịch bản, pipeline */
+
+.source-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+}
+
+.source-card {
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 21px;
+}
+
+.source-card > svg {
+  color: #77a392;
+  margin-bottom: 16px;
+}
+
+.source-card h3 {
+  font-size: 14px;
+  margin-bottom: 9px;
+}
+
+.source-card p {
+  font-size: 11px;
+  color: #8b9a8f;
+  margin-top: 10px;
+}
+
+.source-card .tag {
+  font-size: 10px;
+}
+
+.source-plan {
+  font-size: 10px;
+  color: #6b8a77;
+  background: #f0f7f2;
+  padding: 8px;
+  border-radius: 5px;
+  margin-top: 8px;
+  line-height: 1.5;
+}
+
+.source-plan strong {
+  font-weight: 600;
+  color: #4a7c64;
+}
+
+.scenario-box {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 25px;
+  background: #eef6f0;
+  border: 1px solid #deebe0;
+  border-radius: 10px;
+  padding: 22px;
+  margin-top: 25px;
+}
+
+.scenario-box h3 {
+  font-size: 14px;
+}
+
+.scenario-box p {
+  font-size: 11px;
+  color: #8c9c8e;
+  margin-top: 4px;
+}
+
+.scenario-box select {
+  max-width: 250px;
+  font-size: 12px;
+}
+
+.pipeline {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 18px;
+  padding: 35px 0;
+  font-size: 12px;
+  color: #6e937d;
+}
+
+.pipeline span {
+  background: #f4f8f4;
+  padding: 11px;
+  border-radius: 5px;
+}
+
+.pipeline b {
+  font-weight: 400;
+  color: #a2b5a6;
+}
+
+.muted {
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.8;
+}
