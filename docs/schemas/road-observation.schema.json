@@ -1,0 +1,430 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "VietSafe road observation v0.1.0 (proposal, not current HTTP API)",
+  "description": "One road segment + one timestamp per immutable dataset release. See ../DATA.md for semantic, provenance, as-of and uniqueness rules not expressible here.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "dataset_version",
+    "network_version",
+    "road_id",
+    "timestamp",
+    "as_of",
+    "data_mode",
+    "latitude",
+    "longitude",
+    "rainfall_30m",
+    "rainfall_1h",
+    "rainfall_3h",
+    "soil_moisture",
+    "elevation",
+    "slope",
+    "twi",
+    "traffic_speed",
+    "free_flow_speed",
+    "historical_flood_count",
+    "current_flood_depth",
+    "flood_status",
+    "source",
+    "quality_score",
+    "quality_flags"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "0.1.0"
+    },
+    "dataset_version": {
+      "type": "string",
+      "pattern": "^[a-z0-9][a-z0-9._-]{0,127}$"
+    },
+    "network_version": {
+      "type": "string",
+      "pattern": "^[a-z0-9][a-z0-9._-]{0,127}$"
+    },
+    "road_id": {
+      "type": "string",
+      "pattern": "^(HN-(00[1-9]|0[12][0-9]|03[0-6])|osm:v1:[1-9][0-9]*:[1-9][0-9]*:[1-9][0-9]*:[0-9a-f]{64}:[fr])$"
+    },
+    "timestamp": {
+      "type": "string",
+      "format": "date-time",
+      "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:(00|30):00Z$"
+    },
+    "as_of": {
+      "$ref": "#/$defs/utc_time"
+    },
+    "data_mode": {
+      "enum": [
+        "observed",
+        "demo"
+      ]
+    },
+    "latitude": {
+      "type": "number",
+      "minimum": -90,
+      "maximum": 90,
+      "description": "WGS84 representative point latitude, degrees north."
+    },
+    "longitude": {
+      "type": "number",
+      "minimum": -180,
+      "maximum": 180,
+      "description": "WGS84 representative point longitude, degrees east."
+    },
+    "rainfall_30m": {
+      "type": [
+        "number",
+        "null"
+      ],
+      "description": "mm; accumulation over (timestamp-30m,timestamp].",
+      "minimum": 0
+    },
+    "rainfall_1h": {
+      "type": [
+        "number",
+        "null"
+      ],
+      "description": "mm; accumulation over (timestamp-1h,timestamp].",
+      "minimum": 0
+    },
+    "rainfall_3h": {
+      "type": [
+        "number",
+        "null"
+      ],
+      "description": "mm; accumulation over (timestamp-3h,timestamp].",
+      "minimum": 0
+    },
+    "soil_moisture": {
+      "type": [
+        "number",
+        "null"
+      ],
+      "description": "Surface 0-5 cm volumetric soil moisture, m3/m3; not saturation percent.",
+      "minimum": 0,
+      "maximum": 1
+    },
+    "elevation": {
+      "type": [
+        "number",
+        "null"
+      ],
+      "description": "Representative terrain elevation in m relative to EGM96 geoid."
+    },
+    "slope": {
+      "type": [
+        "number",
+        "null"
+      ],
+      "description": "Terrain slope in degrees, not percent.",
+      "minimum": 0,
+      "exclusiveMaximum": 90
+    },
+    "twi": {
+      "type": [
+        "number",
+        "null"
+      ],
+      "description": "Dimensionless ln((specific catchment area / 1 m) / tan(slope)); recipe versioned."
+    },
+    "traffic_speed": {
+      "type": [
+        "number",
+        "null"
+      ],
+      "description": "Time-weighted mean segment speed in km/h over the last 30 minutes.",
+      "minimum": 0
+    },
+    "free_flow_speed": {
+      "type": [
+        "number",
+        "null"
+      ],
+      "description": "Free-flow baseline km/h; not automatically the posted speed limit.",
+      "exclusiveMinimum": 0
+    },
+    "historical_flood_count": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "description": "Distinct verified flood episodes over (timestamp-365 days,timestamp); full catalog coverage required.",
+      "minimum": 0
+    },
+    "current_flood_depth": {
+      "type": [
+        "number",
+        "null"
+      ],
+      "description": "Observed water depth above road surface, cm; report severity is not depth.",
+      "minimum": 0
+    },
+    "flood_status": {
+      "type": [
+        "boolean",
+        "null"
+      ],
+      "description": "True confirmed flooded, false confirmed dry, null unknown."
+    },
+    "source": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "$ref": "#/$defs/source_entry"
+      }
+    },
+    "quality_score": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 1,
+      "description": "coverage-v0.1: sum of 12 feature weights / 12 rounded to 4 decimals; not confidence."
+    },
+    "quality_flags": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {
+        "$ref": "#/$defs/quality_flag"
+      }
+    }
+  },
+  "$defs": {
+    "utc_time": {
+      "type": "string",
+      "format": "date-time",
+      "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}Z$"
+    },
+    "source_entry": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "fields",
+        "provider",
+        "product",
+        "version",
+        "record_ref",
+        "observed_at",
+        "available_at",
+        "valid_until",
+        "method"
+      ],
+      "properties": {
+        "fields": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {
+            "enum": [
+              "latitude",
+              "longitude",
+              "rainfall_30m",
+              "rainfall_1h",
+              "rainfall_3h",
+              "soil_moisture",
+              "elevation",
+              "slope",
+              "twi",
+              "traffic_speed",
+              "free_flow_speed",
+              "historical_flood_count",
+              "current_flood_depth",
+              "flood_status"
+            ]
+          }
+        },
+        "provider": {
+          "enum": [
+            "nasa_gpm",
+            "nasa_smap",
+            "nasadem",
+            "srtm",
+            "openstreetmap",
+            "traffic_provider",
+            "verified_community_report",
+            "derived",
+            "demo"
+          ]
+        },
+        "product": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 256
+        },
+        "version": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "record_ref": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 2048
+        },
+        "observed_at": {
+          "$ref": "#/$defs/utc_time"
+        },
+        "available_at": {
+          "$ref": "#/$defs/utc_time"
+        },
+        "valid_until": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/utc_time"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "method": {
+          "enum": [
+            "measurement",
+            "aggregate",
+            "derived",
+            "carry_forward",
+            "imputed",
+            "simulated"
+          ]
+        }
+      }
+    },
+    "quality_flag": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "field",
+        "code",
+        "detail"
+      ],
+      "properties": {
+        "field": {
+          "enum": [
+            "latitude",
+            "longitude",
+            "rainfall_30m",
+            "rainfall_1h",
+            "rainfall_3h",
+            "soil_moisture",
+            "elevation",
+            "slope",
+            "twi",
+            "traffic_speed",
+            "free_flow_speed",
+            "historical_flood_count",
+            "current_flood_depth",
+            "flood_status"
+          ]
+        },
+        "code": {
+          "enum": [
+            "missing",
+            "stale",
+            "rejected",
+            "conflict",
+            "carried_forward",
+            "imputed",
+            "proxy",
+            "simulated"
+          ]
+        },
+        "detail": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 512
+        }
+      }
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "data_mode": {
+            "const": "demo"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "quality_score": {
+            "const": 0
+          },
+          "source": {
+            "items": {
+              "properties": {
+                "provider": {
+                  "const": "demo"
+                },
+                "method": {
+                  "const": "simulated"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "data_mode": {
+            "const": "observed"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "source": {
+            "items": {
+              "properties": {
+                "provider": {
+                  "not": {
+                    "const": "demo"
+                  }
+                },
+                "method": {
+                  "not": {
+                    "const": "simulated"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "current_flood_depth": {
+            "type": "number",
+            "exclusiveMinimum": 0
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "flood_status": {
+            "const": true
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "current_flood_depth": {
+            "const": 0
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "flood_status": {
+            "const": false
+          }
+        }
+      }
+    }
+  ]
+}
