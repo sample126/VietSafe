@@ -3,7 +3,7 @@ services:
     name: vietsafe-ai
     env: python
     buildCommand: ""
-    startCommand: "cd backend && python -m vietsafe --host 172.0.0.1 --port $PORT"
+    startCommand: "cd backend && python -m vietsafe --host 0.0.0.0 --port $PORT"
     plan: free
     autoDeploy: true
     envVars:

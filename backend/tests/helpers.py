@@ -10,9 +10,8 @@ from pathlib import Path
 
 from vietsafe import config
 from vietsafe.app import init_app
-from vietsafe.web.api import report_limiter
+from vietsafe.web.controllers.report_controller import report_limiter
 from vietsafe.web.server import create_server
-
 
 class DatabaseTestCase(unittest.TestCase):
     """Mỗi test chạy trên một SQLite tạm mới, không đụng tới dữ liệu thật trong data/."""

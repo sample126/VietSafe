@@ -17,4 +17,4 @@ USER vietsafe
 
 EXPOSE 8765
 WORKDIR /app/backend
-CMD ["python", "-m", "vietsafe", "--host", "localhost", "--port", "8765"]
+CMD ["python", "-m", "vietsafe", "--host", "0.0.0.0", "--port", "8765"]
