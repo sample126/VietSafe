@@ -220,3 +220,117 @@ dataset/T-GCN, database migration hay integration Forecast/Routing/Map.
 Tham khảo quy tắc nguồn:
 [Overpass QL](https://wiki.openstreetmap.org/wiki/Overpass_API/Overpass_QL),
 [OSM oneway](https://wiki.openstreetmap.org/wiki/Key:oneway).
+
+## DATA-04 Environmental Data
+
+Environmental data hiện được chuẩn hóa **offline** theo luồng file → metadata →
+validation → `EnvironmentalGrid` → SHA-256. Chỉ dùng Python standard library.
+Không sửa Data Contract/RoadObservation, runtime network hoặc các module khác.
+
+### Model và provenance
+
+`environment.py` định nghĩa immutable `EnvironmentalGrid`, `to_dict()`,
+`to_json()`, `from_dict()` và `checksum()`. Grid dùng WGS84/EPSG:4326, hàng 0 ở
+phía Bắc, cột 0 ở phía Tây, `lat_step < 0`, `lon_step > 0`. Origin là tọa độ
+sample/cell center [0,0]; `cell_center(row, col)` trả `(latitude, longitude)`.
+Metadata `grid_registration` phân biệt `cell_center` với `point` (HGT). Chưa
+hỗ trợ projected grid, wrap qua đường đổi ngày hay reproject/resample.
+
+Dimensions/shape, extent, finite coordinates/resolution/values, units, source,
+metadata, timestamp và SHA-256 được kiểm tra trước khi tạo grid. Bool/string
+không được dùng như numeric value. Nodata normalized luôn là `None`/JSON `null`,
+**không chuyển thành zero**. Zero là dữ liệu hợp lệ. Không nhận NaN/Infinity.
+Không đoán unit hay tự chuyển unit; input phải dùng canonical unit.
+Grid được giới hạn tối đa 3601 × 3601 samples; JSON interchange tối đa 8 MiB.
+
+Provenance gồm source type, product/version, URI/reference, SHA-256 raw bytes,
+observed/available time, processing version, original variable/units. URI phải
+là reference ổn định do caller/input cung cấp (ví dụ `urn:...`); không tự lấy
+absolute path thư mục tạm. Không cung cấp URL chứa credential/token. Metadata
+không được chứa secrets, thời gian chạy, UUID hoặc temporary path. Input thời
+gian phải có timezone và được chuẩn hóa UTC `Z`; không tự tạo `available_at`.
+DEM dùng `temporal_semantics=static` và có thể giữ timestamps `null`. GPM giữ
+interval_start/end với start < end; observed_at nằm trong interval (gồm hai
+đầu mút), available_at không sớm hơn interval_end. SMAP giữ thời điểm nguồn.
+
+Canonical JSON UTF-8 dùng sorted keys, compact separators, một newline cuối;
+checksum grid là SHA-256 các bytes này. Không thêm current time/random ID/local
+input path. Cùng bytes nguồn và metadata cho cùng output/checksum. Raw checksum
+nhạy với thay đổi whitespace JSON; đây là checksum **file đầu vào**, không phải
+claim đã xác thực NASA granule gốc hoặc xác thực nhà cung cấp.
+
+### DEM: SRTM/HGT
+
+`ingestion/dem.py` đọc HGT không nén: signed int16 big-endian, row-major từ Bắc
+xuống Nam, filename chuẩn `N21E105.hgt` xác định góc Tây Nam của tile 1 độ.
+Hỗ trợ hemisphere N/S/E/W; production chỉ nhận square 1201 hoặc 3601 samples.
+Sample spacing = `1 / (n - 1)`; HGT là point samples có chung biên giữa tile,
+**không cộng half-cell offset**. Elevation dùng `m`; -32768 → null. Product
+version và stable source URI phải được truyền rõ; parser dành cho SRTM HGT
+(EGM96), không suy diễn metadata acquisition/release từ ngày chạy hoặc tên file.
+
+Fixture `N21E105-mini.hgt` là 18 bytes, 3x3, chỉ đọc khi opt-in
+`--fixture-tile N21E105.hgt`. **TEST FIXTURE — NOT A REAL SRTM TILE**.
+Fixture mang product `SYNTHETIC-HGT`, không claim vertical datum thực.
+Không commit/tải tile SRTM production. Format reference:
+[SRTM User Guide](https://lpdaac.usgs.gov/documents/179/SRTM_User_Guide_V3.pdf).
+
+### GPM và SMAP: normalized interchange boundary
+
+- `ingestion/gpm.py`: `precipitation_rate`, `mm/h`, giá trị >= 0.
+- `ingestion/smap.py`: `soil_moisture`, `m3/m3`, giá trị trong [0,1].
+- `ingestion/environment_json.py`: loader chung, giới hạn 8 MiB, strict JSON,
+  reject duplicate keys (kể cả metadata), nonfinite, schema/version sai,
+  missing/unknown top-level fields và provenance không đủ.
+
+Input JSON có `schema=vietsafe.environment-grid.v1` và tất cả trường của model,
+**trừ `raw_checksum`**. Loader tính raw_checksum từ đúng bytes file đã đọc;
+không nhận checksum tự khai báo của chính file để tránh checksum tự tham chiếu.
+Metadata bắt buộc: `processing_version=environment-1`, `original_variable`,
+`original_units`, `reference`, `crs=EPSG:4326`, `grid_registration`.
+Original variable/unit phải bằng canonical variable/unit vì loader không làm
+conversion. GPM còn bắt buộc `interval_start` và `interval_end` trong metadata.
+Các fixture JSON là ví dụ đầy đủ của interchange contract.
+
+Output `to_dict()/to_json()` thêm raw_checksum; dùng `EnvironmentalGrid.from_dict`
+để deserialize output. Output này không được đưa lại vào raw interchange loader.
+Nếu sau này thêm converter native, phải giữ lineage/checksum granule riêng,
+không thay checksum interchange bằng checksum chưa kiểm chứng.
+
+**Normalized GPM/SMAP JSON là interchange/test boundary, KHÔNG phải native NASA
+granule format.** Chưa decode HDF5/NetCDF, không viết parser giả và không thêm
+h5py/netCDF4. NASA native grid cần converter được kiểm chứng riêng, đặc biệt
+projected SMAP grid không được tự gắn nhãn WGS84. Fixtures 3x3 là synthetic test
+values, không phải NASA production observations.
+
+### Offline CLI và tests
+
+Chạy từ `backend`:
+
+```bash
+python -m vietsafe.data_pipeline.ingestion.dem --help
+python -m vietsafe.data_pipeline.ingestion.gpm --help
+python -m vietsafe.data_pipeline.ingestion.smap --help
+python -m vietsafe.data_pipeline.ingestion.dem --input ../data/fixtures/environment/dem/N21E105-mini.hgt --fixture-tile N21E105.hgt --product-version fixture-v1 --source-uri urn:vietsafe:fixture:dem
+python -m vietsafe.data_pipeline.ingestion.gpm --input ../data/fixtures/environment/gpm/gpm-grid.json
+python -m vietsafe.data_pipeline.ingestion.smap --input ../data/fixtures/environment/smap/smap-grid.json
+python -m unittest tests.data.test_environment tests.data.test_dem_ingestion tests.data.test_gpm_ingestion tests.data.test_smap_ingestion -v
+python -m unittest discover -s tests/data -t . -v
+```
+
+Không `--output`: chỉ in summary/checksum, không tạo file. Có `--output <path>`:
+ghi canonical JSON bằng exclusive create, không overwrite, không tạo thư mục
+cha. Dùng path mới; input lỗi hoặc output đã tồn tại trả exit 2. Tests ghi vào
+thư mục tạm và chặn/mock network; không gọi NASA live.
+
+### Giới hạn DATA-04
+
+Không tạo `nasa.py` downloader: offline foundation chưa cần auth/network layer;
+đưa downloader vào lúc này sẽ thêm xử lý credential/redirect mà task không cần.
+Không có download khi import/chạy CLI. Không thay package entrypoint DATA-02.
+
+DATA-04 **CHƯA map environmental grid vào road**; việc đó thuộc DATA-05.
+Chưa có road sampling/spatial join, temporal aggregation, rainfall windows,
+elevation enrichment, slope/TWI, feature engineering, training dataset,
+Forecast/Routing/Map integration. Các giới hạn DATA-03 phía trên mô tả giai đoạn
+DATA-03; DATA-04 chỉ bổ sung foundation offline nêu tại section này.

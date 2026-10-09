@@ -1,0 +1,45 @@
+{
+  "schema": "vietsafe.environment-grid.v1",
+  "source_type": "smap",
+  "product": "SYNTHETIC-SMAP-INTERCHANGE",
+  "product_version": "fixture-v1",
+  "variable": "soil_moisture",
+  "units": "m3/m3",
+  "rows": 3,
+  "cols": 3,
+  "origin_lat": 21.2,
+  "origin_lon": 105.5,
+  "lat_step": -0.1,
+  "lon_step": 0.1,
+  "values": [
+    [
+      0,
+      0.2,
+      null
+    ],
+    [
+      0.3,
+      0.4,
+      1
+    ],
+    [
+      0.25,
+      0,
+      0.5
+    ]
+  ],
+  "nodata": null,
+  "observed_at": "2026-10-08T02:30:00Z",
+  "available_at": "2026-10-08T04:00:00Z",
+  "source_uri": "urn:vietsafe:fixture:environment:smap:v1",
+  "metadata": {
+    "processing_version": "environment-1",
+    "original_variable": "soil_moisture",
+    "original_units": "m3/m3",
+    "crs": "EPSG:4326",
+    "grid_registration": "cell_center",
+    "reference": "synthetic-smap-grid-v1",
+    "is_test_fixture": true,
+    "fixture_notice": "TEST FIXTURE — synthetic values, not NASA production observations"
+  }
+}
