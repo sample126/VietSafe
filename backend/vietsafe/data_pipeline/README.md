@@ -334,3 +334,106 @@ Chưa có road sampling/spatial join, temporal aggregation, rainfall windows,
 elevation enrichment, slope/TWI, feature engineering, training dataset,
 Forecast/Routing/Map integration. Các giới hạn DATA-03 phía trên mô tả giai đoạn
 DATA-03; DATA-04 chỉ bổ sung foundation offline nêu tại section này.
+
+## DATA-05 Spatial + Temporal Alignment
+
+`processing.alignment.align_environment(registry, dem=None, gpm=(), smap=(),
+targets=())` nhận RoadRegistry và EnvironmentalGrid đã ingestion/validation.
+`targets` là danh sách `(timestamp, as_of)`; cặp trùng deduplicate sau UTC
+normalization. Hàm chỉ chạy offline trong bộ nhớ, không HTTP/ghi file. Output
+`AlignmentResult` tách `static`, `dynamic`, `issues`, `summary`, giữ network
+version/registry checksum. Đây là **dữ liệu trung gian**, chưa phải
+RoadObservation hoàn chỉnh hoặc feature rows cho Forecast.
+
+### Spatial V1
+
+`processing/spatial_alignment.py` dùng `RoadSegment.representative_point()`
+(length midpoint đã có) → nearest cell center trong hệ tọa độ grid.
+Method: `representative-point-nearest-cell-v1`. Chỉ EPSG:4326; CRS khác trả
+`UNSUPPORTED_CRS`, không transform. Origin/hướng grid giữ nguyên DATA-04;
+HGT vẫn là point samples, không cộng half-cell offset vào origin.
+
+Coverage inclusive tại center extent ± nửa spacing mỗi trục, point phải có
+tọa độ WGS84 hợp lệ. Ngoài coverage trả `OUTSIDE_GRID`, không clamp vào cạnh.
+Nearest index tính riêng từng trục, so sánh rational từ decimal representation
+để tránh banker rounding. Tie chọn row/col nhỏ hơn (Bắc/Tây). Điểm đúng outer
+half-cell boundary chọn edge cell trong coverage. Không geodesic nearest,
+line/raster intersection, spatial interpolation hoặc thay geometry road.
+
+Output giữ road point, row/col, cell center, method và grid checksum. Null giữ
+null với `GRID_NODATA`, không chọn cell bên cạnh để lấp; zero hợp lệ. Directed
+f/r giữ ID riêng dù cùng representative point và sample value.
+
+### Static và temporal V1
+
+DEM optional chỉ spatial align một lần/road; record timestamp/as_of=null, giữ
+observed/available time nguồn (có thể null). Không giả time hoặc nhân bản DEM.
+Dynamic timestep cố định 30 phút, timestamp là **BIN END**, HH:00:00Z hoặc
+HH:30:00Z. Offset-aware normalize UTC Z; reject naive, :15, giây/phần lẻ giây
+khác zero. `as_of >= timestamp`; as_of không cần khớp bin.
+
+Temporal gates theo thứ tự: observed_at > target → `FUTURE_OBSERVATION`;
+available_at > as_of → `NOT_AVAILABLE_AS_OF`; sau đó kiểm tra exact match:
+
+- GPM: interval_end == target và observed_at == interval_end. Giữ nguyên
+  interval_start/end và precipitation_rate `mm/h`; không overlap-weight,
+  resample, carry-forward hoặc tạo rainfall windows.
+- SMAP: observed_at == target; khác trả `NO_EXACT_TEMPORAL_MATCH`.
+- Không nearest-time, forward/backward fill, averaging, interpolation hay
+  missing→zero; không giả soil moisture không đổi.
+
+Ví dụ GPM observed 02:30, available 04:00: target/as_of=02:30 bị chặn;
+backfill target=02:30, as_of=04:00 có thể dùng, nhưng output vẫn giữ
+source_available_at=04:00 và as_of=04:00, không claim realtime tại 02:30.
+
+### Determinism, candidates và conflicts
+
+Version `alignment-v1` có trong result/records. Dynamic sort theo timestamp,
+road_id, variable, source_type; tie dùng full canonical record. Static sort theo
+road_id/variable; issues theo canonical JSON. Checksum SHA-256 canonical UTF-8
+JSON sorted keys, compact, newline cuối. Không thêm current time, random UUID
+hoặc temporary path; caller phải cung cấp provenance ổn định.
+
+Identity nguồn: `(source_type, variable, observed_at, product, product_version)`.
+Checksum toàn EnvironmentalGrid gồm raw checksum/provenance giống nhau thì
+deduplicate; khác checksum cùng identity thì quarantine mọi variant, không chọn
+grid cuối. Variant vượt temporal gates trả `SOURCE_CONFLICT`; variant bị gate
+chặn giữ reason temporal; tất cả variant xung đột đều value=null.
+
+Khác product/version là candidate riêng, không ưu tiên ngầm. Output giữ
+**mỗi candidate/road/target**, kể cả candidate không khớp (value=null + reason).
+Consumer chỉ dùng record missing_reason=null; DATA-05 không collapse candidates
+thành một feature. GPM/SMAP rỗng tạo `NO_SOURCE_GRID` từng road/target/source;
+DEM optional vắng thì static=[]. Input sai trả `AlignmentInputError`.
+
+Provenance giữ product/version, URI, raw/grid checksums, metadata/intervals,
+observed/available times, spatial lineage, target/as_of. Chỉ copy metadata,
+không copy toàn raster mỗi road. Không sửa road/network IDs hoặc input objects.
+
+### Fixtures, tests và giới hạn
+
+`data/fixtures/alignment/{gpm,smap}-alignment-grid.json` là **TEST FIXTURE**,
+synthetic 3×3 grids phủ bbox nhỏ của OSM fixture, có zero/positive/null.
+DEM tái dùng mini HGT DATA-04. Không phải NASA production observations.
+Chạy từ `backend`:
+
+```bash
+python -m unittest tests.data.test_spatial_alignment tests.data.test_temporal_alignment tests.data.test_alignment -v
+python -m unittest discover -s tests/data -t . -v
+```
+
+End-to-end: OSM fixture → registry; DEM/GPM/SMAP fixtures → grids → alignment.
+Tests kiểm tra identity, provenance, deterministic ordering/checksum,
+duplicates/conflicts, as_of và no HTTP. Không thêm CLI; function/tests đáp ứng
+bước offline này.
+
+**Coarse GPM/SMAP cell ≠ road-level ground truth.** V1 không thể hiện intersection
+hoặc độ phủ toàn tuyến, không có precision cao hơn nguồn. Chưa hỗ trợ projection,
+antimeridian/wrapping, DEM mosaics hoặc ưu tiên giữa product. Candidate per
+target có thể tạo output lớn; chưa phải engine tối ưu production datasets.
+
+DATA-06 có thể xây policy features/imputation riêng sau này. DATA-05 không tạo
+rainfall windows, slope/TWI, traffic/history features, labels, adjacency matrix,
+training tensors/splits; không tích hợp Forecast/Routing/Map, API/database.
+Giới hạn DATA-03/04 phía trên mô tả giai đoạn tương ứng; section này chỉ bổ sung
+alignment offline của DATA-05.
