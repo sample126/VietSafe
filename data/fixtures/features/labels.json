@@ -1,0 +1,369 @@
+{
+  "fixture_notice": "SYNTHETIC TEST FIXTURE — NOT PRODUCTION FLOOD GROUND TRUTH",
+  "labels": [
+    {
+      "road_id": "HN-001",
+      "observed_at": "2026-10-08T00:30:00Z",
+      "available_at": "2026-10-08T01:00:00Z",
+      "target_name": "flood_depth_cm",
+      "value": 110,
+      "units": "cm",
+      "source_metadata": {
+        "data_kind": "synthetic",
+        "source_uri": "urn:vietsafe:fixture:features:labels",
+        "fixture_notice": "SYNTHETIC TEST FIXTURE — NOT PRODUCTION FLOOD GROUND TRUTH"
+      },
+      "event_id": "synthetic-event-0"
+    },
+    {
+      "road_id": "HN-002",
+      "observed_at": "2026-10-08T00:30:00Z",
+      "available_at": "2026-10-08T01:00:00Z",
+      "target_name": "flood_depth_cm",
+      "value": 111,
+      "units": "cm",
+      "source_metadata": {
+        "data_kind": "synthetic",
+        "source_uri": "urn:vietsafe:fixture:features:labels",
+        "fixture_notice": "SYNTHETIC TEST FIXTURE — NOT PRODUCTION FLOOD GROUND TRUTH"
+      },
+      "event_id": "synthetic-event-0"
+    },
+    {
+      "road_id": "HN-001",
+      "observed_at": "2026-10-08T01:00:00Z",
+      "available_at": "2026-10-08T01:30:00Z",
+      "target_name": "flood_depth_cm",
+      "value": 120,
+      "units": "cm",
+      "source_metadata": {
+        "data_kind": "synthetic",
+        "source_uri": "urn:vietsafe:fixture:features:labels",
+        "fixture_notice": "SYNTHETIC TEST FIXTURE — NOT PRODUCTION FLOOD GROUND TRUTH"
+      },
+      "event_id": "synthetic-event-0"
+    },
+    {
+      "road_id": "HN-002",
+      "observed_at": "2026-10-08T01:00:00Z",
+      "available_at": "2026-10-08T01:30:00Z",
+      "target_name": "flood_depth_cm",
+      "value": 121,
+      "units": "cm",
+      "source_metadata": {
+        "data_kind": "synthetic",
+        "source_uri": "urn:vietsafe:fixture:features:labels",
+        "fixture_notice": "SYNTHETIC TEST FIXTURE — NOT PRODUCTION FLOOD GROUND TRUTH"
+      },
+      "event_id": "synthetic-event-0"
+    },
+    {
+      "road_id": "HN-001",
+      "observed_at": "2026-10-08T01:30:00Z",
+      "available_at": "2026-10-08T02:00:00Z",
+      "target_name": "flood_depth_cm",
+      "value": 130,
+      "units": "cm",
+      "source_metadata": {
+        "data_kind": "synthetic",
+        "source_uri": "urn:vietsafe:fixture:features:labels",
+        "fixture_notice": "SYNTHETIC TEST FIXTURE — NOT PRODUCTION FLOOD GROUND TRUTH"
+      },
+      "event_id": "synthetic-event-1"
+    },
+    {
+      "road_id": "HN-002",
+      "observed_at": "2026-10-08T01:30:00Z",
+      "available_at": "2026-10-08T02:00:00Z",
+      "target_name": "flood_depth_cm",
+      "value": 131,
+      "units": "cm",
+      "source_metadata": {
+        "data_kind": "synthetic",
+        "source_uri": "urn:vietsafe:fixture:features:labels",
+        "fixture_notice": "SYNTHETIC TEST FIXTURE — NOT PRODUCTION FLOOD GROUND TRUTH"
+      },
+      "event_id": "synthetic-event-1"
+    },
+    {
+      "road_id": "HN-001",
+      "observed_at": "2026-10-08T02:00:00Z",
+      "available_at": "2026-10-08T02:30:00Z",
+      "target_name": "flood_depth_cm",
+      "value": 140,
+      "units": "cm",
+      "source_metadata": {
+        "data_kind": "synthetic",
+        "source_uri": "urn:vietsafe:fixture:features:labels",
+        "fixture_notice": "SYNTHETIC TEST FIXTURE — NOT PRODUCTION FLOOD GROUND TRUTH"
+      },
+      "event_id": "synthetic-event-1"
+    },
+    {
+      "road_id": "HN-002",
+      "observed_at": "2026-10-08T02:00:00Z",
+      "available_at": "2026-10-08T02:30:00Z",
+      "target_name": "flood_depth_cm",
+      "value": 141,
+      "units": "cm",
+      "source_metadata": {
+        "data_kind": "synthetic",
+        "source_uri": "urn:vietsafe:fixture:features:labels",
+        "fixture_notice": "SYNTHETIC TEST FIXTURE — NOT PRODUCTION FLOOD GROUND TRUTH"
+      },
+      "event_id": "synthetic-event-1"
+    },
+    {
+      "road_id": "HN-001",
+      "observed_at": "2026-10-08T02:30:00Z",
+      "available_at": "2026-10-08T03:00:00Z",
+      "target_name": "flood_depth_cm",
+      "value": 150,
+      "units": "cm",
+      "source_metadata": {
+        "data_kind": "synthetic",
+        "source_uri": "urn:vietsafe:fixture:features:labels",
+        "fixture_notice": "SYNTHETIC TEST FIXTURE — NOT PRODUCTION FLOOD GROUND TRUTH"
+      },
+      "event_id": "synthetic-event-1"
+    },
+    {
+      "road_id": "HN-002",
+      "observed_at": "2026-10-08T02:30:00Z",
+      "available_at": "2026-10-08T03:00:00Z",
+      "target_name": "flood_depth_cm",
+      "value": 151,
+      "units": "cm",
+      "source_metadata": {
+        "data_kind": "synthetic",
+        "source_uri": "urn:vietsafe:fixture:features:labels",
+        "fixture_notice": "SYNTHETIC TEST FIXTURE — NOT PRODUCTION FLOOD GROUND TRUTH"
+      },
+      "event_id": "synthetic-event-1"
+    },
+    {
+      "road_id": "HN-001",
+      "observed_at": "2026-10-08T03:00:00Z",
+      "available_at": "2026-10-08T03:30:00Z",
+      "target_name": "flood_depth_cm",
+      "value": 160,
+      "units": "cm",
+      "source_metadata": {
+        "data_kind": "synthetic",
+        "source_uri": "urn:vietsafe:fixture:features:labels",
+        "fixture_notice": "SYNTHETIC TEST FIXTURE — NOT PRODUCTION FLOOD GROUND TRUTH"
+      },
+      "event_id": "synthetic-event-2"
+    },
+    {
+      "road_id": "HN-002",
+      "observed_at": "2026-10-08T03:00:00Z",
+      "available_at": "2026-10-08T03:30:00Z",
+      "target_name": "flood_depth_cm",
+      "value": 161,
+      "units": "cm",
+      "source_metadata": {
+        "data_kind": "synthetic",
+        "source_uri": "urn:vietsafe:fixture:features:labels",
+        "fixture_notice": "SYNTHETIC TEST FIXTURE — NOT PRODUCTION FLOOD GROUND TRUTH"
+      },
+      "event_id": "synthetic-event-2"
+    },
+    {
+      "road_id": "HN-001",
+      "observed_at": "2026-10-08T03:30:00Z",
+      "available_at": "2026-10-08T04:00:00Z",
+      "target_name": "flood_depth_cm",
+      "value": 170,
+      "units": "cm",
+      "source_metadata": {
+        "data_kind": "synthetic",
+        "source_uri": "urn:vietsafe:fixture:features:labels",
+        "fixture_notice": "SYNTHETIC TEST FIXTURE — NOT PRODUCTION FLOOD GROUND TRUTH"
+      },
+      "event_id": "synthetic-event-2"
+    },
+    {
+      "road_id": "HN-002",
+      "observed_at": "2026-10-08T03:30:00Z",
+      "available_at": "2026-10-08T04:00:00Z",
+      "target_name": "flood_depth_cm",
+      "value": 171,
+      "units": "cm",
+      "source_metadata": {
+        "data_kind": "synthetic",
+        "source_uri": "urn:vietsafe:fixture:features:labels",
+        "fixture_notice": "SYNTHETIC TEST FIXTURE — NOT PRODUCTION FLOOD GROUND TRUTH"
+      },
+      "event_id": "synthetic-event-2"
+    },
+    {
+      "road_id": "HN-001",
+      "observed_at": "2026-10-08T04:00:00Z",
+      "available_at": "2026-10-08T04:30:00Z",
+      "target_name": "flood_depth_cm",
+      "value": 180,
+      "units": "cm",
+      "source_metadata": {
+        "data_kind": "synthetic",
+        "source_uri": "urn:vietsafe:fixture:features:labels",
+        "fixture_notice": "SYNTHETIC TEST FIXTURE — NOT PRODUCTION FLOOD GROUND TRUTH"
+      },
+      "event_id": "synthetic-event-2"
+    },
+    {
+      "road_id": "HN-002",
+      "observed_at": "2026-10-08T04:00:00Z",
+      "available_at": "2026-10-08T04:30:00Z",
+      "target_name": "flood_depth_cm",
+      "value": 181,
+      "units": "cm",
+      "source_metadata": {
+        "data_kind": "synthetic",
+        "source_uri": "urn:vietsafe:fixture:features:labels",
+        "fixture_notice": "SYNTHETIC TEST FIXTURE — NOT PRODUCTION FLOOD GROUND TRUTH"
+      },
+      "event_id": "synthetic-event-2"
+    },
+    {
+      "road_id": "HN-001",
+      "observed_at": "2026-10-08T04:30:00Z",
+      "available_at": "2026-10-08T05:00:00Z",
+      "target_name": "flood_depth_cm",
+      "value": 190,
+      "units": "cm",
+      "source_metadata": {
+        "data_kind": "synthetic",
+        "source_uri": "urn:vietsafe:fixture:features:labels",
+        "fixture_notice": "SYNTHETIC TEST FIXTURE — NOT PRODUCTION FLOOD GROUND TRUTH"
+      },
+      "event_id": "synthetic-event-3"
+    },
+    {
+      "road_id": "HN-002",
+      "observed_at": "2026-10-08T04:30:00Z",
+      "available_at": "2026-10-08T05:00:00Z",
+      "target_name": "flood_depth_cm",
+      "value": 191,
+      "units": "cm",
+      "source_metadata": {
+        "data_kind": "synthetic",
+        "source_uri": "urn:vietsafe:fixture:features:labels",
+        "fixture_notice": "SYNTHETIC TEST FIXTURE — NOT PRODUCTION FLOOD GROUND TRUTH"
+      },
+      "event_id": "synthetic-event-3"
+    },
+    {
+      "road_id": "HN-001",
+      "observed_at": "2026-10-08T05:00:00Z",
+      "available_at": "2026-10-08T05:30:00Z",
+      "target_name": "flood_depth_cm",
+      "value": 200,
+      "units": "cm",
+      "source_metadata": {
+        "data_kind": "synthetic",
+        "source_uri": "urn:vietsafe:fixture:features:labels",
+        "fixture_notice": "SYNTHETIC TEST FIXTURE — NOT PRODUCTION FLOOD GROUND TRUTH"
+      },
+      "event_id": "synthetic-event-3"
+    },
+    {
+      "road_id": "HN-002",
+      "observed_at": "2026-10-08T05:00:00Z",
+      "available_at": "2026-10-08T05:30:00Z",
+      "target_name": "flood_depth_cm",
+      "value": 201,
+      "units": "cm",
+      "source_metadata": {
+        "data_kind": "synthetic",
+        "source_uri": "urn:vietsafe:fixture:features:labels",
+        "fixture_notice": "SYNTHETIC TEST FIXTURE — NOT PRODUCTION FLOOD GROUND TRUTH"
+      },
+      "event_id": "synthetic-event-3"
+    },
+    {
+      "road_id": "HN-001",
+      "observed_at": "2026-10-08T05:30:00Z",
+      "available_at": "2026-10-08T06:00:00Z",
+      "target_name": "flood_depth_cm",
+      "value": 210,
+      "units": "cm",
+      "source_metadata": {
+        "data_kind": "synthetic",
+        "source_uri": "urn:vietsafe:fixture:features:labels",
+        "fixture_notice": "SYNTHETIC TEST FIXTURE — NOT PRODUCTION FLOOD GROUND TRUTH"
+      },
+      "event_id": "synthetic-event-3"
+    },
+    {
+      "road_id": "HN-002",
+      "observed_at": "2026-10-08T05:30:00Z",
+      "available_at": "2026-10-08T06:00:00Z",
+      "target_name": "flood_depth_cm",
+      "value": 211,
+      "units": "cm",
+      "source_metadata": {
+        "data_kind": "synthetic",
+        "source_uri": "urn:vietsafe:fixture:features:labels",
+        "fixture_notice": "SYNTHETIC TEST FIXTURE — NOT PRODUCTION FLOOD GROUND TRUTH"
+      },
+      "event_id": "synthetic-event-3"
+    },
+    {
+      "road_id": "HN-001",
+      "observed_at": "2026-10-08T06:00:00Z",
+      "available_at": "2026-10-08T06:30:00Z",
+      "target_name": "flood_depth_cm",
+      "value": 220,
+      "units": "cm",
+      "source_metadata": {
+        "data_kind": "synthetic",
+        "source_uri": "urn:vietsafe:fixture:features:labels",
+        "fixture_notice": "SYNTHETIC TEST FIXTURE — NOT PRODUCTION FLOOD GROUND TRUTH"
+      },
+      "event_id": "synthetic-event-4"
+    },
+    {
+      "road_id": "HN-002",
+      "observed_at": "2026-10-08T06:00:00Z",
+      "available_at": "2026-10-08T06:30:00Z",
+      "target_name": "flood_depth_cm",
+      "value": 221,
+      "units": "cm",
+      "source_metadata": {
+        "data_kind": "synthetic",
+        "source_uri": "urn:vietsafe:fixture:features:labels",
+        "fixture_notice": "SYNTHETIC TEST FIXTURE — NOT PRODUCTION FLOOD GROUND TRUTH"
+      },
+      "event_id": "synthetic-event-4"
+    },
+    {
+      "road_id": "HN-001",
+      "observed_at": "2026-10-08T06:30:00Z",
+      "available_at": "2026-10-08T07:00:00Z",
+      "target_name": "flood_depth_cm",
+      "value": 230,
+      "units": "cm",
+      "source_metadata": {
+        "data_kind": "synthetic",
+        "source_uri": "urn:vietsafe:fixture:features:labels",
+        "fixture_notice": "SYNTHETIC TEST FIXTURE — NOT PRODUCTION FLOOD GROUND TRUTH"
+      },
+      "event_id": "synthetic-event-4"
+    },
+    {
+      "road_id": "HN-002",
+      "observed_at": "2026-10-08T06:30:00Z",
+      "available_at": "2026-10-08T07:00:00Z",
+      "target_name": "flood_depth_cm",
+      "value": 231,
+      "units": "cm",
+      "source_metadata": {
+        "data_kind": "synthetic",
+        "source_uri": "urn:vietsafe:fixture:features:labels",
+        "fixture_notice": "SYNTHETIC TEST FIXTURE — NOT PRODUCTION FLOOD GROUND TRUTH"
+      },
+      "event_id": "synthetic-event-4"
+    }
+  ]
+}

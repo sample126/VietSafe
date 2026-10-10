@@ -437,3 +437,155 @@ rainfall windows, slope/TWI, traffic/history features, labels, adjacency matrix,
 training tensors/splits; không tích hợp Forecast/Routing/Map, API/database.
 Giới hạn DATA-03/04 phía trên mô tả giai đoạn tương ứng; section này chỉ bổ sung
 alignment offline của DATA-05.
+
+## DATA-06 Feature Engineering + Forecast Dataset
+
+DATA-06 cung cấp function API **offline**, Python standard library, không ghi
+file khi caller chưa yêu cầu. Không thêm CLI để tránh thêm luồng xử lý file
+không cần thiết. Code nằm trong `features/engineering.py`, `graph.py`,
+`labels.py`, `dataset.py`, `split.py`; không sửa runtime/module Forecast.
+
+### Features V1
+
+`FEATURE_VERSION = "features-v1"`. `build_features(registry, aligned, as_of=...)`
+nhận AlignmentResult hoặc JSON object từ `AlignmentResult.to_dict()`. Registry
+checksum/network phải khớp. Mỗi lần gọi tạo một snapshot: một RoadFeatureRow
+cho mỗi road/timestamp có mặt trong dynamic input và không sau as_of. Không tự
+tạo timestamp bị thiếu. Thứ tự output `(timestamp, road_id)`; các input đổi
+iteration order không đổi kết quả.
+
+Feature order cố định và units tương ứng:
+
+| Feature | Unit | Policy |
+| --- | --- | --- |
+| precipitation_rate_mm_h | mm/h | GPM exact aligned rate |
+| rain_30m_mm | mm | rate × 0.5, chỉ khi interval đúng 30 phút |
+| rain_1h_mm | mm | tổng đúng 2 bin tại T, T−30m |
+| rain_3h_mm | mm | tổng đúng 6 bin tại T…T−150m |
+| soil_moisture | m3/m3 | SMAP exact temporal match, không carry-forward |
+| elevation_m | m | join DEM static theo road_id/network_version |
+
+Thiếu một bin thì accumulation/window là null; không partial sum. Rate có thể
+vẫn dùng được khi interval không đúng 30 phút, nhưng accumulation không được
+suy diễn. True zero giữ 0 và mask=true; null giữ null và mask=false. Row có
+missing_reasons riêng từng feature, rain_bins ghi rõ các timestamp/reason,
+source_record_checksums truy về aligned records, registry checksum và versions.
+Elevation được đưa vào matrix nhưng lineage vẫn ghi static-road-network join;
+không tạo dynamic DEM source mới. Không sửa nguồn hoặc fabricate slope/TWI,
+traffic/free-flow/history/drainage/river features.
+
+Không có product priority ngầm: nhiều usable candidate khác nhau → null,
+`MULTIPLE_SOURCE_CANDIDATES`. Evidence giống nhau ở các alignment snapshot
+khác as_of được deduplicate. Null/unusable candidates không được dùng. Unknown
+road/network/version, nonfinite values và unit sai bị reject.
+
+### As-of và chống leakage
+
+Feature snapshot chỉ dùng record có aligned as_of <= feature as_of,
+source_available_at <= feature as_of, source_observed_at khớp bin được dùng.
+GPM còn kiểm tra interval_end. Rain windows chọn tất cả bin tại **cùng feature
+as_of**, không lấy feature/observation tương lai. DEM có available_at thì cũng
+bị chặn trước thời điểm đó; DEM không có availability giữ semantics static
+unknown từ DATA-04, không tự bịa publication time.
+
+Dataset tại issue_time T chỉ chọn feature snapshot có as_of <= T. Nếu nhiều
+snapshot cùng road/timestamp, chọn latest eligible as_of; cùng as_of nhưng
+payload khác thì reject, không lấy record cuối. Backfill timestamp=02:30,
+as_of=04:00 không thể dùng cho forecast issue=02:30. Có thể dùng cho issue muộn
+hơn khi nằm trong lookback. Giữ `feature_as_of`/feature checksums trong sample.
+Không coi checksum là bằng chứng độc lập về chất lượng provider: caller phải
+cung cấp input đã ingestion/alignment đáng tin cậy và giữ nguồn để truy lineage.
+
+### Graph topology
+
+`build_graph(registry)` trả `GraphTopology`, `graph_version=road-connectivity-v1`.
+Road là node, road_ids sort lexicographic ổn định, mọi matrix dùng cùng order.
+DATA-03 lưu endpoints/coordinates theo canonical path: forward đi a→b, reverse
+đi b→a; both hỗ trợ hai chiều. Có edge i→j khi travel end của i khớp travel start
+của j. f/r vẫn riêng. Raw adjacency N×N chỉ 0/1; không self-edge mặc định,
+không normalize adjacency hoặc thêm normalized self-loops.
+
+U-turn f↔r có thể tồn tại như raw connectivity. **Chưa xử lý full OSM turn
+restrictions**; không claim routing-perfect. Graph này phục vụ dataset
+foundation; Routing độc lập. Dense matrix phù hợp foundation/fixture nhỏ,
+chưa tối ưu mạng đô thị lớn hoặc cập nhật network version động.
+
+### Labels và model-neutral dataset
+
+`RoadTarget` là generic numeric target: road_id, canonical observed_at,
+available_at, target_name, finite value/null, units, source_metadata và optional
+event_id. available_at phải >= observed_at. `data_kind=synthetic` bắt buộc notice
+rõ ràng; `observed` dành cho nguồn thật do caller cung cấp, không chứng nhận
+label chỉ qua metadata. Không lấy demo flood status làm ground truth.
+
+`build_dataset(registry, rows, labels, target_name=..., lookback_steps=6,
+horizon_steps=1, issue_times=None, require_targets=True)` trả ForecastDataset:
+
+- schema `vietsafe.forecast-dataset.v1`, timestep_minutes=30.
+- L=lookback_steps, N=graph roads, F=6. X và X_mask cùng shape **L×N×F**.
+- History chính xác T−(L−1)×30m … T; không nhảy qua timestamp thiếu. Thiếu row
+  của bất kỳ road/timestep nào thì loại sample với report `INSUFFICIENT_HISTORY`.
+  Row tồn tại nhưng feature null vẫn hợp lệ, luôn kèm mask.
+- horizon_steps là integer dương bất kỳ: 1 → +30m, 2 → +60m. Không hỗ trợ +15m;
+  cần phối hợp Forecast nếu hệ thống yêu cầu horizon 15 phút.
+- y/y_mask shape N, generic target tại target_time=T+horizon×30m. Target tuyệt
+  đối không vào X. Label available sau issue được phép cho supervised y và
+  được giữ riêng trong `label_available_at`; không dùng như feature.
+- require_targets=True loại sample nếu bất kỳ road thiếu/null/conflict target,
+  kèm report `TARGETS_REQUIRED`. False giữ y=null, mask=false và reason.
+  Duplicate label y hệt deduplicate; khác payload cùng road/time/name →
+  `TARGET_CONFLICT`. Khác unit của target được chọn bị reject.
+
+Dataset giữ feature names/units, road order, graph/checksum, config,
+issue_time/target_time, lịch sử, labels/checksums/event IDs và excluded reports.
+`to_dict()`, `to_json()`, `checksum()` dùng canonical UTF-8 JSON sorted keys,
+không NaN/Infinity/current time/UUID/temp path. Checksum không tự nhúng vào
+payload để tránh self-reference. Không có writer tự động.
+
+### Chronological split
+
+`chronological_split(dataset, train_ratio=.7, validation_ratio=.15,
+test_ratio=.15, preserve_events=True, purge_overlap=True)` không shuffle/random.
+Ratios trong [0,1] và sum=1. Sort samples theo target_time rồi issue_time;
+exact duplicate sample deduplicate, conflicting duplicate identity reject.
+Ties cùng target_time là atomic. Nếu preserve_events=True, mọi boundary nằm
+trong span của cùng event_id bị cấm; event giao nhau tạo block liên tục lớn hơn.
+Chọn boundary hợp lệ gần cumulative ratio nhất, tie chọn boundary sớm hơn.
+
+Mặc định purge sample ở validation/test khi history bắt đầu <= target_time cuối
+của block trước. Report `HISTORY_OVERLAPS_PRIOR_TARGET` giữ checksum/sample
+partition; không âm thầm drop. False cho phép history overlap theo target-only
+split và được ghi rõ trong metadata. Event grouping hoặc purge có thể làm lệch
+ratios, thậm chí tạo partition rỗng; không randomize để ép đủ số lượng. Split
+output tham chiếu sample checksum cùng dataset checksum, không duplicate X/y.
+
+Chronological split không tự chọn lịch retraining. Label_available_at được giữ
+để nhóm training kiểm tra cutoff lúc fit; target-time split không tự đảm bảo
+mọi label đã được công bố ở thời điểm một lần retraining cụ thể. Chưa train model.
+
+### Fixtures và tests
+
+`data/fixtures/features/aligned-series.json`: 2 roads × 12 timesteps 30 phút,
+GPM/SMAP, DEM static, zero/null, provenance/as_of. `labels.json`: generic
+flood_depth_cm synthetic, publication times và event IDs. Cả hai ghi rõ:
+**SYNTHETIC TEST FIXTURE — NOT PRODUCTION FLOOD GROUND TRUTH**.
+Không commit real flood labels. Chạy từ `backend`:
+
+```bash
+python -m unittest tests.data.test_feature_engineering tests.data.test_graph_features tests.data.test_forecast_dataset tests.data.test_dataset_split -v
+python -m unittest discover -s tests/data -t . -v
+```
+
+Tests gồm rain windows, masks, source/as_of leakage, OSM travel lineage,
+lookback/horizons, y tách khỏi X, chronological/event boundaries, determinism,
+fixtures và full function flow khi socket/HTTP bị chặn.
+
+### Giới hạn DATA-06
+
+Chưa train T-GCN/chọn architecture/evaluate/deploy; không PyTorch/TensorFlow.
+Chưa normalize adjacency, scale features hoặc impute missing. Scaler về sau phải
+fit TRAIN only; hiện không tính thống kê từ toàn dataset. Chưa có production
+flood labels; chưa fabricate slope/TWI hoặc traffic từ nguồn thật. Coarse grid
+không phải road-level ground truth. Chưa integration Forecast/Routing/Map/API,
+không DATA-07/final project audit. Những giới hạn DATA-05 phía trên mô tả giai
+đoạn đó; DATA-06 chỉ bổ sung feature/dataset foundation như section này.
