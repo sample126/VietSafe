@@ -1,4 +1,10 @@
-# VietSafe Data Module — DATA-02
+# VietSafe Data Module — DATA-01 → DATA-07
+
+Data Module hiện có offline foundation, ingestion boundaries, alignment,
+features/dataset và quality audit. Đọc [HANDOFF.md](HANDOFF.md) trước khi chuẩn
+bị Forecast/Integration. Chưa integration hoặc train model. Các section
+DATA-02…DATA-06 dưới đây giữ mô tả từng giai đoạn; section DATA-07 là trạng thái
+kiểm chứng/bàn giao cuối của chuỗi hiện tại.
 
 Nền tảng Data chạy offline bằng Python standard library. Module biểu diễn road
 observation, quản lý registry, kiểm tra provenance/chất lượng và tạo release demo
@@ -28,7 +34,10 @@ Timestamp canonical là UTC `Z`, cuối bin 30 phút; `as_of` là cutoff kiến 
 | `pipeline.py` | Registry → observations → validation/quality → manifest → optional write |
 | `adapters/demo.py` | Đọc mạng demo, tạo dữ liệu mô phỏng có provenance |
 | `__main__.py` | CLI offline |
-| `ingestion/`, `processing/`, `features/` | Chỉ là extension boundary cho DATA-03+ |
+| `ingestion/` | OSM JSON, DEM HGT, GPM/SMAP normalized JSON |
+| `processing/` | OSM registry, spatial và temporal alignment |
+| `features/` | Engineering, graph, labels, forecast dataset và split |
+| `audit.py`, `end_to_end.py` | Audit read-only, validation fixture offline |
 
 Validator triển khai contract hiện tại, không phải JSON Schema engine tổng quát.
 Import config/package không tạo thư mục. `ensure_directories()` và chế độ write
@@ -589,3 +598,137 @@ flood labels; chưa fabricate slope/TWI hoặc traffic từ nguồn thật. Coar
 không phải road-level ground truth. Chưa integration Forecast/Routing/Map/API,
 không DATA-07/final project audit. Những giới hạn DATA-05 phía trên mô tả giai
 đoạn đó; DATA-06 chỉ bổ sung feature/dataset foundation như section này.
+
+## DATA-07 Quality + End-to-End Validation
+
+### Trạng thái DATA-01 → DATA-07
+
+| Stage | Deliverable | Giới hạn chính |
+| --- | --- | --- |
+| DATA-01 | Contract/dictionary/schema/example trong `docs/` | Draft v0.1.0; không đổi trong DATA-07 |
+| DATA-02 | Models, registry, validation, manifest, demo CLI | Demo/simulated, chưa application integration |
+| DATA-03 | Offline Overpass JSON → directed road registry | Không đầy đủ OSM turn restrictions |
+| DATA-04 | HGT reader và normalized environmental grid | Chưa decode native NASA HDF5/NetCDF |
+| DATA-05 | Spatial nearest-cell và exact temporal alignment | Không road-level ground truth |
+| DATA-06 | Six features, graph, labels interface, dataset, split | Synthetic labels; không train/scaling/imputation |
+| DATA-07 | Read-only audit, offline end-to-end, handoff | Kiểm chứng fixture, không chứng nhận production |
+
+```mermaid
+flowchart TD
+    OSM["OSM fixture"] --> Registry["Road Registry"]
+    DEM["DEM HGT"] --> Align["Alignment"]
+    GPM["GPM normalized JSON"] --> Align
+    SMAP["SMAP normalized JSON"] --> Align
+    Registry --> Align
+    Align --> Features["Feature Engineering"]
+    Features --> Dataset["Graph + Dataset"]
+    Registry --> Dataset
+    Labels["Synthetic labels"] --> Dataset
+    Dataset --> Split["Train / Validation / Test Split"]
+    Split --> Audit["Quality Audit"]
+```
+
+**Forecast model training nằm NGOÀI Data Module.** Audit cũng nhận riêng các
+artifact ở mỗi stage; không chỉ kiểm tra artifact cuối.
+
+### API audit read-only
+
+```python
+from vietsafe.data_pipeline.audit import audit_artifacts
+
+report = audit_artifacts(
+    registry,
+    grids=grids,
+    alignment=alignment,
+    feature_rows=feature_rows,
+    graph=graph,
+    dataset=dataset,
+    split=split,
+    labels=labels,
+)
+summary = report.to_dict()
+assert summary["errors"] == 0  # Không đồng nghĩa production-ready.
+```
+
+Tất cả context sau registry là optional. API nhận model object hoặc serialized
+dict để audit cả payload hỏng. Stage không cung cấp không được coi là validated.
+Khi thiếu alignment/feature/label evidence, có `LINEAGE_NOT_VERIFIED`, không tự
+khẳng định checksum/source availability đã được xác minh. `issue_time=` optional
+áp một forecast cutoff cho audit feature rows. Audit row list yêu cầu unique
+(road_id, timestamp); audit mỗi feature snapshot riêng nếu lưu nhiều as_of.
+
+`QualityIssue` có severity INFO/WARNING/ERROR; `QualityReport` cung cấp
+`to_dict()`, `to_json()`, `checksum()`. Issues và metrics sort canonical; duplicate
+issue descriptions được gộp trong report, **không deduplicate dữ liệu input**.
+Không current time/random UUID/đường dẫn tạm được tự thêm. Report không dùng raw
+exception text để tránh rò local filesystem paths. Input URI vẫn là provenance
+do caller cung cấp: dùng stable reference, không dùng path chứa PII/credential.
+
+- ERROR: duplicate identity, malformed shape, invalid timestamps/provenance,
+  nonfinite, mask sai, checksum mismatch, leakage, derived rain sai.
+- WARNING: missing values, synthetic/test data, isolated nodes, empty splits,
+  thiếu evidence để kiểm tra lineage. Không hard-code ngưỡng missing production.
+- INFO: registry validation summary. Không biến warning thành lỗi tùy tiện.
+
+Metrics gồm road count/fingerprint; grid nodata/finite count, missing ratio,
+min/max bỏ null, provenance fields/checksum; alignment missingness theo variable,
+source_type và road; feature missingness; graph edge count, isolated count,
+density; sample counts. Zero không phải missing. DEM không đặt elevation range
+production tùy đoán; GPM/SMAP dùng validator semantic ranges hiện có.
+
+Audit dùng lại registry/grid validators và feature builder cho reconstruction
+cùng as_of, không viết lại feature policy. Có source grid thì đối chiếu aligned
+value với selected cell để phát hiện zero filling. Có alignment thì kiểm tra
+rainfall windows/provenance và availability; có feature rows thì đối chiếu X
+và row checksums. Có labels thì kiểm tra y/target time/availability/source ref.
+Không coi X có giá trị bằng y là leakage chỉ vì trùng số: `TARGET_LEAKAGE` cần
+feature name là target hoặc X sai so với evidence và chứa giá trị target.
+Đây không phải detector tổng quát suy ra mọi causal leakage khi thiếu evidence.
+
+Graph audit đối chiếu raw connectivity với registry. Dataset audit kiểm tra
+L×N×F/masks, y/mask, history liên tục, horizon, as_of và checksum references.
+Split audit kiểm tra ratios/policy flags, chronological order, sample uniqueness,
+event grouping khi bật, và history overlap đối với preceding retained targets.
+Không chứng nhận một lịch model retraining: team training vẫn phải kiểm tra
+label availability tại cutoff fit riêng (giới hạn DATA-06).
+
+Audit **không** sửa timestamp/mask/labels, fill null, thay NaN, remove rows,
+reorder input hoặc ghi artifact. Import audit/runner không HTTP, mkdir, write
+hay tự chạy pipeline. Không secrets/Earthdata token/user PII trong fixture/report.
+
+### End-to-end offline và reproducibility
+
+`end_to_end.build_fixture_artifacts()` reuse fixtures OSM/environment/alignment/
+features đã có; không thêm data/fixtures/quality vì không cần duplicate dữ liệu.
+`run_fixture_pipeline()` trả EndToEndResult trong bộ nhớ, gồm network version,
+registry/alignment/feature/graph/dataset/split/quality checksums, road count,
+error/warning count và full quality report.
+
+Smoke run dùng 12 directed OSM roads và **một bin**. DEM spatial join; GPM/SMAP
+fixture available muộn hơn issue nên cố ý giữ missing/masks, không backdate.
+Labels copy giá trị từ synthetic label template đúng target time sang từng OSM
+road, ghi rõ provenance remap; **không phải geo-matched flood observations**.
+Dataset lookback=1/horizon=1, có sample hợp lệ; event-preserving split có thể
+validation/test rỗng (`EMPTY_SPLIT`). Đây không phải training benchmark.
+12-step feature-series fixture/tests DATA-06 và quality tests riêng kiểm tra
+rain windows đầy đủ, không giả smoke run một bin chứng minh mọi history case.
+
+Chạy từ `backend`:
+
+```bash
+python -m vietsafe.data_pipeline.audit --help
+python -m vietsafe.data_pipeline.audit --fixture-demo
+python -m unittest tests.data.test_quality_audit tests.data.test_leakage_audit tests.data.test_data_end_to_end -v
+python -m unittest discover -s tests/data -t . -v
+```
+
+CLI chỉ in JSON summary/report, không ghi file; exit 1 khi có integrity ERROR,
+exit 0 khi chỉ có warning. Tests so sánh hai lần chạy và input order đảo ngược;
+kiểm tra no-mutation, import safety, no HTTP/no writes và failure injections.
+
+### Handoff boundary
+
+Xem [HANDOFF.md](HANDOFF.md) cho API/schema/order/mask/horizon chính xác.
+Không production NASA ingestion claim, không live OSM guarantee, production
+flood labels/prediction/accuracy hoặc trained T-GCN. Chưa kết nối Forecast,
+Routing, Map, Reports hay production API/database. Integration là phase riêng.
