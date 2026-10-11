@@ -183,6 +183,10 @@ Tình trạng hiện tại của các lệnh kiểm thử và công cụ format/
 
 ---
 
+## Tùy chọn AI nghiên cứu
+
+Tùy chọn AI nghiên cứu: xem [cách chạy mô hình đã huấn luyện](docs/AI_FORECAST.md) và [kế hoạch tích hợp để review](docs/AI_INTEGRATION_PLAN.md). Trang Dự báo có lối vào mô hình Bellinge, FloodNet và SZ-Taxi. Đây là phát lại dữ liệu lịch sử; chưa hiệu chỉnh cho Hà Nội. Các checkpoint/dữ liệu cần được cung cấp cục bộ, không nằm trong repository.
+
 ## 📄 Bản quyền và Tác giả
 
 - Phát triển bởi Đội ngũ **VietSafe AI** cho cuộc thi **Data for Life 2026**.

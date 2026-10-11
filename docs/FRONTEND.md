@@ -256,3 +256,7 @@ npm run test:frontend  # 34 kiểm tra (cần Python 3.10+; nếu lệnh Python 
 Nó bắt được: import thiếu/sai tên, vòng phụ thuộc gãy, id/selector bị đổi, API đổi hình dạng. Nó **không** kiểm tra giao diện
 nhìn thế nào (pixel/CSS) — vẫn cần mở trình duyệt xem sau thay đổi về style. Khi thêm trang/chức năng, thêm một đoạn vào file này
 (mẫu: các khối `console.log("\n[n] ...")`; helper `click`, `submit`, `change`, `waitFor`, `check`).
+
+## Trang AI nghiên cứu
+
+`forecast-lab.html` + `js/views/ai-forecast.js` + `css/ai-forecast.css` là trang độc lập cùng frontend/server, được mở từ tab Dự báo. Trang gọi `/api/ai/*`; không thay đổi state bản đồ Hà Nội. Chuyển task/điểm/thời gian sẽ xóa kết quả cũ và hủy request; phản hồi đến muộn không được ghi đè lựa chọn mới. Kiểm thử bằng `node frontend/tests/ai-smoke.mjs`, cấu hình artifact tùy chọn và hướng dẫn ở [AI_FORECAST.md](AI_FORECAST.md).

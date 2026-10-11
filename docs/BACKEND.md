@@ -248,3 +248,7 @@ python3 -m unittest tests.test_http.HTTPTests.test_health   # một test
 `tests/helpers.py` cung cấp `DatabaseTestCase` (mỗi test một SQLite tạm, **không** đụng `data/`, và đặt lại `report_limiter`) và
 `ServerTestCase` (thêm máy chủ HTTP trên cổng ngẫu nhiên, có `self.api(path, body, token)` và `self.login(...)`).
 Test mới cần DB → kế thừa `DatabaseTestCase`; cần gọi API → kế thừa `ServerTestCase`.
+
+## Tùy chọn AI nghiên cứu
+
+`forecasting/` chứa các adapter suy luận và quản lý artifact tùy chọn; `web/controllers/ai_controller.py` đăng ký `/api/ai/catalog`, `/api/ai/sites`, `/api/ai/times` và POST `/api/ai/predict`. API cơ sở tiếp tục chạy khi chưa có thư viện ML hoặc artifact. Hợp đồng, cấu hình `VIETSAFE_AI_RESEARCH_ROOT`, dependency và các test mới: [AI_FORECAST.md](AI_FORECAST.md). Đây là replay nghiên cứu, độc lập với đầu ra nguy cơ/định tuyến hiện tại.

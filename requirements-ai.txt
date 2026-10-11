@@ -1,0 +1,9 @@
+# Optional research replay only; base web app still uses the standard library.
+# Match the environment of the trusted local 2026-10-07 checkpoints.
+numpy==2.1.3
+pandas==2.2.3
+scipy==1.15.3
+scikit-learn==1.6.1
+joblib==1.4.2
+threadpoolctl==3.5.0
+pyarrow==19.0.0

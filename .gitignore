@@ -18,6 +18,16 @@ data/*
 *.db
 *.log
 
+# AI artifacts stay on the operator's machine; source/manifest only in Git.
+*.joblib
+*.pkl
+*.pt
+*.parquet
+*.npz
+*.npy
+.env
+.env.*
+
 # Tệp nhị phân lớn tải tự động khi cần
 cloudflared.exe
 *.exe

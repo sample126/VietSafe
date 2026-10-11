@@ -120,8 +120,8 @@
         <button class="nav-item active" data-view="map" title="Bản đồ">
           <svg><use href="#i-map" /></svg><span>Bản đồ</span>
         </button>
-        <button class="nav-item" data-view="forecast" title="Dự báo">
-          <svg><use href="#i-chart" /></svg><span>Dự báo</span>
+        <button class="nav-item" data-view="forecast" title="Thực nghiệm dự báo">
+          <svg><use href="#i-chart" /></svg><span>Thực nghiệm<br />dự báo</span>
         </button>
         <button class="nav-item" data-view="rescue" title="Ứng cứu khẩn cấp">
           <svg><use href="#i-rescue" /></svg><span>Ứng cứu</span>
@@ -361,7 +361,7 @@
                 <div class="eyebrow teal-text">ĐOẠN ĐƯỜNG ĐANG THEO DÕI</div>
                 <h3 id="insight-road">Láng Hạ</h3>
                 <p id="insight-summary">Đang tổng hợp dữ liệu…</p>
-                <button class="text-button" data-view="forecast">Xem phân tích dự báo <span>→</span></button>
+                <button class="text-button" data-view="forecast">Xem thực nghiệm dự báo <span>→</span></button>
               </div>
               <div id="mini-forecast" class="mini-forecast"></div>
               <div class="insight-note">
@@ -377,7 +377,19 @@
         <section id="forecast-view" class="view" hidden>
           <div class="section-card">
             <div class="section-title">
-              <div><h2>Dự báo theo đoạn đường</h2></div>
+              <div>
+                <h2>Thực nghiệm dự báo</h2>
+                <p>Chạy mô hình đã huấn luyện trên dữ liệu quan trắc quốc tế. Chọn điểm và thời điểm lịch sử để xem kết quả; chưa hiệu chỉnh cho Hà Nội.</p>
+              </div>
+              <a class="button secondary" href="/forecast-lab.html">Mở thực nghiệm →</a>
+            </div>
+          </div>
+          <div class="section-card">
+            <div class="section-title">
+              <div>
+                <h2>Kịch bản bản đồ — mô phỏng</h2>
+                <p>Ước lượng theo quy tắc và kịch bản cho các đoạn đường Hà Nội. Đây là phần kiểm tra giao diện, chưa phải kết quả của mô hình AI nghiên cứu.</p>
+              </div>
               <a class="button secondary" href="/api/export/predictions" download
                 ><svg><use href="#i-download" /></svg>Nhật ký dự báo</a
               >
