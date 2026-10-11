@@ -1,4 +1,15 @@
-# INT-03A — Draft Data / Forecast boundary
+# VietSafe contract-only Integration foundation
+
+## Current phase — INT-07 quality gate and handoff
+
+See [INTEGRATION_HANDOFF.md](INTEGRATION_HANDOFF.md) for the contract inventory,
+validated payload examples, ancestry audit, readiness matrix and owner decisions.
+Latest quality gate: **PASS WITH BLOCKERS**; 304 Data and 183 Integration tests.
+This remains **contract-only / offline**, not a production API or runtime system.
+Forecast target/units/provider/missing semantics, Routing risk/status/closure
+policies and Backend endpoint/mode ownership must be approved before runtime work.
+The task sections below retain implementation history; the handoff is the entry
+point for cross-team integration planning.
 
 **DRAFT / PROVISIONAL — FORECAST OWNER APPROVAL STILL REQUIRED.**
 This is a contract skeleton, validator, serializer and offline projection adapter.
