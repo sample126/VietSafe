@@ -451,3 +451,84 @@ No endpoint, HTTP, DB query, frontend, route calculation, prediction or risk
 interpretation is implemented. INT-04B Forecast → Routing remains blocked by
 owner policy. Endpoint integration requires backend/API owner agreement in a
 separate task; contract-only work can continue without runtime integration.
+
+## INT-06B Contract-only E2E Harness
+
+`run_contract_pipeline` composes existing public builders and typed validators.
+This is an offline contract compatibility harness, **not production runtime**.
+
+```mermaid
+flowchart TD
+    R[RoadRegistry] --> RN[RoutingNetwork]
+    R --> MN[MapNetwork]
+    RN --> C[IntegrationContext]
+    MN --> C
+    F["ForecastOutput — optional caller fixture"] --> C
+    C --> A[ArtifactApiBundle]
+    MN --> A
+    F --> A
+```
+
+```python
+from vietsafe.integration.end_to_end import run_contract_pipeline
+
+result = run_contract_pipeline(
+    registry=registry,  # validated Data RoadRegistry supplied by caller
+    mode="artifact",   # explicit, never inferred from an ID
+    generated_at="2026-10-08T04:12:34Z",
+    forecasts=(),      # or caller-supplied ForecastOutput objects/contract dicts
+)
+result.routing_network
+result.map_network
+result.forecasts  # immutable tuple, sorted by horizon
+result.context
+result.api_bundle.to_json()
+```
+
+The result is a frozen dataclass containing immutable typed artifacts. Forecasts
+are revalidated and detached before assembly. The harness produces no prediction,
+never repairs rejected inputs, and never bypasses Map/Routing/Context/API
+validators. No current time, file read/write, CLI or implicit printing is added.
+Registry loading remains a caller/test responsibility; generated_at is required.
+
+Tests obtain an actual Data RoadRegistry offline from
+`data/fixtures/osm/overpass-small.json` via `read_overpass` and
+`build_road_network`, then run every Integration boundary. A second path uses
+`load_demo_registry` without simulation: 36 Map roads, 72 travel arcs, 36 context
+road IDs. Registry network_version, road IDs and checksum survive the boundaries.
+Routing scope compares deduplicated road IDs, not arc counts or list indices.
+Identity stays `(network_version, road_id)`, with no name join or ID parsing.
+
+Map and API geometry stay canonical `[lat, lon]`. Routing reverse travel reverses
+the entire polyline; `both` creates two travel arcs for one road. Routing arcs
+never enter the API payload. Tests separately exercise forward/reverse/both.
+
+`tests/integration/e2e_helpers.py` contains explicitly synthetic **contract
+fixtures**, not a trained model or real prediction. +30/+60 outputs cover four
+of the OSM fixture's twelve roads, preserving OK risk=0, MISSING_INPUT null,
+UNAVAILABLE absent metric and STALE null. API output keeps full Map scope and
+partial forecast rows without synthesis. Forecast producer row order is kept;
+reversing the forecast-list order and registry insertion order preserves all
+artifact checksums. Repeated runs with the same generated_at are deterministic.
+
+Failure tests reject wrong network, unknown road, divergent Routing scope,
+tampered context Map/Forecast hashes, issue mismatch, duplicate horizons and
+artifact +15/+45. Fault injection at builder boundaries is test-only; no bypass
+or tampering hook exists in the harness. Recursive API checks prohibit raw ML
+inputs, training labels, grids, routing internals and route-result fields.
+Deep snapshots and frozen/detached export checks cover mutation. Import and E2E
+checks block network/runtime calls, writes, mkdir and unintended output.
+
+From `backend`:
+
+```sh
+PYTHONDONTWRITEBYTECODE=1 python -m unittest tests.integration.test_integration_end_to_end -v
+PYTHONDONTWRITEBYTECODE=1 python -m unittest discover -s tests/data -t . -v
+PYTHONDONTWRITEBYTECODE=1 python -m unittest discover -s tests/integration -t . -v
+```
+
+There is no trained model, real prediction, route solver integration, HTTP
+endpoint, frontend integration or production runtime. Contract-only integration
+now has E2E validation. INT-04B Forecast → Routing remains blocked by owner
+decisions on forecast target/output semantics, risk scale, unknown/missing,
+stale and closure policies. Runtime integration requires separate owner approval.
