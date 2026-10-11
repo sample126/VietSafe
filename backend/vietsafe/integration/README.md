@@ -273,3 +273,89 @@ commands above; no dependencies or runtime files change.
 Forecast→Routing remains blocked on owner risk semantics, missing/stale and closure
 policy. Forecast/Map presentation or API contract skeletons may proceed separately
 when authorized; this task does not implement them or runtime integration.
+
+## INT-05B Integration Context Guard
+
+**DRAFT / PROVISIONAL**, offline only:
+
+`MapNetwork + RoutingNetwork + optional ForecastOutput(s) → IntegrationContext`
+
+```python
+from vietsafe.integration.context_guard import build_integration_context
+
+context = build_integration_context(
+    mode="artifact",
+    map_network=map_network,
+    routing_network=routing_network,
+    forecasts=(),  # optional typed ForecastOutput objects or serialized dicts
+)
+context.to_dict()   # detached containers
+context.to_json()   # canonical UTF-8 JSON, sorted keys, compact, finite only
+context.checksum()  # SHA-256 of the canonical JSON
+```
+
+Map and Routing are required. Their typed contracts or serialized dictionaries
+are revalidated with their existing validators. ForecastOutput validation is
+reused unchanged, including forecast_time relative to issue_time, supported
+horizons and exact per-status coverage. No provider is called.
+
+The `vietsafe.integration-context.v1` summary contains `contract_status=draft`,
+explicit `mode` (`demo` or `artifact`), `network_version`, sorted unique nonempty
+`road_ids`, `artifacts`, and sorted `available_horizons_minutes` (empty without
+forecasts). It contains no tensors, labels, adjacency, predictions or route costs.
+
+Consistency rules:
+
+- Identity is `(network_version, road_id)`; all attached artifacts must share the
+  network version. No index join, road-name join, ID parsing or per-road fallback.
+- Map supplies the road scope. Routing's road IDs are deduplicated across arcs
+  and must match Map exactly. A `both` road has two arcs but one context road ID.
+- Map and Routing must share the same registry checksum, preventing two different
+  registry snapshots with a reused version string from being combined.
+- Map/Routing have no mode field. The caller declares mode; the guard cannot
+  independently certify source mode and never guesses it from HN/OSM ID text.
+- Forecast mode must equal context mode. Forecast roads must be a subset of the
+  context scope. Each output's actual rows form its explicit prediction scope;
+  `ForecastOutput.validate_scope` is called for that scope, without weakening its
+  requirement for a status row for every road in an explicitly requested scope.
+- Partial and empty forecast scopes are accepted as allowed by ForecastOutput.
+  Summary `road_ids` and exact `coverage` are retained for each horizon. Roads
+  outside that scope have no forecast; they are never synthesized as safe or 0.
+  The guard cannot infer a producer's intended scope beyond the supplied rows.
+- A forecast set shares mode, network, issue_time and model_version. Horizons
+  must be unique. Artifact mode permits +30/+60; demo preserves its existing
+  0/+15/+30/+45/+60 contract. `issued_at` can differ and is never used as issue time.
+
+Artifact summaries contain real checksums of the validated inputs. Map/Routing
+summaries also retain registry checksum. Forecast summaries retain schema, mode,
+network/model versions, issue/issued/forecast times, horizon, explicit road IDs
+and coverage. Forecast summaries sort by horizon; reversing input forecast order
+preserves context JSON/checksum. Source artifact checksums remain sensitive to
+changes in their actual canonical content, including ForecastOutput row order.
+No current timestamp or random identifier is generated. Inputs are not mutated;
+the context is frozen with detached exports.
+
+Deserializing a context validates summary structure and internal consistency.
+A hash alone does not prove possession/authenticity of an artifact: use
+`build_integration_context` with actual artifacts to verify compatibility and bind
+checksums. Per-status coverage is checked against actual rows by ForecastOutput
+at build time; the compact summary does not duplicate all prediction rows.
+
+Errors reuse `IntegrationContractError`: network mismatch uses
+`NETWORK_VERSION_MISMATCH`; unknown Routing/Forecast roads use `UNKNOWN_ROAD`;
+unsupported horizons use `UNSUPPORTED_HORIZON`; missing Routing roads, mode,
+registry snapshot, issue/model, duplicate horizons or malformed contracts use
+`INVALID_CONTRACT`. No new error code or runtime policy is introduced.
+
+Tests (from `backend`, offline):
+
+```sh
+PYTHONDONTWRITEBYTECODE=1 python -m unittest discover -s tests/data -t . -v
+PYTHONDONTWRITEBYTECODE=1 python -m unittest discover -s tests/integration -t . -v
+```
+
+The guard does not predict, route, interpret risk, choose closures, serve API,
+render frontend, or change canonical/travel geometry. INT-04B Forecast → Routing
+remains blocked by owner decisions on risk semantics, unknown/missing, stale and
+closure policies. API contract skeleton work can follow separately; runtime
+integration remains outside this task.
