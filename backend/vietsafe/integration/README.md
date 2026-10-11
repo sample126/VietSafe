@@ -202,3 +202,74 @@ network and ensure neither Forecast graph nor runtime Forecast/Routing was impor
 
 INT-04B still requires owner decisions on risk semantics, missing/stale behavior
 and closure sources/policy. INT-04A does not decide or implement them.
+
+## INT-05A Map Network Contract
+
+**DRAFT / PROVISIONAL.** `RoadRegistry → MapNetwork` projects canonical registry
+roads for a future API/Frontend consumer. This is an offline artifact only: no
+Forecast→Map, Routing→Map, API endpoint, Frontend integration or runtime mode switch.
+
+Public API:
+
+```python
+from vietsafe.integration.registry_map import build_map_network
+network = build_map_network(registry, expected_registry_checksum=registry.checksum)
+payload = network.to_dict()
+```
+
+Accepts RoadRegistry or its full serialized dict; dict roads are reconstructed
+through the public Data RoadSegment/RoadRegistry validators. An optional
+registry_checksum in the dict and/or expected_registry_checksum argument is checked
+against canonical RoadRegistry serialization, not raw file bytes. Invalid Data
+inputs become IntegrationContractError (INVALID_CONTRACT, or
+NETWORK_VERSION_MISMATCH for mixed network versions). Input is not mutated.
+
+Schema `vietsafe.map-network.v1`, contract_status=draft; required envelope fields:
+network_version, registry_checksum, coordinate_order=lat_lon and roads. Each road
+has exactly road_id, network_version, name, geometry and directionality. IDs are
+opaque; identity is (network_version, road_id). No parsing OSM IDs, name joins,
+index joins, renaming or HN→OSM mapping. Roads are unique and sorted by road_id.
+The adapter sorts source roads deterministically; a manually constructed contract
+with unsorted/duplicate roads rejects rather than silently deduplicating.
+
+Geometry remains canonical [latitude, longitude] from RoadSegment.coordinates.
+**Reverse does NOT reverse map geometry.** Forward/reverse/both each produce ONE
+map entry per RoadSegment. Both is never expanded into two map entries. Separate
+OSM f/r segments keep their original separate road IDs. Travel-direction arrows
+would require a future presentation policy, not mutation of this canonical line.
+
+The three structures serve different purposes:
+
+- Forecast graph: road-as-node.
+- Routing network: junction-as-node, travel arc-as-edge; reverse geometry is travel ordered.
+- Map network: road entries + canonical polylines, independent of travel direction.
+
+MapNetwork is built directly from RoadRegistry, never RoutingNetwork arcs. Using
+arcs as its source would duplicate both roads and incorrectly reverse geometry.
+RouteOutput travel geometry belongs to a later Routing→Map contract.
+
+No source_id, provenance, labels, tensor, adjacency, grids, feature checksums or
+OSM lineage is exposed. No risk/flood_risk/speed/label/forecast/horizon/model_version,
+route/ETA/distance/warnings are present; unknown fields reject. The only checksum
+in the payload is the source registry checksum; the artifact checksum is a method.
+
+MapRoad and MapNetwork are frozen canonical-JSON models, accepting payloads or
+.from_dict(). to_dict() returns a deeply detached copy; to_json()/checksum() use
+sorted keys, compact UTF-8, a trailing newline, allow_nan=False and SHA-256. No
+current time, random UUID or file path is generated. Finite numeric lat/lon ranges,
+at least two points and at least two distinct coordinates are required. Booleans,
+NaN/Infinity, empty names/IDs and mixed networks reject. No GeoJSON conversion,
+snapping or geometry simplification is performed. Standalone checksum-format
+validation does not prove the registry exists; adapter verification requires the
+actual source registry or expected checksum. Empty registries remain unsupported.
+
+Tests include four-point forward/reverse/both geometry, order-independent dict and
+object inputs, detached state, malformed geometry, duplicate IDs, mixed versions,
+the existing offline OSM fixture and 36-road demo registry (not doubled to 72).
+Socket/HTTP are blocked at key entrypoints, and a fresh process checks import safety.
+No simulation/model/route solver is called. Run the same Data/Integration unittest
+commands above; no dependencies or runtime files change.
+
+Forecast→Routing remains blocked on owner risk semantics, missing/stale and closure
+policy. Forecast/Map presentation or API contract skeletons may proceed separately
+when authorized; this task does not implement them or runtime integration.
