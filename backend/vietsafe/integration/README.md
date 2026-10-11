@@ -124,3 +124,81 @@ label stripping with sentinel values, immutable copies, actual Data interoperabi
 shape/order/checksums, masks, publication delay, all statuses and partial coverage.
 Socket/HTTP are blocked at entrypoints; a fresh interpreter checks imports for
 network/filesystem/DB side effects. No live providers or prediction accuracy tests.
+
+## INT-04A Routing Network Contract
+
+**DRAFT / PROVISIONAL.** `RoadRegistry → RoutingNetwork` is a pure structural
+adapter for a future Routing consumer. It does not calculate a route or connect
+Forecast. There is no Forecast→Routing adapter, risk mapping, stale/unknown policy,
+closure policy, vehicle policy, ETA, route solver integration or runtime/API integration.
+
+Public API:
+
+```python
+from vietsafe.integration.registry_routing import build_routing_network
+network = build_routing_network(registry, expected_registry_checksum=registry.checksum)
+payload = network.to_dict()
+```
+
+Input accepts a public Data RoadRegistry or its full serialized dict. Dict roads
+must contain the existing RoadSegment fields (including source/name metadata);
+they are reconstructed through RoadSegment/RoadRegistry validation. Optional
+`registry_checksum` in the dict and/or the keyword expected_registry_checksum are
+verified against the canonical RoadRegistry checksum, not raw file bytes. Malformed
+Data inputs become IntegrationContractError with INVALID_CONTRACT or, when identified,
+NETWORK_VERSION_MISMATCH. Error serialization contains no raw Data traceback/message.
+No Data validator is changed. Object inputs are also revalidated without mutation.
+
+Output schema: `vietsafe.routing-network.v1`, contract_status=draft. Fields:
+network_version, registry_checksum, nodes, arcs, outgoing, routing_policy.
+RoutingArc/ RoutingNetwork accept a payload or `.from_dict(payload)`, are frozen
+with canonical JSON storage, and offer detached `.to_dict()`, `.to_json()`, `.checksum()`.
+Canonical encoding is sorted keys, compact UTF-8, no NaN, trailing newline; checksum
+is SHA-256 of those bytes. No self-referential checksum, timestamps or random keys.
+
+Graph semantics are distinct:
+
+- Forecast graph: **road-as-node**, adjacency describes travel continuity between roads.
+- Routing network: **junction-as-node, travel arc-as-edge**, built directly from
+  registry endpoint_a/endpoint_b and directionality. No feature adjacency is read.
+
+Nodes are nonempty opaque endpoint IDs, unique and sorted. No node coordinate
+records are invented. Road IDs are opaque and never parsed to infer connectivity.
+Within a network the arc identity is (road_id, travel_from, travel_to); across
+networks it additionally requires network_version. Parallel roads remain separate.
+
+| Registry directionality | Travel arcs | Travel geometry |
+| --- | --- | --- |
+| forward | endpoint_a → endpoint_b | canonical coordinates |
+| reverse | endpoint_b → endpoint_a | entire canonical polyline reversed |
+| both | both of the above, same road_id | one polyline per travel direction |
+
+The adapter does not infer direction from OSM f/r ID suffixes. DATA-03 has already
+produced separate directed RoadSegments; each forward/reverse segment produces
+exactly one arc. Demo both produces two arcs without changing/suffixing road_id.
+Geometry remains [latitude, longitude], including every intermediate coordinate.
+No snapping, GeoJSON conversion or length recomputation occurs. length_km is copied
+exactly and must be finite and positive. Self loops reject rather than disappear.
+
+Arcs are sorted by (road_id, travel_from, travel_to). outgoing[node] contains their
+indices within THIS same artifact; it is never a cross-artifact identity. Nodes
+with no outgoing arcs have an empty list. Validation checks index contents,
+composite uniqueness, network consistency and both-direction pair symmetry.
+Unknown fields such as risk/speed/closure/forecast reject in this contract.
+
+routing_policy=`registry-endpoints-directionality-v1-no-turn-restrictions` describes
+only topology conversion. It is not a routing cost/product policy. The standalone
+contract validates structure; without the source registry it cannot prove a digest
+refers to actual source contents or independently confirm an endpoint's physical
+location. The adapter ensures geometry direction relative to registry semantics.
+Full OSM turn restrictions, barriers and vehicle-specific access remain unresolved;
+this artifact is not a production navigation network or route recommendation.
+
+Tests cover four-point reversal, both directions sharing identity, parallel roads,
+self-loop rejection, checksum verification, input-order independence, outgoing index,
+and the existing local OSM fixture through read_overpass/build_road_network. Socket
+and HTTP are blocked in key tests. Fresh-process import tests reject writes/mkdir/DB/
+network and ensure neither Forecast graph nor runtime Forecast/Routing was imported.
+
+INT-04B still requires owner decisions on risk semantics, missing/stale behavior
+and closure sources/policy. INT-04A does not decide or implement them.
