@@ -359,3 +359,95 @@ render frontend, or change canonical/travel geometry. INT-04B Forecast → Routi
 remains blocked by owner decisions on risk semantics, unknown/missing, stale and
 closure policies. API contract skeleton work can follow separately; runtime
 integration remains outside this task.
+
+## INT-06A Artifact API Contract Skeleton
+
+**DRAFT / PROVISIONAL — presentation contract only.**
+
+`MapNetwork + ForecastOutput(s) + IntegrationContext → ArtifactApiBundle`
+
+```python
+from vietsafe.integration.api_projection import build_artifact_api_bundle
+
+bundle = build_artifact_api_bundle(
+    context=context,
+    map_network=map_network,
+    forecasts=forecasts,  # exact set attached to context; defaults to ()
+    generated_at="2026-10-08T04:12:34Z",  # required caller-supplied UTC timestamp
+)
+bundle.to_dict()   # deeply detached
+bundle.to_json()   # canonical compact UTF-8 JSON, sorted keys, allow_nan=False
+bundle.checksum()  # SHA-256
+```
+
+Typed contracts and their serialized dictionaries are supported and revalidated.
+The schema is `vietsafe.artifact-api-bundle.v1`, `contract_status=draft`. Fields:
+`schema`, `contract_status`, `mode`, `network_version`, `generated_at`,
+`available_horizons_minutes`, `network`, `forecasts`, `source_checksums`.
+
+Mode and available horizons come from the supplied context. The projection never
+infers mode from an ID or uses `/15` array-index horizon semantics. The caller
+must provide canonical `YYYY-MM-DDTHH:MM:SSZ` generated_at; it describes payload
+creation only. It does not replace or recompute issue_time, issued_at or
+forecast_time. There is no current-time lookup or random ID generation.
+
+Before projecting, the function verifies context network and exact road scope
+against Map, and compares the full Map summary (schema, actual artifact checksum,
+registry checksum). Every supplied forecast is revalidated with ForecastOutput;
+network, mode and road membership are checked, then its complete summary,
+including actual checksum, times, model, horizon, road IDs and coverage, must
+match the corresponding context summary. Missing, extra or duplicate forecasts
+are rejected. The supplied context is never silently rebuilt or repaired.
+
+Network presentation uses an explicit allowlist: `schema`, `network_version`,
+`coordinate_order`, `roads`; each road exposes only `road_id`, `name`, `geometry`,
+`directionality`. Geometry stays canonical `[lat, lon]`, including reverse roads.
+Map road order is preserved (sorted road_id). No source_id, provenance, registry
+internals, routing arcs/outgoing, feature tensors, adjacency or OSM lineage leaks.
+
+Each forecast preserves the complete validated ForecastOutput public envelope,
+including schema/draft status, network/model/mode, issue_time, issued_at, horizon,
+forecast_time, output_fields, coverage and roads. The existing validator permits
+only road_id, status, optional reason_code and declared metrics in each row.
+Rows keep **producer order** and exact values; the projection does not join by
+index, normalize risk, create colors/labels, fill null/absent metrics, or treat
+missing forecasts as safe. All four statuses remain unchanged. Partial and empty
+forecast row scopes remain partial/empty while the Map network retains its full
+scope. Frontend presentation policy is a future owner's decision.
+
+Forecast objects sort by horizon, so reversing their input order with identical
+generated_at yields identical bundle JSON/checksum. Producer row order remains
+part of the source ForecastOutput checksum and is deliberately not rewritten.
+Identity is `(network_version, road_id)`, never a checksum, index, name, or parsed
+HN/OSM identifier.
+
+`source_checksums` contains the real `integration_context` and `map_network`
+checksums plus `forecasts` keyed by decimal horizon strings (e.g. `"30"`, `"60"`).
+The raw bundle validator checks schema, allowed fields, mode, UTC time, MapRoad
+geometry/identity rules, ForecastOutput semantics, network/mode/scope, common
+issue/model, unique sorted horizons, and exact forecast payload checksums. It
+rejects route/ETA/distance/vehicle fields, raw model inputs, malformed coverage,
+nonfinite metrics and undeclared fields.
+
+Trust boundary: raw bundle deserialization checks structural consistency and
+forecast hashes, but cannot recover omitted Map metadata or the entire context
+from a hash. Build with actual artifacts to verify source bindings. Routing is
+not passed into this projection: its compatibility remains the responsibility of
+`build_integration_context`; INT-06A does not independently authenticate a
+Routing artifact or make a checksum a proof of origin.
+
+Errors reuse IntegrationContractError: `NETWORK_VERSION_MISMATCH`, `UNKNOWN_ROAD`,
+`UNSUPPORTED_HORIZON` from forecast validation, and `INVALID_CONTRACT` for other
+mismatches. Inputs are not mutated; bundle storage is frozen and exports detached.
+
+Regression from `backend`:
+
+```sh
+PYTHONDONTWRITEBYTECODE=1 python -m unittest discover -s tests/data -t . -v
+PYTHONDONTWRITEBYTECODE=1 python -m unittest discover -s tests/integration -t . -v
+```
+
+No endpoint, HTTP, DB query, frontend, route calculation, prediction or risk
+interpretation is implemented. INT-04B Forecast → Routing remains blocked by
+owner policy. Endpoint integration requires backend/API owner agreement in a
+separate task; contract-only work can continue without runtime integration.
