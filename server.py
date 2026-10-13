@@ -376,26 +376,19 @@ class Handler(BaseHTTPRequestHandler):
 
 
 def main():
-    default_port = int(os.environ.get('PORT', 8765))
-    default_host = os.environ.get('HOST', '0.0.0.0')
-    parser = argparse.ArgumentParser(description='VietSafe local demo')
-    parser.add_argument('--port', type=int, default=default_port)
-    parser.add_argument('--host', type=str, default=default_host)
-    args = parser.parse_args()
-    init_db()
-    try:
-        server = ThreadingHTTPServer((args.host, args.port), Handler)
-    except OSError:
-        print(f'Port {args.port} unavailable. Open http://{args.host}:{args.port} or use --port 8766.')
-        raise SystemExit(1)
-    print(f'VietSafe is running at http://{args.host}:{args.port}', flush=True)
-    print('Local demo only. Press Ctrl+C to stop.', flush=True)
-    try:
-        server.serve_forever()
-    except KeyboardInterrupt:
-        pass
-    finally:
-        server.server_close()
+    """Forward legacy launch commands to the team's modular backend/frontend.
+
+    Keep legacy imports available for historical tests, but never serve public/
+    when this file is launched. New application code belongs in backend/.
+    """
+    import sys
+
+    sys.path.insert(0, str(ROOT / 'backend'))
+    # Preserve this entry point's existing cloud-compatible bind default.
+    os.environ.setdefault('HOST', '0.0.0.0')
+    from vietsafe.__main__ import main as run_backend
+
+    run_backend()
 
 
 if __name__=='__main__': main()

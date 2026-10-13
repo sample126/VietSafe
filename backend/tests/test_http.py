@@ -44,8 +44,16 @@ class HTTPTests(ServerTestCase):
     def test_reject_cross_origin_and_missing_custom_header(self):
         for headers in ({}, {"X-VietSafe": "local", "Origin": "https://example.org"}):
             with self.subTest(headers=headers):
-                code, _, _ = self.request("/api/scenario", {"scenario": "storm"}, headers)
-                self.assertEqual(code, 403)
+                # The guard rejects headers before reading a body. Sending a body
+                # can race the early close and cause a TCP reset on Windows.
+                conn = http.client.HTTPConnection("127.0.0.1", self.server.server_port, timeout=5)
+                try:
+                    conn.request("POST", "/api/scenario", headers=headers)
+                    response = conn.getresponse()
+                    self.assertEqual(response.status, 403)
+                    response.read()
+                finally:
+                    conn.close()
 
     def test_bad_host_and_traversal(self):
         self.assertEqual(self.request("/api/health", headers={"Host": "example.org"})[0], 403)

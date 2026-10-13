@@ -252,3 +252,12 @@ Test mới cần DB → kế thừa `DatabaseTestCase`; cần gọi API → kế
 ## Tùy chọn AI nghiên cứu
 
 `forecasting/` chứa các adapter suy luận và quản lý artifact tùy chọn; `web/controllers/ai_controller.py` đăng ký `/api/ai/catalog`, `/api/ai/sites`, `/api/ai/times` và POST `/api/ai/predict`. API cơ sở tiếp tục chạy khi chưa có thư viện ML hoặc artifact. Hợp đồng, cấu hình `VIETSAFE_AI_RESEARCH_ROOT`, dependency và các test mới: [AI_FORECAST.md](AI_FORECAST.md). Đây là replay nghiên cứu, độc lập với đầu ra nguy cơ/định tuyến hiện tại.
+
+## Mô phỏng ngập theo điểm
+
+`forecasting/scenario.py` tính cân bằng nước vùng trũng giả định bằng thư viện chuẩn.
+Controller `flood_scenario_controller.py` cung cấp GET `/api/flood-simulation/catalog`
+và POST `/api/flood-simulation/predict`. Đầu ra gồm độ sâu +30/+60, sự kiện vượt ngưỡng
+trong cửa sổ và chuỗi mỗi phút; `synthetic=true`, `probability=null`, `uses_trained_ai=false`.
+API không ghi DB hay cảnh báo. Đặc tả, giới hạn và hướng nối AI sau này:
+[FLOOD_SIMULATOR.md](FLOOD_SIMULATOR.md). Test: `tests/test_flood_scenario.py`.

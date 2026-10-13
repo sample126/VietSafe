@@ -260,3 +260,13 @@ nhìn thế nào (pixel/CSS) — vẫn cần mở trình duyệt xem sau thay đ
 ## Trang AI nghiên cứu
 
 `forecast-lab.html` + `js/views/ai-forecast.js` + `css/ai-forecast.css` là trang độc lập cùng frontend/server, được mở từ tab Dự báo. Trang gọi `/api/ai/*`; không thay đổi state bản đồ Hà Nội. Chuyển task/điểm/thời gian sẽ xóa kết quả cũ và hủy request; phản hồi đến muộn không được ghi đè lựa chọn mới. Kiểm thử bằng `node frontend/tests/ai-smoke.mjs`, cấu hình artifact tùy chọn và hướng dẫn ở [AI_FORECAST.md](AI_FORECAST.md).
+
+## Trang mô phỏng ngập theo điểm
+
+`flood-simulator.html`, `js/views/flood-simulator.js`, `css/flood-simulator.css` gọi
+`/api/flood-simulation/*`. Trang nhập kịch bản, hiển thị sự kiện ngập và độ sâu,
+biểu đồ SVG, so sánh công suất thoát và xuất JSON/CSV có nguồn giả lập.
+Kết quả cũ bị ẩn ngay khi sửa đầu vào; phản hồi muộn bị bỏ qua.
+Không cần CDN hoặc model AI. Test: `node frontend/tests/flood-simulator-smoke.mjs`.
+Trên Windows, đặt `PYTHONUTF8=1` khi chạy các smoke test chung để console in được tiếng Việt.
+Chi tiết: [FLOOD_SIMULATOR.md](FLOOD_SIMULATOR.md).

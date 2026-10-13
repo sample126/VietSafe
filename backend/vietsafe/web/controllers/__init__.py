@@ -26,13 +26,21 @@ từ `router.py`.
 """
 
 from ..router import router
-from . import admin_controller, ai_controller, auth_controller, report_controller, system_controller
+from . import (
+    admin_controller,
+    ai_controller,
+    auth_controller,
+    flood_scenario_controller,
+    report_controller,
+    system_controller,
+)
 
 __all__ = [
     "router",
     "admin_controller",
     "ai_controller",
     "auth_controller",
+    "flood_scenario_controller",
     "report_controller",
     "system_controller",
 ]
