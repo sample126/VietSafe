@@ -1,0 +1,94 @@
+<!doctype html>
+<html lang="vi">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>VietSafe · Thực nghiệm dự báo</title>
+    <link rel="stylesheet" href="/css/ai-forecast.css" />
+  </head>
+  <body>
+    <header>
+      <a class="brand" href="/">VIETSAFE <span>/ AI RESEARCH</span></a
+      ><a href="/">← Về bản đồ</a>
+    </header>
+    <main>
+      <div class="eyebrow">PHÒNG THỬ NGHIỆM DỰ BÁO</div>
+      <h1>Thực nghiệm dự báo</h1>
+      <p class="lead">
+        Khám phá kết quả của các mô hình VietSafe đã huấn luyện trên dữ liệu
+        quan trắc. Chọn điểm và thời điểm lịch sử để chạy dự báo mực nước, khả
+        năng xuất hiện ngập hoặc tốc độ giao thông.
+      </p>
+      <aside class="notice">
+        <strong
+          >Dữ liệu nghiên cứu quốc tế · Thử nghiệm trên chuỗi quan trắc lịch
+          sử</strong
+        >
+        <p>
+          Kết quả chưa được hiệu chỉnh cho Hà Nội và chưa dùng để phát cảnh báo
+          công cộng hoặc quyết định tuyến đi.
+        </p>
+      </aside>
+      <section aria-label="Chọn bài toán">
+        <div id="ai-tasks" class="tasks"></div>
+      </section>
+      <section class="workspace">
+        <div class="workspace-heading">
+          <div>
+            <div class="eyebrow">THIẾT LẬP LẦN CHẠY</div>
+            <h2 id="ai-heading">Đang kết nối mô hình…</h2>
+          </div>
+          <span class="local">● Chạy tại máy</span>
+        </div>
+        <p id="ai-description"></p>
+        <form id="ai-form">
+          <label
+            >Điểm quan trắc / đoạn đường<select
+              id="ai-site"
+              required
+              disabled
+            ></select
+          ></label>
+          <label
+            ><span id="ai-day-label">Ngày quan trắc</span
+            ><select id="ai-day" required disabled></select
+          ></label>
+          <label
+            >Thời điểm phát dự báo<select
+              id="ai-origin"
+              required
+              disabled
+            ></select
+          ></label>
+          <button id="ai-run" type="submit" disabled>
+            Chạy dự báo thử nghiệm →
+          </button>
+        </form>
+        <p id="ai-status" role="status" aria-live="polite">
+          Đang đọc danh mục…
+        </p>
+        <div id="ai-result" hidden>
+          <div class="result-top">
+            <h2>Kết quả dự báo</h2>
+            <button id="ai-download" type="button" class="secondary">
+              Tải kết quả JSON
+            </button>
+          </div>
+          <p id="ai-origin-label"></p>
+          <div id="ai-values" class="values"></div>
+          <div id="ai-chart"></div>
+          <details>
+            <summary>Thông tin mô hình và đầu vào</summary>
+            <pre id="ai-details"></pre>
+          </details>
+        </div>
+      </section>
+      <footer>
+        Dữ liệu minh họa: Bellinge (Đan Mạch), FloodNet (New York), SZ-Taxi
+        (Thâm Quyến). Chọn điểm thuộc từng bộ dữ liệu; vị trí trên bản đồ Hà Nội
+        chưa được nối vào các mô hình này.
+      </footer>
+    </main>
+    <script type="module" src="/js/views/ai-forecast.js"></script>
+  </body>
+</html>
