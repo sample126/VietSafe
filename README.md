@@ -83,6 +83,9 @@
 
 Chi tiết các lớp, luồng dữ liệu và quyết định thiết kế: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
 
+Chạy đúng giao diện mới trên local/Render và xử lý lệnh chạy cũ:
+[docs/DEPLOYMENT.md](docs/DEPLOYMENT.md).
+
 ---
 
 ## 🚀 Hướng dẫn cài đặt và khởi chạy
