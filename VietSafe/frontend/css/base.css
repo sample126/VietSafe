@@ -1,0 +1,161 @@
+/* base.css - Biến màu (:root), reset, kiểu chữ và form cơ bản */
+
+@charset "UTF-8";
+:root {
+  --teal: #087f72;
+  --teal-dark: #075b52;
+  --ink: #1d3438;
+  --muted: #7a8b8e;
+  --line: #e5eceb;
+  --bg: #f5f8f7;
+  --blue: #377be8;
+  --orange: #e99a36;
+  --red: #de655e;
+  --shadow: 0 8px 30px #193d3810;
+  font-family: "Segoe UI", Arial, sans-serif;
+  color: var(--ink);
+  font-synthesis: none;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: var(--bg);
+  font-size: 14px;
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+}
+
+button,
+a,
+input,
+select,
+textarea {
+  -webkit-tap-highlight-color: transparent;
+}
+
+button {
+  cursor: pointer;
+  color: inherit;
+}
+
+button:disabled {
+  opacity: 0.55;
+  cursor: wait;
+}
+
+button,
+a,
+input,
+select,
+textarea {
+  outline-offset: 4px;
+}
+
+button:focus-visible,
+a:focus-visible {
+  outline: 3px solid #81d2c5;
+}
+
+svg {
+  width: 20px;
+  height: 20px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.7;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  flex-shrink: 0;
+}
+
+button svg,
+a svg {
+  pointer-events: none;
+}
+
+.svg-library {
+  position: absolute;
+  width: 0;
+  height: 0;
+  overflow: hidden;
+}
+
+[hidden] {
+  display: none !important;
+}
+
+a {
+  color: var(--teal);
+}
+
+h1,
+h2,
+h3,
+p {
+  margin: 0;
+}
+
+h2 {
+  font-size: 17px;
+  letter-spacing: -0.3px;
+}
+
+h3 {
+  font-size: 17px;
+}
+
+p {
+  line-height: 1.7;
+}
+
+button {
+  border: 0;
+  background: none;
+}
+
+input,
+select,
+textarea {
+  width: 100%;
+  border: 1px solid #dce5e2;
+  background: white;
+  border-radius: 8px;
+  padding: 11px 12px;
+  color: var(--ink);
+}
+
+input:focus,
+select:focus,
+textarea:focus {
+  outline: 2px solid #b4dfd7;
+  border-color: var(--teal);
+}
+
+input[type="checkbox"],
+input[type="radio"] {
+  width: auto;
+  accent-color: var(--teal);
+}
+
+label {
+  display: block;
+  font-size: 12px;
+  font-weight: 600;
+  margin-bottom: 7px;
+}
+
+select {
+  cursor: pointer;
+}
+
+small {
+  font-size: 11px;
+}

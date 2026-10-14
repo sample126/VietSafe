@@ -1,0 +1,12 @@
+.git
+.github
+node_modules
+docs
+scripts
+data
+**/__pycache__
+**/*.pyc
+backend/tests
+frontend/tests
+*.md
+package*.json

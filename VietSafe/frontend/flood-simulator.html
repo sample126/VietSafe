@@ -1,0 +1,259 @@
+<!doctype html>
+<html lang="vi">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>VietSafe · Mô phỏng ngập đô thị</title>
+    <link rel="stylesheet" href="/css/flood-simulator.css" />
+  </head>
+  <body>
+    <header class="topbar">
+      <a class="brand" href="/">VIETSAFE <span>PHÒNG THỬ NGHIỆM</span></a>
+      <nav aria-label="Điều hướng">
+        <a href="/forecast-lab.html">Mô hình nghiên cứu</a
+        ><a href="/">Về bản đồ ↗</a>
+      </nav>
+    </header>
+    <main>
+      <div class="intro">
+        <div>
+          <p class="eyebrow">MƯA → DÒNG CHẢY → NGẬP</p>
+          <h1>Mô phỏng ngập đô thị</h1>
+          <p class="lead">
+            Điều chỉnh một trận mưa. Xem khi nào nước vượt ngưỡng và độ sâu thay
+            đổi ra sao trong một giờ tiếp theo.
+          </p>
+        </div>
+        <span class="badge">DỮ LIỆU GIẢ LẬP</span>
+      </div>
+      <aside class="notice">
+        <strong>Kịch bản thử nghiệm tại một vùng trũng giả định.</strong> Mưa và
+        thông số bên dưới chưa được đo tại Hà Nội. Kết quả thể hiện điều gì xảy
+        ra <em>nếu các giả định đúng</em>; chưa dùng làm cảnh báo thực tế.
+      </aside>
+      <div class="layout">
+        <section class="panel controls" aria-labelledby="input-heading">
+          <div class="section-top">
+            <span class="step">01</span>
+            <h2 id="input-heading">Thiết lập kịch bản</h2>
+          </div>
+          <label class="preset-label" for="scenario-preset"
+            >Bắt đầu từ tình huống mẫu</label
+          >
+          <select id="scenario-preset" disabled></select>
+          <form id="scenario-form">
+            <fieldset>
+              <legend>Trạng thái &amp; khu vực</legend>
+              <div class="field-grid">
+                <label
+                  >Độ sâu ban đầu <span>cm</span
+                  ><input
+                    id="initial_depth_cm"
+                    type="number"
+                    min="0"
+                    max="100"
+                    step="0.1"
+                    required
+                /></label>
+                <label
+                  >Diện tích hứng nước <span>ha</span
+                  ><input
+                    id="catchment_area_ha"
+                    type="number"
+                    min="0.1"
+                    max="10"
+                    step="0.1"
+                    required
+                /></label>
+                <label
+                  >Diện tích vùng trũng <span>m²</span
+                  ><input
+                    id="ponding_area_m2"
+                    type="number"
+                    min="100"
+                    max="10000"
+                    step="1"
+                    required
+                /></label>
+                <label
+                  >Hệ số dòng chảy <span>0–1</span
+                  ><input
+                    id="runoff_coefficient"
+                    type="number"
+                    min="0"
+                    max="1"
+                    step="0.01"
+                    required
+                /></label>
+              </div>
+              <p class="help">
+                Hệ số 0,8 nghĩa là 80% lượng mưa trên khu vực trở thành dòng
+                chảy vào vùng trũng.
+              </p>
+            </fieldset>
+            <fieldset>
+              <legend>Khả năng thoát nước</legend>
+              <div class="field-grid">
+                <label
+                  >Công suất thoát tối đa <span>L/s</span
+                  ><input
+                    id="drainage_capacity_lps"
+                    type="number"
+                    min="0"
+                    max="1000"
+                    step="1"
+                    required
+                /></label>
+                <label
+                  >Mức giảm do tắc nghẽn <span>%</span
+                  ><input
+                    id="blockage_percent"
+                    type="number"
+                    min="0"
+                    max="100"
+                    step="1"
+                    required
+                /></label>
+              </div>
+              <p class="help">
+                Công suất đạt tối đa khi nước sâu từ 10 cm; ở mức thấp hơn, tốc
+                độ thoát giảm theo độ sâu.
+              </p>
+            </fieldset>
+            <fieldset>
+              <legend>Quy ước nhận diện ngập</legend>
+              <div class="field-grid">
+                <label
+                  >Ngưỡng độ sâu <span>cm</span
+                  ><input
+                    id="threshold_cm"
+                    type="number"
+                    min="1"
+                    max="50"
+                    step="0.5"
+                    required
+                /></label>
+                <label
+                  >Duy trì ít nhất <span>phút</span
+                  ><input
+                    id="sustain_minutes"
+                    type="number"
+                    min="1"
+                    max="20"
+                    step="1"
+                    required
+                /></label>
+              </div>
+              <p class="help">
+                Đây là ngưỡng thử nghiệm có thể chỉnh, không phải tiêu chuẩn
+                ngập chính thức. Cả thời gian duy trì phải nằm trong cửa sổ dự
+                báo.
+              </p>
+            </fieldset>
+            <fieldset>
+              <legend>Mưa giả định trong 60 phút tới</legend>
+              <p class="help">
+                Cường độ mm/h cho từng khoảng 5 phút. Ví dụ: 60 mm/h trong 5
+                phút tương đương 5 mm mưa.
+              </p>
+              <div id="rain-inputs" class="rain-grid"></div>
+            </fieldset>
+            <button id="scenario-run" class="primary" type="submit" disabled>
+              Tính diễn biến ngập →
+            </button>
+          </form>
+        </section>
+        <section class="output" aria-labelledby="output-heading">
+          <div class="output-heading">
+            <div class="section-top">
+              <span class="step">02</span>
+              <h2 id="output-heading">Kết quả theo kịch bản</h2>
+            </div>
+            <span class="badge small">TÍNH TẠI MÁY</span>
+          </div>
+          <p id="scenario-status" role="status" aria-live="polite">
+            Đang tải các tình huống mẫu…
+          </p>
+          <div id="scenario-empty" class="empty panel">
+            <div class="water-icon" aria-hidden="true">≈</div>
+            <h3>Một điểm giả định, hai câu trả lời</h3>
+            <p>
+              Khi nào xuất hiện ngập?<br />Sau 30 và 60 phút, nước sâu bao
+              nhiêu?
+            </p>
+          </div>
+          <div id="scenario-result" hidden>
+            <div id="scenario-summary" class="summary"></div>
+            <div id="horizon-cards" class="horizon-cards"></div>
+            <section class="panel chart-panel" aria-labelledby="chart-heading">
+              <div class="chart-heading">
+                <div>
+                  <p class="eyebrow">DIỄN BIẾN TRONG 60 PHÚT</p>
+                  <h3 id="chart-heading">Nước dâng &amp; rút theo thời gian</h3>
+                </div>
+                <span class="unit">Độ sâu · cm</span>
+              </div>
+              <div class="legend">
+                <span><i class="green"></i>Kịch bản bạn chọn</span
+                ><span><i class="orange"></i>Công suất thoát giảm một nửa</span
+                ><span><i class="dashed"></i>Ngưỡng ngập</span>
+              </div>
+              <div id="depth-chart" class="chart"></div>
+              <p class="help">
+                Đường màu cam giữ nguyên mưa và các thông số khác để so sánh tác
+                động của công suất thoát nước. Đây không phải khoảng tin cậy.
+              </p>
+              <div class="chart-heading">
+                <h3>Mưa đầu vào</h3>
+                <span id="rain-total" class="unit"></span>
+              </div>
+              <div id="rain-chart" class="rain-chart"></div>
+            </section>
+            <section class="panel comparison-panel">
+              <h3>Nếu công suất thoát giảm một nửa?</h3>
+              <div id="scenario-comparison"></div>
+            </section>
+            <section class="panel details-panel">
+              <div class="downloads">
+                <button id="download-json" type="button">
+                  Tải kết quả JSON</button
+                ><button id="download-csv" type="button">
+                  Tải diễn biến CSV
+                </button>
+              </div>
+              <details>
+                <summary>Dữ liệu &amp; cách tính</summary>
+                <p>
+                  Mô hình cân bằng nước cho một vùng trũng: nước còn lại = nước
+                  ban đầu + dòng chảy do mưa − nước thoát đi. Tính mỗi giây,
+                  xuất biểu đồ mỗi phút. Đây là mô hình khái niệm, chưa phải mô
+                  hình AI đã huấn luyện hoặc mạng cống Hà Nội.
+                </p>
+                <ul id="scenario-limitations"></ul>
+                <pre id="scenario-input-details"></pre>
+              </details>
+            </section>
+          </div>
+          <section class="next-step">
+            <p class="eyebrow">TỪ MÔ PHỎNG ĐẾN THÍ ĐIỂM</p>
+            <h3>Khi có dữ liệu Hà Nội</h3>
+            <p>
+              Cần chuỗi độ sâu mặt đường và mưa đồng bộ, mã điểm, tọa độ, mốc
+              đo, thời gian nhận và cờ chất lượng. Bổ sung địa hình, công trình
+              thoát nước, trạng thái bơm/cửa điều tiết để hiệu chỉnh và kiểm
+              chứng trên các trận mưa riêng.
+            </p>
+            <a href="/forecast-lab.html"
+              >Xem các mô hình đã huấn luyện trên dữ liệu quốc tế →</a
+            >
+          </section>
+        </section>
+      </div>
+      <footer>
+        VIETSAFE / Mô phỏng ngập theo điểm · Không tự tạo số liệu quan trắc Hà
+        Nội · Các thay đổi ở đây chỉ áp dụng cho lần mô phỏng của bạn.
+      </footer>
+    </main>
+    <script type="module" src="/js/views/flood-simulator.js"></script>
+  </body>
+</html>

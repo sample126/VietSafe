@@ -1,0 +1,33 @@
+{
+  "bellinge": {
+    "prepared/depth.parquet": "81deed5b3897c09d0a8dc4f1d0ed5b7d3c4035fd67a6cdeca5a6e6941fb30e06",
+    "prepared/rain.parquet": "b5b08c043fb32b2c90bb66061add675f3f7c0590ef0333dec64f1dbaa2c34e1a",
+    "results/test_predictions.npz": "5109f071c39657c30a7e51250ac3c565c7f62a11bfbf0cec8975b9d4373c2d9d",
+    "results/HGB_all_nodes_leaves31_iter240.joblib": "0c00b0d4e10037d52aa859606b8e73238e5f93560cad70eb35fd9b91608ada28"
+  },
+  "sztaxi": {
+    "source/data__sz_speed.csv": "7f1b02a73c7ab2af75565e7922db246bed301da220121e02f324631ab263814e",
+    "source/data__sz_adj.csv": "4e40e865b29d73df8404f6cc4c1a0c5ba55aa575aef97a4e9ce4fcd30aad16d6",
+    "results/HGB_neighbours_l31_i240.joblib": "05ed824cbcd600b8687bb94f4e05740489d5d12144a85be602f9d9469ffcca79"
+  },
+  "floodnet": {
+    "data/processed/features.json": "c4e5f57d81aebd2688ab7fc5d737ffebcfe74e21c4129e91d192369c7ced9c70",
+    "data/processed/sites.json": "44de880eb9c87f2444d15c01cd7974f1c2bea841e9b0ee4377994c20c2d880f6",
+    "data/processed/quality.json": "c581d65a90528e2de1f6bf6246ce60a1d3e98b4f36e9661b69a3d7904ac57b25",
+    "artifacts/shadow_policy.json": "9d82f801e411bbb14e23df721265f8bf3bda4a7b38b858dbae58403572ef7b8b",
+    "artifacts/warning_30.joblib": "5fe3c5b3a5faa4296a3d1d58126b608da7ec2a2df325a8581e4ff6f6da3bef6c",
+    "artifacts/warning_60.joblib": "ccbb3c50089bbd1be0dbaa1d7c17f22bf9840814ab0e311e55529ef362fc6fac",
+    "data/processed/tired_red_monkey.parquet": "9ccd8b558b2f6872dbfa05ccc52149c9ec299d947711dd0a0f968862a4f9dfa4",
+    "data/processed/weekly_fair_dove.parquet": "db8844d5a94e564dbef5550c0dea5212e03785e39c3c16a220b1a276593d80eb",
+    "data/processed/ugliest_cyan_elephant.parquet": "e23b37e58ac963aa28e131102ca6109f2aeb1ffce5771f8ef1c2be0daa6f087f",
+    "data/processed/evenly_divine_dingo.parquet": "7bd7d0f49269e4718aedccfe3b66a5400e91e212b259943d38c72d3bacac3cd8",
+    "data/processed/boring_olive_stingray.parquet": "6f85e104476ef214812f95540244b1af4d8ac5c10cc9265c95cc4cab5d830e04",
+    "data/processed/daily_gentle_beetle.parquet": "cf2dc89304046054278ee0e500529a19b23ff90b42a1da533e540856d6e0f90f",
+    "data/processed/future_aqua_wildcat.parquet": "a8775a8f6df1d88444a8ab52c5b69c2cbaa3602d9edae2df5c9a91add4e14f46",
+    "data/processed/total_moccasin_dolphin.parquet": "5f733ce46a303f2ba897c2ae7f8dc7e8c30e6f811d9a4591d46ddcdf971171b4",
+    "data/processed/daily_new_falcon.parquet": "f5c3cb747593613f1793a2cd2059b10a7260be6796212afb586144e034299942",
+    "data/processed/weekly_poetic_guinea.parquet": "447a0d208eca7c5b0379c7cc31a129dc3adb7f04d1743585afcd7eedf974f655",
+    "data/processed/overly_heroic_squid.parquet": "61f3de640440fc7de7ad92bc56803640dc3adc4d77252a50248543219edd91c3",
+    "data/processed/openly_driven_tarpon.parquet": "5bd2db6f4aec8c6bc738e00d3cd03006c18c74308cbb49066ea520dcd91c100c"
+  }
+}
