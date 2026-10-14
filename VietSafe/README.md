@@ -38,7 +38,7 @@
    - Chống lạm dụng: giới hạn 10 phản ánh/phút/IP, chặn gửi trùng trong 5 phút, kiểm tra chữ ký file ảnh, phản ánh tự hết hạn sau 2 giờ.
    - Phản ánh mới ở trạng thái **chờ xác minh** và chưa ảnh hưởng bản đồ hay định tuyến; chỉ phản ánh đã được admin xác minh mới có tác dụng.
 5. **Ứng cứu khẩn cấp (Rescue)**:
-   - Trang tra hotline cứu hộ theo loại phương tiện và loại sự cố (chết máy do ngập, thủy kích, hỏng ắc quy...).
+   - Một danh sách thẻ cứu hộ gộp thông tin dịch vụ và nút gọi, tự đưa đơn vị phù hợp với loại xe đã chọn lên đầu trên màn hình điện thoại; thông tin chi tiết nằm trong mục mở rộng.
    - Hiện chạy hoàn toàn ở trình duyệt, chưa có API điều phối ở backend; số hotline là dữ liệu tĩnh cần xác minh trước khi công khai.
 6. **Bàn làm việc Quản trị viên (Admin)**:
    - Kiểm duyệt phản ánh (_Chờ xác minh → Đã xác minh → Đã xử lý_, hoặc _Từ chối_).

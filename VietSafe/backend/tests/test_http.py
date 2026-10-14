@@ -9,7 +9,14 @@ from .helpers import ServerTestCase
 
 class HTTPTests(ServerTestCase):
     def test_page_and_local_assets(self):
-        paths = ("/", "/js/main.js", "/css/base.css", "/vendor/leaflet.js", "/favicon.svg")
+        paths = (
+            "/",
+            "/js/main.js",
+            "/css/base.css",
+            "/vendor/leaflet.js",
+            "/favicon.svg",
+            "/data/rescue-services.json",
+        )
         for path in paths:
             with self.subTest(path=path):
                 code, _, body = self.request(path)
@@ -17,6 +24,10 @@ class HTTPTests(ServerTestCase):
                 self.assertTrue(body)
         _, headers, _ = self.request("/js/main.js")
         self.assertIn("javascript", headers["Content-Type"])
+        code, headers, body = self.request("/data/rescue-services.json")
+        self.assertEqual(code, 200)
+        self.assertIn("application/json", headers["Content-Type"])
+        self.assertEqual(len(json.loads(body)), 3)
 
     def test_security_headers_present(self):
         _, headers, _ = self.request("/")

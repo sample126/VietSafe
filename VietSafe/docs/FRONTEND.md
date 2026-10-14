@@ -47,9 +47,22 @@ index.html
 | `views/report-form.js`              | Hộp thoại gửi phản ánh, GPS, chọn điểm trên bản đồ                                                                                                                                          | `openReport`, `submitReport`, `geolocate`...                                                                                                                                       |
 | `views/rescue.js`                   | Trang Ứng cứu (chỉ chạy ở trình duyệt, chưa có API backend)                                                                                                                                 | `initRescue`                                                                                                                                                                       |
 | `views/alert-banner.js`             | Banner cảnh báo đường bị chặn                                                                                                                                                               | `updateAlertBanner`, `initAlertBanner`                                                                                                                                             |
-| `data/sources.js`, `data/rescue.js` | **Dữ liệu tĩnh** tách khỏi logic                                                                                                                                                            | `DATA_SOURCES`, `rescueServices`                                                                                                                                                   |
+| `data/sources.js`, `data/rescue.js` | Nhãn nguồn dữ liệu và loại sự cố cứu hộ                                                                                                                                                     | `DATA_SOURCES`, `rescueProblemTypes`                                                                                                                                               |
+| `data/rescue-services.json`         | Danh sách đơn vị cứu hộ, thông tin liên hệ, khu vực phục vụ, giờ, chi phí và nội dung thẻ                                                                                                   | JSON được `views/rescue.js` tải và dựng vào trang Ứng cứu                                                                                                                          |
 
 Các `*.js` đứng ngoài `views/` là hạ tầng dùng chung; mỗi file trong `views/` là **một khu vực giao diện**.
+
+Danh sách đơn vị cứu hộ được lưu trong `frontend/data/rescue-services.json`, không viết lặp trong HTML hay JavaScript.
+Khi mở trang, `views/rescue.js` tải JSON, kiểm tra dữ liệu rồi tạo các thẻ trong `#rescue-service-list`; cùng dữ liệu
+đó cũng được dùng cho hotline và website trong kết quả biểu mẫu ứng cứu. Có thể thêm hoặc sửa đơn vị bằng cách cập
+nhật JSON; mỗi mục cần có các trường cùng cấu trúc với những mục hiện có. Chi tiết từng đơn vị nằm trong thẻ
+thu gọn/mở rộng và danh sách được trình bày một cột.
+
+Người dùng bấm nút lấy vị trí hiện tại để sắp xếp đơn vị cứu hộ; không cần tự nhập tọa độ. Tọa độ GPS chỉ dùng
+trong trình duyệt để tính khoảng cách đường chim bay và sắp xếp thẻ, không gửi tới dịch vụ bản đồ. Tọa độ chi
+nhánh trong JSON là mốc ước tính theo các địa chỉ tham khảo, không phải vị trí xe cứu hộ trực tiếp. Khoảng cách
+và thứ tự vì vậy chỉ mang tính tham khảo; cần xác minh địa chỉ/chi nhánh với đơn vị trước khi điều phối. Giá chưa
+xác minh phải ghi rõ trạng thái; liên kết Google Maps mở trang tìm kiếm theo địa chỉ tham khảo.
 
 ## 3. Mô hình hoạt động
 

@@ -517,34 +517,6 @@
     padding: 5px 10px;
   }
 
-  .rescue-hotline-bar {
-    grid-template-columns: 1fr;
-    gap: 10px;
-  }
-
-  .hotline-box {
-    padding: 12px;
-    gap: 10px;
-  }
-
-  .hotline-icon {
-    width: 38px;
-    height: 38px;
-  }
-
-  .hotline-content strong {
-    font-size: 16px;
-  }
-
-  .hotline-content small {
-    white-space: normal;
-  }
-
-  .phone-btn {
-    width: 100%;
-    justify-content: center;
-  }
-
   .rescue-main-grid {
     grid-template-columns: 1fr;
     gap: 16px;
@@ -606,20 +578,6 @@
   .map-surface {
     height: 270px;
   }
-
-  .hotline-box {
-    flex-wrap: wrap;
-    align-items: flex-start;
-  }
-
-  .hotline-content {
-    width: 100%;
-  }
-
-  .phone-btn {
-    width: 100%;
-  }
-}
   .report-filter {
     gap: 10px;
   }
@@ -707,54 +665,30 @@
 }
 
 @media (max-width: 600px) {
-  .rescue-hotline-bar {
-    grid-template-columns: minmax(0, 1fr);
-    gap: 10px;
-    margin-bottom: 18px;
+  #rescue-view .section-card {
+    display: flex;
+    flex-direction: column;
   }
 
-  .hotline-box {
-    display: grid;
-    grid-template-columns: 38px minmax(0, 1fr);
-    grid-template-areas:
-      "icon content"
-      "call call";
-    align-items: center;
-    gap: 10px 12px;
-    padding: 12px;
+  #rescue-view .rescue-main-grid,
+  #rescue-view .rescue-services-col,
+  #rescue-view .rescue-side-col {
+    display: contents;
   }
 
-  .hotline-icon {
-    grid-area: icon;
+  #rescue-view .rescue-form-box {
+    order: 10;
   }
 
-  .hotline-content {
-    grid-area: content;
-    width: auto;
-    min-width: 0;
+  #rescue-view .rescue-services-col > h3 {
+    order: 1;
   }
 
-  .hotline-content span {
-    line-height: 1.35;
+  #rescue-view .rescue-card {
+    order: 3;
   }
 
-  .hotline-content strong {
-    font-size: 16px;
-    line-height: 1.35;
-    letter-spacing: 0;
-    white-space: nowrap;
-  }
-
-  .hotline-content small {
-    margin-top: 2px;
-    line-height: 1.4;
-  }
-
-  .phone-btn {
-    grid-area: call;
-    width: 100%;
-    min-height: 44px;
-    padding: 10px 12px;
-    justify-content: center;
+  #rescue-view .safety-box {
+    order: 0;
   }
 }

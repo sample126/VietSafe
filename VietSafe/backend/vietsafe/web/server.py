@@ -35,7 +35,9 @@ class Handler(BaseHTTPRequestHandler):
 
     # --- Ghi phản hồi -----------------------------------------------------------------
     def respond(self, data, code=200, content_type="application/json; charset=utf-8", headers=None):
-        if content_type.startswith("application/json"):
+        if isinstance(data, bytes):
+            payload = data
+        elif content_type.startswith("application/json"):
             payload = json.dumps(data, ensure_ascii=False, allow_nan=False).encode("utf-8")
         else:
             payload = data

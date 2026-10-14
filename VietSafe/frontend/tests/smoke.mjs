@@ -14,7 +14,10 @@ import path from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { JSDOM } from "jsdom";
 
-const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
+const ROOT = path.resolve(
+  path.dirname(fileURLToPath(import.meta.url)),
+  "../..",
+);
 const FRONTEND = path.join(ROOT, "frontend");
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
@@ -55,11 +58,15 @@ const port = await freePort();
 const BASE = `http://127.0.0.1:${port}`;
 const tmp = mkdtempSync(path.join(tmpdir(), "vietsafe-smoke-"));
 const python = process.env.PYTHON || "python3";
-const server = spawn(python, ["-m", "vietsafe", "--host", "127.0.0.1", "--port", String(port)], {
-  cwd: path.join(ROOT, "backend"),
-  env: { ...process.env, VIETSAFE_DB: path.join(tmp, "smoke.sqlite3") },
-  stdio: ["ignore", "ignore", "pipe"],
-});
+const server = spawn(
+  python,
+  ["-m", "vietsafe", "--host", "127.0.0.1", "--port", String(port)],
+  {
+    cwd: path.join(ROOT, "backend"),
+    env: { ...process.env, VIETSAFE_DB: path.join(tmp, "smoke.sqlite3") },
+    stdio: ["ignore", "ignore", "pipe"],
+  },
+);
 let serverErr = "";
 server.stderr.on("data", (d) => (serverErr += d));
 const cleanup = () => {
@@ -68,9 +75,12 @@ const cleanup = () => {
 };
 process.on("exit", cleanup);
 
-const ready = await waitFor(async () => (await fetch(`${BASE}/api/health`)).ok, {
-  label: "backend khởi động",
-});
+const ready = await waitFor(
+  async () => (await fetch(`${BASE}/api/health`)).ok,
+  {
+    label: "backend khởi động",
+  },
+);
 if (!ready) {
   console.error("Backend không khởi động được:\n" + serverErr);
   process.exit(1);
@@ -86,18 +96,29 @@ const dom = new JSDOM(html, {
 const { window } = dom;
 for (const key of Object.getOwnPropertyNames(window)) {
   if (!(key in globalThis)) {
-    Object.defineProperty(globalThis, key, { get: () => window[key], configurable: true });
+    Object.defineProperty(globalThis, key, {
+      get: () => window[key],
+      configurable: true,
+    });
   }
 }
-for (const key of ["window", "document", "localStorage"]) {
-  Object.defineProperty(globalThis, key, { value: window[key] ?? window, configurable: true });
+for (const key of ["window", "document", "localStorage", "navigator"]) {
+  Object.defineProperty(globalThis, key, {
+    value: window[key] ?? window,
+    configurable: true,
+  });
 }
 // jsdom chưa cài đặt một số API trình duyệt mà ứng dụng/Leaflet dùng:
 window.SVGElement.prototype.createSVGRect = () => ({});
 window.Element.prototype.scrollIntoView = () => {};
 window.scrollTo = () => {};
-window.matchMedia ??= () => ({ matches: false, addEventListener() {}, removeEventListener() {} });
-const dialogProto = window.HTMLDialogElement?.prototype ?? window.HTMLElement.prototype;
+window.matchMedia ??= () => ({
+  matches: false,
+  addEventListener() {},
+  removeEventListener() {},
+});
+const dialogProto =
+  window.HTMLDialogElement?.prototype ?? window.HTMLElement.prototype;
 dialogProto.showModal = function () {
   this.setAttribute("open", "");
 };
@@ -106,17 +127,22 @@ dialogProto.close = function () {
 };
 // fetch của Node cần URL tuyệt đối; ứng dụng gọi đường dẫn tương đối như ở trình duyệt.
 const nodeFetch = globalThis.fetch;
-globalThis.fetch = (url, opts) => nodeFetch(String(url).startsWith("/") ? BASE + url : url, opts);
+globalThis.fetch = (url, opts) =>
+  nodeFetch(String(url).startsWith("/") ? BASE + url : url, opts);
 // Leaflet là script cổ điển nạp bằng <script> trong index.html
 window.eval(readFileSync(path.join(FRONTEND, "vendor/leaflet.js"), "utf8"));
 globalThis.L = window.L;
 
 const $ = (s) => window.document.querySelector(s);
 const $$ = (s) => [...window.document.querySelectorAll(s)];
-const click = (el) => el.dispatchEvent(new window.MouseEvent("click", { bubbles: true }));
+const click = (el) =>
+  el.dispatchEvent(new window.MouseEvent("click", { bubbles: true }));
 const submit = (el) =>
-  el.dispatchEvent(new window.Event("submit", { bubbles: true, cancelable: true }));
-const change = (el) => el.dispatchEvent(new window.Event("change", { bubbles: true }));
+  el.dispatchEvent(
+    new window.Event("submit", { bubbles: true, cancelable: true }),
+  );
+const change = (el) =>
+  el.dispatchEvent(new window.Event("change", { bubbles: true }));
 const visible = (el) => el && !el.hidden;
 
 // --- 3. Nạp ứng dụng thật ----------------------------------------------------------------
@@ -128,7 +154,11 @@ try {
 } catch (e) {
   loadError = e;
 }
-check("tất cả module nạp được (không lỗi import / vòng phụ thuộc)", !loadError, String(loadError));
+check(
+  "tất cả module nạp được (không lỗi import / vòng phụ thuộc)",
+  !loadError,
+  String(loadError),
+);
 if (loadError) {
   console.error(loadError);
   process.exit(1);
@@ -150,13 +180,22 @@ check(
   mapModule.roadLayer?.getLayers().length >= 36,
   `roadLayer=${mapModule.roadLayer?.getLayers().length}`,
 );
-check("thẻ 'Nhìn trước hành trình' được điền", $("#insight-road").textContent.trim().length > 0);
+check(
+  "thẻ 'Nhìn trước hành trình' được điền",
+  $("#insight-road").textContent.trim().length > 0,
+);
 check("ô tìm tuyến có danh sách điểm", $("#route-origin").options.length > 2);
 
 console.log("\n[2] Điều hướng & dự báo");
 click($('[data-view="forecast"]'));
-check("mở trang Dự báo", visible($("#forecast-view")) && !visible($("#map-view")));
-check("biểu đồ dự báo được vẽ", $("#forecast-chart").innerHTML.includes("<svg"));
+check(
+  "mở trang Dự báo",
+  visible($("#forecast-view")) && !visible($("#map-view")),
+);
+check(
+  "biểu đồ dự báo được vẽ",
+  $("#forecast-chart").innerHTML.includes("<svg"),
+);
 click($('[data-view="rescue"]'));
 check("mở trang Ứng cứu", visible($("#rescue-view")));
 click($('[data-view="map"]'));
@@ -164,16 +203,24 @@ check("quay lại trang Bản đồ", visible($("#map-view")));
 
 console.log("\n[3] Tìm tuyến");
 click($("#open-route"));
-check("mở bảng tìm tuyến", visible($("#route-panel")) && !visible($("#event-panel")));
+check(
+  "mở bảng tìm tuyến",
+  visible($("#route-panel")) && !visible($("#event-panel")),
+);
 $("#route-origin").value = "caugiay";
 $("#route-destination").value = "hoankiem";
 submit($("#route-form"));
 check(
   "nhận và hiển thị kết quả tuyến",
-  await waitFor(() => $$("#route-results .route-choice").length > 0, { label: "kết quả tuyến" }),
+  await waitFor(() => $$("#route-results .route-choice").length > 0, {
+    label: "kết quả tuyến",
+  }),
 );
 click($("#close-route"));
-check("đóng bảng tìm tuyến", !visible($("#route-panel")) && visible($("#event-panel")));
+check(
+  "đóng bảng tìm tuyến",
+  !visible($("#route-panel")) && visible($("#event-panel")),
+);
 
 console.log("\n[4] Đăng nhập & phân quyền");
 check("ban đầu là khách", authState.user === null);
@@ -184,7 +231,9 @@ $("#login-password").value = "sai-mat-khau";
 submit($("#login-form"));
 check(
   "sai mật khẩu -> báo lỗi",
-  await waitFor(() => $("#login-error").textContent.trim().length > 0, { label: "báo lỗi" }),
+  await waitFor(() => $("#login-error").textContent.trim().length > 0, {
+    label: "báo lỗi",
+  }),
 );
 $("#login-password").value = "vietsafe2026";
 submit($("#login-form"));
@@ -192,7 +241,10 @@ check(
   "đăng nhập admin thành công",
   await waitFor(() => authState.user?.role === "admin", { label: "đăng nhập" }),
 );
-check("token được lưu vào localStorage", Boolean(localStorage.getItem("vietsafe_token")));
+check(
+  "token được lưu vào localStorage",
+  Boolean(localStorage.getItem("vietsafe_token")),
+);
 check(
   "menu admin hiện ra",
   $$(".admin-only").length > 0 && $$(".admin-only").every((el) => !el.hidden),
@@ -217,30 +269,43 @@ check(
   await waitFor(() => state.data?.rainfall === 55, { label: "đổi kịch bản" }),
 );
 
-console.log("\n[5b] Luồng phản ánh: gửi -> admin duyệt -> bản đồ đổi trạng thái");
+console.log(
+  "\n[5b] Luồng phản ánh: gửi -> admin duyệt -> bản đồ đổi trạng thái",
+);
 const node0 = state.data.nodes.find((n) => n.name);
 click($("#open-report"));
 check("mở hộp thoại gửi phản ánh", $("#report-dialog").hasAttribute("open"));
 $("#report-address").value = node0.name; // khớp tên nút giao -> tự đặt tọa độ
-$("#report-address").dispatchEvent(new window.Event("input", { bubbles: true }));
+$("#report-address").dispatchEvent(
+  new window.Event("input", { bubbles: true }),
+);
 check("chọn địa chỉ đặt được vị trí", Boolean(state.reportPosition));
 $("#report-severity").value = "3";
 $("#report-description").value = "Nước ngập sâu, xe máy không thể đi qua được.";
 submit($("#report-form"));
 check(
   "gửi phản ánh thành công (chờ xác minh)",
-  await waitFor(() => $("#toast").textContent.includes("Đã lưu"), { label: "thông báo đã lưu" }),
+  await waitFor(() => $("#toast").textContent.includes("Đã lưu"), {
+    label: "thông báo đã lưu",
+  }),
 );
 click($('[data-view="reports"]'));
 const reviewBtn = () => $('[data-review-id][data-status="verified"]');
-check("admin thấy nút 'xác minh'", await waitFor(reviewBtn, { label: "nút xác minh" }));
+check(
+  "admin thấy nút 'xác minh'",
+  await waitFor(reviewBtn, { label: "nút xác minh" }),
+);
 const reportId = reviewBtn().dataset.reviewId;
 click(reviewBtn());
 check(
   "xác minh -> đường bị chặn trên snapshot (nguồn local_report)",
-  await waitFor(() => state.data.roads.some((r) => r.origin === "local_report" && r.blocked), {
-    label: "snapshot phản ánh verified",
-  }),
+  await waitFor(
+    () =>
+      state.data.roads.some((r) => r.origin === "local_report" && r.blocked),
+    {
+      label: "snapshot phản ánh verified",
+    },
+  ),
 );
 check(
   "trạng thái phản ánh là 'verified'",
@@ -250,11 +315,129 @@ click($('[data-view="map"]'));
 
 console.log("\n[6] Ứng cứu");
 click($('[data-view="rescue"]'));
+const rescueListLoaded = await waitFor(
+  () => $$("#rescue-service-list .rescue-card[data-rescue-service]").length > 0,
+  { label: "danh sách cứu hộ từ JSON" },
+);
+const rescueCards = $$(".rescue-card[data-rescue-service]");
+const rescueDataResponse = await fetch(`${BASE}/data/rescue-services.json`);
+const rescueData = rescueDataResponse.ok ? await rescueDataResponse.json() : [];
+check("tệp JSON danh sách cứu hộ được phục vụ", rescueDataResponse.ok);
+check(
+  "thẻ cứu hộ được dựng từ dữ liệu JSON",
+  rescueListLoaded &&
+    rescueCards.length === rescueData.length &&
+    rescueData.every((service) =>
+      rescueCards.some(
+        (card) =>
+          card.dataset.rescueService === service.vehicle &&
+          card.querySelector("h4").textContent === service.name,
+      ),
+    ),
+);
+check(
+  "danh sách cứu hộ không còn hàng hotline trùng",
+  !$(".rescue-hotline-bar"),
+);
+check(
+  "mỗi đơn vị có đúng một nút gọi",
+  rescueCards.length > 0 &&
+    rescueCards.every(
+      (card) => card.querySelectorAll('a[href^="tel:"]').length === 1,
+    ),
+);
+check(
+  "thông tin dịch vụ mở rộng đóng mặc định",
+  rescueCards.every((card) => !card.querySelector("details")?.open),
+);
+check(
+  "chi tiết có khu vực, địa chỉ, giờ, chi phí và liên kết Google Maps",
+  rescueCards.length === rescueData.length &&
+    rescueCards.every((card) => {
+      const details = card.querySelector(".rescue-card-details");
+      const facts = [...details.querySelectorAll(".rescue-service-fact")];
+      return (
+        [
+          "Khu vực",
+          "Địa chỉ",
+          "Thời gian",
+          "Chi phí",
+          "Độ chính xác",
+          "Bản đồ",
+        ].every((label) =>
+          facts.some(
+            (fact) => fact.querySelector("strong")?.textContent === label,
+          ),
+        ) &&
+        facts.some((fact) =>
+          fact.querySelector('a[href^="https://www.google.com/maps/search/"]'),
+        )
+      );
+    }),
+);
+check(
+  "mỗi đơn vị có tọa độ tham chiếu hợp lệ",
+  rescueData.length === rescueCards.length &&
+    rescueData.every(
+      (service) =>
+        Number.isFinite(service.referenceLat) &&
+        Number.isFinite(service.referenceLng) &&
+        service.referenceNote,
+    ),
+);
+check(
+  "tìm cứu hộ không yêu cầu người dùng nhập tọa độ",
+  !$("#rescue-origin-lat") &&
+    !$("#rescue-origin-lng") &&
+    !$("#rescue-sort-coordinates") &&
+    $("#rescue-distance-status").textContent === "",
+);
+const motorbikeReference = rescueData.find(
+  (service) => service.vehicle === "motorbike",
+);
+Object.defineProperty(window.navigator, "geolocation", {
+  configurable: true,
+  value: {
+    getCurrentPosition(onSuccess) {
+      onSuccess({
+        coords: {
+          latitude: motorbikeReference.referenceLat,
+          longitude: motorbikeReference.referenceLng,
+        },
+      });
+    },
+  },
+});
+click($("#rescue-sort-gps"));
+check(
+  "dùng GPS tự sắp xếp cứu hộ gần nhất lên đầu",
+  $("#rescue-service-list .rescue-card").dataset.rescueService ===
+    "motorbike" &&
+    $("#rescue-distance-status").textContent.includes("đã được sắp xếp"),
+);
+check(
+  "hiển thị khoảng cách ước tính sau khi lấy GPS",
+  rescueCards.every(
+    (card) =>
+      !card.querySelector(".rescue-distance-label").hidden &&
+      card.querySelector(".rescue-distance-label").textContent.includes("km"),
+  ),
+);
 $("#rescue-vehicle").value = "motorbike";
 $("#rescue-address").value = "Phố Giảng Võ";
 $("#rescue-phone").value = "0900000000";
 submit($("#rescue-request-form"));
-check("form cứu hộ trả kết quả", $("#rescue-form-result").innerHTML.trim().length > 0);
+check(
+  "form cứu hộ trả kết quả",
+  await waitFor(() => $("#rescue-form-result").innerHTML.trim().length > 0, {
+    label: "kết quả yêu cầu cứu hộ",
+  }),
+);
+check(
+  "hotline trong kết quả lấy từ JSON",
+  $("#rescue-form-result a[href^='tel:']")?.getAttribute("href") ===
+    rescueData.find((service) => service.vehicle === "motorbike")?.tel,
+);
 
 console.log("\n[7] Đăng xuất");
 click($("#logout-button"));
