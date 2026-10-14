@@ -1,0 +1,2 @@
+# The HTTP server and its application core only use Python's standard library.
+# Optional NASA IMERG/HDF5 integration: requirements-optional.txt

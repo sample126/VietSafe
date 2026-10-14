@@ -1,0 +1,28 @@
+# OWNER-REQUESTED EXCEPTION: keep the already-configured `.env` and
+# `.env.local` available for Git tracking. Pushing these files to a PUBLIC
+# repository exposes active credentials; a PRIVATE repository is recommended.
+# Any other local .env.* files remain ignored by default.
+.env.*
+!.env.local
+!.env.example
+!.env.local.example
+# Runtime-generated data (schema and sample reference geometries live in source tree).
+data/*
+!data/.gitkeep
+*.sqlite3
+*.sqlite3-shm
+*.sqlite3-wal
+*.db
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.pytest_cache/
+.coverage
+node_modules/
+*.log
+cloudflared.exe
+.DS_Store
+__MACOSX/
+.vscode/
+.idea/

@@ -1,0 +1,3 @@
+# Optional provider ONLY: raw NASA GPM IMERG HDF5 granules.
+# Not required to start the VietSafe server.
+h5py>=3.12

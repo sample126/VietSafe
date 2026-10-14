@@ -1,0 +1,10 @@
+**/__pycache__/
+**/*.pyc
+.env
+.env.*
+.git/
+.venv/
+node_modules/
+data/*.sqlite3*
+*.log
+__MACOSX/

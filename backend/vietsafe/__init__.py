@@ -1,0 +1,1 @@
+"""VietSafe — modular application."""

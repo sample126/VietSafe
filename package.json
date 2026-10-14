@@ -1,0 +1,7 @@
+{
+  "name": "vietsafe-web-tests",
+  "private": true,
+  "type": "module",
+  "scripts": {"test": "node --test frontend/tests/*.test.cjs"},
+  "devDependencies": {"jsdom": "^25.0.1"}
+}
