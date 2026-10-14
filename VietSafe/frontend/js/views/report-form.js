@@ -1,10 +1,29 @@
-/** Hộp thoại "Gửi phản ánh" của người dân: chọn vị trí (GPS / địa chỉ / chấm trên bản đồ), ảnh, gửi. */
-import { post, api } from "../api.js";
+/** Hộp thoại "Gửi phản ánh" của người dân: GPS, ảnh và gửi. */
+import { post } from "../api.js";
 import { authState, state } from "../state.js";
 import { map, selectionLayer } from "../map.js";
 import { $, inPilotArea, toast } from "../utils.js";
 import { refresh } from "../dashboard.js";
-import { setView } from "../navigation.js";
+
+let selectedReportImage = null;
+
+function updateReportImage(file, source) {
+  if (!file) return;
+  selectedReportImage = file;
+  if (source === "camera") $("#report-image").value = "";
+  else $("#report-camera").value = "";
+  $("#report-image-status").textContent =
+    `${file.name} (${(file.size / 1024).toFixed(0)} KB)`;
+  $("#report-remove-image").hidden = false;
+}
+
+function clearReportImage() {
+  selectedReportImage = null;
+  $("#report-camera").value = "";
+  $("#report-image").value = "";
+  $("#report-image-status").textContent = "Chưa có ảnh được thêm.";
+  $("#report-remove-image").hidden = true;
+}
 
 export function openReport() {
   if (!state.data) {
@@ -22,100 +41,47 @@ export function openReport() {
 export function setReportPosition(lat, lng, address) {
   state.reportPosition = { lat, lng };
   if (address) $("#report-address").value = address;
-  $("#report-coordinates").textContent = `Đã đặt vị trí: ${lat.toFixed(5)}, ${lng.toFixed(5)}`;
+  $("#report-coordinates").textContent =
+    `Đã đặt vị trí: ${lat.toFixed(5)}, ${lng.toFixed(5)}`;
   $("#report-coordinates").classList.add("valid");
-}
-
-export function startPick() {
-  state.picking = true;
-  $("#report-dialog").close();
-  setView("map");
-  $("#pick-banner").hidden = false;
-  $(".map-surface").classList.add("picking");
-  $("#map").scrollIntoView({ behavior: "smooth", block: "center" });
-}
-
-export function finishPick(lat, lng) {
-  if (!inPilotArea(lat, lng)) {
-    toast("Hãy chọn vị trí trong vùng thử nghiệm Hà Nội.");
-    return;
-  }
-  state.picking = false;
-  $("#pick-banner").hidden = true;
-  $(".map-surface").classList.remove("picking");
-  const nearest = state.data.roads
-    .map((r) => ({
-      r,
-      d: Math.hypot(
-        lat - (r.coordinates[0][0] + r.coordinates[1][0]) / 2,
-        lng - (r.coordinates[0][1] + r.coordinates[1][1]) / 2,
-      ),
-    }))
-    .sort((a, b) => a.d - b.d)[0].r;
-  setReportPosition(lat, lng, nearest.name);
-  selectionLayer.clearLayers();
-  L.circleMarker([lat, lng], { radius: 9, color: "#087f72", fillOpacity: 0.3 }).addTo(
-    selectionLayer,
-  );
-  $("#report-dialog").showModal();
 }
 
 export function geolocate(forReport = false) {
   if (!navigator.geolocation) {
-    toast("Trình duyệt không hỗ trợ định vị. Bạn có thể chọn trên bản đồ.");
+    toast(
+      forReport
+        ? "Trình duyệt không hỗ trợ GPS nên chưa thể gửi phản ánh."
+        : "Trình duyệt không hỗ trợ định vị.",
+    );
     return;
   }
-  toast("Đang xác định vị trí. Cho phép trình duyệt truy cập vị trí nếu được hỏi.");
+  toast(
+    "Đang xác định vị trí. Cho phép trình duyệt truy cập vị trí nếu được hỏi.",
+  );
   navigator.geolocation.getCurrentPosition(
     (p) => {
       const { latitude: lat, longitude: lng } = p.coords;
       if (!inPilotArea(lat, lng)) {
-        toast("Bạn đang ngoài vùng thử nghiệm Hà Nội. Hãy chọn địa chỉ hoặc ghim trong vùng.");
+        toast("Vị trí GPS của bạn nằm ngoài vùng thử nghiệm Hà Nội.");
         return;
       }
-      if (forReport) setReportPosition(lat, lng, "Vị trí GPS của tôi");
+      if (forReport) setReportPosition(lat, lng);
       else {
         map.setView([lat, lng], 15);
         selectionLayer.clearLayers();
-        L.circleMarker([lat, lng], { radius: 9, color: "#087f72" }).addTo(selectionLayer);
+        L.circleMarker([lat, lng], { radius: 9, color: "#087f72" }).addTo(
+          selectionLayer,
+        );
       }
     },
-    () => toast("Chưa lấy được GPS. Hãy nhập địa điểm hoặc chọn vị trí trên bản đồ."),
+    () =>
+      toast(
+        forReport
+          ? "Chưa lấy được GPS. Hãy cho phép truy cập vị trí rồi thử lại."
+          : "Chưa lấy được GPS.",
+      ),
     { timeout: 10000, maximumAge: 60000 },
   );
-}
-
-export async function locateReportAddress() {
-  const value = $("#report-address").value.trim();
-  if (!value) {
-    toast("Hãy nhập tên đường hoặc địa điểm.");
-    return;
-  }
-  try {
-    const result = await api("/api/search?q=" + encodeURIComponent(value));
-    const exact = result.results.find(
-      (p) => p.name.toLocaleLowerCase("vi") === value.toLocaleLowerCase("vi"),
-    );
-    if (exact || result.results.length === 1) {
-      const p = exact || result.results[0];
-      setReportPosition(p.lat, p.lng, p.name);
-    } else if (result.results.length > 1) {
-      $("#report-error").textContent =
-        "Có nhiều địa điểm phù hợp: " +
-        result.results
-          .slice(0, 4)
-          .map((p) => p.name)
-          .join("; ") +
-        ". Chọn tên đầy đủ hoặc đặt ghim.";
-      $("#report-error").hidden = false;
-    } else {
-      toast(
-        "Địa chỉ chưa có trong danh mục local. Dùng “Chọn trên bản đồ” để đặt vị trí chính xác.",
-      );
-    }
-  } catch (e) {
-    toast(e.message);
-  }
 }
 
 export async function submitReport(event) {
@@ -123,7 +89,7 @@ export async function submitReport(event) {
   $("#report-error").hidden = true;
   if (!state.reportPosition) {
     $("#report-error").textContent =
-      "Hãy định vị địa chỉ, dùng GPS hoặc chọn trên bản đồ trước khi gửi.";
+      "Hãy dùng GPS để xác định vị trí trước khi gửi.";
     $("#report-error").hidden = false;
     return;
   }
@@ -131,9 +97,12 @@ export async function submitReport(event) {
   button.disabled = true;
   try {
     let image = null;
-    const file = $("#report-image").files[0];
+    const file = selectedReportImage;
     if (file) {
-      if (file.size > 1500000 || !["image/jpeg", "image/png", "image/webp"].includes(file.type))
+      if (
+        file.size > 1500000 ||
+        !["image/jpeg", "image/png", "image/webp"].includes(file.type)
+      )
         throw new Error("Ảnh JPG, PNG hoặc WebP tối đa 1,5 MB.");
       image = await new Promise((resolve, reject) => {
         const reader = new FileReader();
@@ -152,6 +121,7 @@ export async function submitReport(event) {
     });
     $("#report-dialog").close();
     $("#report-form").reset();
+    clearReportImage();
     state.reportPosition = null;
     $("#report-coordinates").textContent = "Chưa chọn tọa độ.";
     $("#report-coordinates").classList.remove("valid");
@@ -171,22 +141,19 @@ export async function submitReport(event) {
 
 export function initReportForm() {
   $("#open-report").addEventListener("click", openReport);
-  $("#report-pick").addEventListener("click", startPick);
-  $("#cancel-pick").addEventListener("click", () => {
-    state.picking = false;
-    $("#pick-banner").hidden = true;
-    $(".map-surface").classList.remove("picking");
-    $("#report-dialog").showModal();
-  });
+  $("#report-take-photo").addEventListener("click", () =>
+    $("#report-camera").click(),
+  );
+  $("#report-choose-image").addEventListener("click", () =>
+    $("#report-image").click(),
+  );
+  $("#report-camera").addEventListener("change", (event) =>
+    updateReportImage(event.currentTarget.files[0], "camera"),
+  );
+  $("#report-image").addEventListener("change", (event) =>
+    updateReportImage(event.currentTarget.files[0], "picker"),
+  );
+  $("#report-remove-image").addEventListener("click", clearReportImage);
   $("#report-gps").addEventListener("click", () => geolocate(true));
-  $("#report-find").addEventListener("click", locateReportAddress);
-  $("#report-address").addEventListener("input", () => {
-    state.reportPosition = null;
-    $("#report-coordinates").textContent =
-      "Địa chỉ đã thay đổi. Hãy định vị lại hoặc chọn trên bản đồ.";
-    $("#report-coordinates").classList.remove("valid");
-    const n = state.data.nodes.find((n) => n.name === $("#report-address").value);
-    if (n) setReportPosition(n.lat, n.lng);
-  });
   $("#report-form").addEventListener("submit", submitReport);
 }

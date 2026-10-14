@@ -337,10 +337,6 @@
                   </button>
                 </div>
                 <div id="map-mode-label" class="map-mode-label" hidden></div>
-                <div id="pick-banner" class="pick-banner" hidden>
-                  Chạm vào đoạn đường để đặt vị trí phản ánh
-                  <button id="cancel-pick">Hủy</button>
-                </div>
               </div>
               <div class="map-status">
                 <span
@@ -825,25 +821,21 @@
             ></label
           >
         </div>
-        <label for="report-address">Vị trí / địa chỉ cụ thể</label
+        <label for="report-address"
+          >Địa chỉ bổ sung <span class="optional">(không bắt buộc)</span></label
         ><input
           id="report-address"
           list="address-options"
-          placeholder="Nhập tên đường hoặc chọn trên bản đồ"
+          placeholder="Gần giao lộ, số nhà hoặc địa điểm dễ nhận biết"
           maxlength="200"
-          required
         /><datalist id="address-options"></datalist>
         <div class="location-actions">
           <button type="button" id="report-gps">
-            <svg><use href="#i-target" /></svg>Vị trí của tôi</button
-          ><button type="button" id="report-pick">
-            <svg><use href="#i-map" /></svg>Chọn trên bản đồ</button
-          ><button type="button" id="report-find">
-            <svg><use href="#i-search" /></svg>Định vị địa chỉ
+            <svg><use href="#i-target" /></svg>Vị trí của tôi
           </button>
         </div>
         <p id="report-coordinates" class="field-hint">
-          Chọn địa điểm gợi ý, định vị địa chỉ hoặc đặt ghim để xác định tọa độ.
+          Dùng GPS để xác định tọa độ; địa chỉ bổ sung giúp mô tả vị trí rõ hơn.
         </p>
         <label for="report-severity">Mức độ ảnh hưởng</label
         ><select id="report-severity">
@@ -861,11 +853,51 @@
         ></textarea
         ><label for="report-image"
           >Ảnh hiện trường <span class="optional">(không bắt buộc)</span></label
-        ><input
-          id="report-image"
-          type="file"
-          accept="image/jpeg,image/png,image/webp"
-        />
+        >
+        <div class="report-image-actions">
+          <input
+            id="report-camera"
+            type="file"
+            accept="image/jpeg,image/png,image/webp"
+            capture="environment"
+            hidden
+          />
+          <input
+            id="report-image"
+            type="file"
+            accept="image/jpeg,image/png,image/webp"
+            hidden
+          />
+          <button type="button" class="button secondary" id="report-take-photo">
+            Chụp ảnh
+          </button>
+          <button
+            type="button"
+            class="button secondary"
+            id="report-choose-image"
+          >
+            Chọn ảnh
+          </button>
+        </div>
+        <div class="report-image-selection">
+          <p
+            id="report-image-status"
+            class="field-hint"
+            role="status"
+            aria-live="polite"
+          >
+            Chưa có ảnh được thêm.
+          </p>
+          <button
+            type="button"
+            class="text-button"
+            id="report-remove-image"
+            aria-label="Xóa ảnh đã chọn"
+            hidden
+          >
+            Xóa ảnh
+          </button>
+        </div>
         <p class="field-hint">
           JPG, PNG hoặc WebP · Tối đa 1,5 MB · Tránh ảnh có thông tin cá nhân.
         </p>

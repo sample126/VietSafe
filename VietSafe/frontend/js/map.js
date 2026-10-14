@@ -12,20 +12,28 @@ import { state } from "./state.js";
 import { $, esc, icon, toast } from "./utils.js";
 import { selectRoad } from "./views/road-details.js";
 import { showEvent } from "./views/events-panel.js";
-import { finishPick } from "./views/report-form.js";
 
 /*
  * Các biến dưới đây được gán trong initializeMap(). Module khác chỉ ĐỌC chúng
  * (import <class 'map'> ...) - ES module cho phép đọc giá trị mới nhất ("live binding").
  */
-export let map, baseTiles, roadLayer, eventLayer, routeLayer, selectionLayer, placeLayer;
+export let map,
+  baseTiles,
+  roadLayer,
+  eventLayer,
+  routeLayer,
+  selectionLayer,
+  placeLayer;
 let geographyLayer;
 let tileErrorCount = 0;
 let tileProviderIndex = 0;
 
 function buildTileLayer(key) {
   const cfg = TILE_PROVIDERS[key];
-  const layer = L.tileLayer(cfg.url, { maxZoom: cfg.maxZoom, attribution: cfg.attr });
+  const layer = L.tileLayer(cfg.url, {
+    maxZoom: cfg.maxZoom,
+    attribution: cfg.attr,
+  });
   layer.on("tileerror", () => {
     if (++tileErrorCount >= 6 && map.hasLayer(layer)) switchTileProvider();
   });
@@ -128,15 +136,16 @@ export function initializeMap() {
       interactive: false,
     })
       .addTo(geographyLayer)
-      .bindTooltip(name, { permanent: true, direction: "center", className: "water-label" });
+      .bindTooltip(name, {
+        permanent: true,
+        direction: "center",
+        className: "water-label",
+      });
   placeLayer = L.layerGroup().addTo(map);
   roadLayer = L.layerGroup().addTo(map);
   routeLayer = L.layerGroup().addTo(map);
   eventLayer = L.layerGroup().addTo(map);
   selectionLayer = L.layerGroup().addTo(map);
-  map.on("click", (e) => {
-    if (state.picking) finishPick(e.latlng.lat, e.latlng.lng);
-  });
   map.on("movestart", () => ($("#search-results").hidden = true));
 }
 
@@ -148,7 +157,9 @@ export function roadColor(r) {
   }
   if (r.blocked) return "#c95650";
   if (r.event_type && state.layers[r.event_type])
-    return { flood: "#568eeb", traffic: "#e9a34d", incident: "#df7469" }[r.event_type];
+    return { flood: "#568eeb", traffic: "#e9a34d", incident: "#df7469" }[
+      r.event_type
+    ];
   return "#86b9a0";
 }
 
@@ -170,13 +181,16 @@ export function renderMap() {
     );
     line.on("click", (e) => {
       L.DomEvent.stopPropagation(e);
-      if (state.picking) finishPick(e.latlng.lat, e.latlng.lng);
-      else selectRoad(r.id, true);
+      selectRoad(r.id, true);
     });
   }
   if (!state.horizon)
     for (const e of state.data.events) {
-      if (!state.layers[e.type] || (e.status === "pending" && !state.layers.pending)) continue;
+      if (
+        !state.layers[e.type] ||
+        (e.status === "pending" && !state.layers.pending)
+      )
+        continue;
       const marker = L.marker([e.lat, e.lng], {
         icon: L.divIcon({
           className: `event-marker ${e.type} ${e.status === "pending" ? "pending" : ""}`,
@@ -188,7 +202,7 @@ export function renderMap() {
       marker.bindTooltip(
         `${esc(e.name)} · ${e.status === "pending" ? "Chờ xác minh" : typeNames[e.type]}`,
       );
-      marker.on("click", () => (state.picking ? finishPick(e.lat, e.lng) : showEvent(e.id)));
+      marker.on("click", () => showEvent(e.id));
     }
   $("#map-mode-label").hidden = !state.horizon;
   $("#map-mode-label").textContent =

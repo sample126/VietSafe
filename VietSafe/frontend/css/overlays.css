@@ -95,14 +95,6 @@
   box-shadow: 0 0 0 7px #087f7230;
 }
 
-.map-surface.picking {
-  cursor: crosshair;
-}
-
-.map-surface.picking .leaflet-container {
-  cursor: crosshair;
-}
-
 .leaflet-interactive:focus {
   outline: none;
 }

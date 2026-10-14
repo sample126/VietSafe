@@ -275,11 +275,55 @@ console.log(
 const node0 = state.data.nodes.find((n) => n.name);
 click($("#open-report"));
 check("mở hộp thoại gửi phản ánh", $("#report-dialog").hasAttribute("open"));
-$("#report-address").value = node0.name; // khớp tên nút giao -> tự đặt tọa độ
-$("#report-address").dispatchEvent(
-  new window.Event("input", { bubbles: true }),
+check(
+  "chỉ còn lựa chọn vị trí của tôi bằng GPS",
+  $("#report-gps").textContent.includes("Vị trí của tôi") &&
+    !$("#report-pick") &&
+    !$("#report-find"),
 );
-check("chọn địa chỉ đặt được vị trí", Boolean(state.reportPosition));
+check(
+  "biểu mẫu có nút chụp ảnh và chọn ảnh",
+  $("#report-take-photo") && $("#report-choose-image"),
+);
+check(
+  "nút chụp ảnh mở bộ chọn camera phía sau",
+  $("#report-camera").getAttribute("capture") === "environment",
+);
+const reportPhoto = new window.File(["ảnh thử nghiệm"], "hien-truong.jpg", {
+  type: "image/jpeg",
+});
+Object.defineProperty($("#report-camera"), "files", {
+  configurable: true,
+  value: [reportPhoto],
+});
+change($("#report-camera"));
+check(
+  "ảnh chụp được nhận vào biểu mẫu",
+  $("#report-image-status").textContent.includes("hien-truong.jpg"),
+);
+click($("#report-remove-image"));
+check(
+  "có thể xóa ảnh đã chọn",
+  $("#report-image-status").textContent === "Chưa có ảnh được thêm." &&
+    $("#report-remove-image").hidden,
+);
+Object.defineProperty(window.navigator, "geolocation", {
+  configurable: true,
+  value: {
+    getCurrentPosition(onSuccess) {
+      onSuccess({
+        coords: { latitude: node0.lat, longitude: node0.lng },
+      });
+    },
+  },
+});
+click($("#report-gps"));
+check(
+  "xác định tọa độ phản ánh bằng GPS",
+  state.reportPosition?.lat === node0.lat &&
+    state.reportPosition?.lng === node0.lng,
+);
+$("#report-address").value = node0.name;
 $("#report-severity").value = "3";
 $("#report-description").value = "Nước ngập sâu, xe máy không thể đi qua được.";
 submit($("#report-form"));
@@ -394,27 +438,23 @@ check(
   rescueCards.every((card) => !card.querySelector("details")?.open),
 );
 check(
-  "chi tiết có khu vực, địa chỉ, giờ, chi phí và liên kết Google Maps",
+  "chi tiết chỉ hiển thị khu vực, địa chỉ, giờ và chi phí",
   rescueCards.length === rescueData.length &&
     rescueCards.every((card) => {
       const details = card.querySelector(".rescue-card-details");
       const facts = [...details.querySelectorAll(".rescue-service-fact")];
       return (
-        [
-          "Khu vực",
-          "Địa chỉ",
-          "Thời gian",
-          "Chi phí",
-          "Độ chính xác",
-          "Bản đồ",
-        ].every((label) =>
+        ["Khu vực", "Địa chỉ", "Thời gian", "Chi phí"].every((label) =>
           facts.some(
             (fact) => fact.querySelector("strong")?.textContent === label,
           ),
         ) &&
-        facts.some((fact) =>
-          fact.querySelector('a[href^="https://www.google.com/maps/search/"]'),
-        )
+        !facts.some((fact) =>
+          ["Độ chính xác", "Bản đồ"].includes(
+            fact.querySelector("strong")?.textContent,
+          ),
+        ) &&
+        !details.querySelector('a[href^="https://www.google.com/maps/search/"]')
       );
     }),
 );

@@ -1,6 +1,16 @@
 """Điểm vào: `python -m vietsafe [--host H] [--port P]` (chạy từ thư mục backend/)."""
 
 import argparse
+import os
+import sys
+
+if sys.platform == "win32":
+    os.environ.setdefault("PYTHONUTF8", "1")
+    for stream in (sys.stdout, sys.stderr):
+        try:
+            stream.reconfigure(encoding="utf-8", errors="replace")
+        except (AttributeError, ValueError):
+            pass
 
 from . import config
 from .app import init_app

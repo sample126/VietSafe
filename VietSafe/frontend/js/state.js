@@ -12,7 +12,6 @@ export const state = {
   selected: DEFAULT_SELECTED_ROAD,
   layers: { flood: true, traffic: true, incident: true, pending: true },
   reportPosition: null,
-  picking: false,
   reports: [],
   routes: null,
   routeIndex: 0,
@@ -21,4 +20,7 @@ export const state = {
 };
 
 /** Người dùng đăng nhập hiện tại (user = null nếu là khách). */
-export const authState = { user: null, token: localStorage.getItem(TOKEN_STORAGE_KEY) };
+export const authState = {
+  user: null,
+  token: localStorage.getItem(TOKEN_STORAGE_KEY),
+};

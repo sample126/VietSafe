@@ -179,14 +179,6 @@ function renderRescueServices(services, container) {
     addFact("Địa chỉ", document.createTextNode(service.address));
     addFact("Thời gian", document.createTextNode(service.hours));
     addFact("Chi phí", document.createTextNode(service.cost));
-    addFact("Độ chính xác", document.createTextNode(service.referenceNote));
-
-    const mapsLink = document.createElement("a");
-    mapsLink.href = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(service.mapsQuery)}`;
-    mapsLink.target = "_blank";
-    mapsLink.rel = "noopener";
-    mapsLink.textContent = `Tìm “${service.name}” trên Google Maps`;
-    addFact("Bản đồ", mapsLink);
 
     details.append(detailsSummary, website, description, info);
     if (service.simulated) {
