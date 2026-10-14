@@ -1,0 +1,112 @@
+/* overlays.css - Marker sự kiện trên bản đồ, hộp chi tiết đoạn đường, các chỉnh sửa bổ sung */
+
+.event-marker {
+  background: white;
+  width: 32px !important;
+  height: 32px !important;
+  margin-left: -16px !important;
+  margin-top: -16px !important;
+  border-radius: 10px;
+  display: grid;
+  place-items: center;
+  border: 2px solid currentColor;
+  box-shadow: 0 3px 10px #20493a30;
+}
+
+.event-marker svg {
+  width: 17px;
+  height: 17px;
+}
+
+.event-marker.flood {
+  color: var(--blue);
+}
+
+.event-marker.traffic {
+  color: var(--orange);
+}
+
+.event-marker.incident {
+  color: var(--red);
+}
+
+.event-marker.pending {
+  color: #8b869d;
+  border-style: dashed;
+}
+
+.event-marker:hover {
+  transform: scale(1.15);
+}
+
+.detail-stats {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+  margin: 20px 0;
+}
+
+.detail-stats div {
+  background: #f3f7f3;
+  padding: 13px;
+  border-radius: 8px;
+}
+
+.detail-stats span {
+  display: block;
+  font-size: 10px;
+  color: #8d9d8d;
+  margin-bottom: 8px;
+}
+
+.detail-stats strong {
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.detail-evidence {
+  padding: 14px;
+  background: #f7f9f6;
+  border-radius: 7px;
+  margin: 12px 0;
+  font-size: 12px;
+  color: #7f9281;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+#about-dialog p {
+  font-size: 13px;
+  color: #7c8f81;
+  margin: 17px 0;
+  line-height: 1.8;
+}
+
+.data-label {
+  font-size: 10px;
+  color: #8b9c8c;
+}
+
+.selected-map-marker {
+  color: var(--teal);
+  background: white;
+  border-radius: 50%;
+  border: 3px solid var(--teal);
+  box-shadow: 0 0 0 7px #087f7230;
+}
+
+.map-surface.picking {
+  cursor: crosshair;
+}
+
+.map-surface.picking .leaflet-container {
+  cursor: crosshair;
+}
+
+.leaflet-interactive:focus {
+  outline: none;
+}
+
+.forecast-table-wrap {
+  overflow-x: auto;
+}

@@ -1,0 +1,27 @@
+/* map-overrides.css - Chỉnh sửa Leaflet/#map/nhãn hồ nước (đặt sau các khối trên như file gốc) */
+
+.leaflet-overlay-pane svg {
+  width: initial;
+  height: initial;
+}
+
+#map {
+  background-color: #edf0e8;
+  background-image:
+    linear-gradient(#dbe4d940 1px, transparent 1px),
+    linear-gradient(90deg, #dbe4d940 1px, transparent 1px);
+  background-size: 32px 32px;
+}
+
+.water-label {
+  background: none;
+  border: none;
+  box-shadow: none;
+  color: #6d9b9b;
+  font-size: 10px;
+  font-style: italic;
+}
+
+.water-label:before {
+  display: none;
+}
