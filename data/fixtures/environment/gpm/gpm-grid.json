@@ -1,0 +1,47 @@
+{
+  "schema": "vietsafe.environment-grid.v1",
+  "source_type": "gpm",
+  "product": "SYNTHETIC-GPM-INTERCHANGE",
+  "product_version": "fixture-v1",
+  "variable": "precipitation_rate",
+  "units": "mm/h",
+  "rows": 3,
+  "cols": 3,
+  "origin_lat": 21.2,
+  "origin_lon": 105.5,
+  "lat_step": -0.1,
+  "lon_step": 0.1,
+  "values": [
+    [
+      0,
+      1.5,
+      null
+    ],
+    [
+      2,
+      3,
+      4
+    ],
+    [
+      0.25,
+      0,
+      5
+    ]
+  ],
+  "nodata": null,
+  "observed_at": "2026-10-08T02:30:00Z",
+  "available_at": "2026-10-08T04:00:00Z",
+  "source_uri": "urn:vietsafe:fixture:environment:gpm:v1",
+  "metadata": {
+    "processing_version": "environment-1",
+    "original_variable": "precipitation_rate",
+    "original_units": "mm/h",
+    "crs": "EPSG:4326",
+    "grid_registration": "cell_center",
+    "reference": "synthetic-gpm-grid-v1",
+    "is_test_fixture": true,
+    "fixture_notice": "TEST FIXTURE — synthetic values, not NASA production observations",
+    "interval_start": "2026-10-08T02:00:00Z",
+    "interval_end": "2026-10-08T02:30:00Z"
+  }
+}

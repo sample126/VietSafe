@@ -1,0 +1,136 @@
+{
+  "schema_version": "0.1.0",
+  "dataset_version": "data-01-example-v1",
+  "network_version": "hanoi-demo-d98f8da",
+  "road_id": "HN-001",
+  "timestamp": "2026-10-08T02:30:00Z",
+  "as_of": "2026-10-08T02:30:00Z",
+  "data_mode": "demo",
+  "latitude": 21.03605,
+  "longitude": 105.80365,
+  "rainfall_30m": 12.4,
+  "rainfall_1h": 24.8,
+  "rainfall_3h": 41.2,
+  "soil_moisture": 0.32,
+  "elevation": 7.3,
+  "slope": 1.8,
+  "twi": 9.6,
+  "traffic_speed": 18.5,
+  "free_flow_speed": 35.0,
+  "historical_flood_count": 8,
+  "current_flood_depth": 0.0,
+  "flood_status": false,
+  "source": [
+    {
+      "fields": [
+        "latitude",
+        "longitude",
+        "elevation",
+        "slope",
+        "twi",
+        "free_flow_speed"
+      ],
+      "provider": "demo",
+      "product": "data-01-synthetic-fixture",
+      "version": "1",
+      "record_ref": "example-only:data-01/static",
+      "observed_at": "2026-10-08T02:30:00Z",
+      "available_at": "2026-10-08T02:30:00Z",
+      "valid_until": null,
+      "method": "simulated"
+    },
+    {
+      "fields": [
+        "rainfall_30m",
+        "rainfall_1h",
+        "rainfall_3h",
+        "soil_moisture",
+        "traffic_speed",
+        "historical_flood_count",
+        "current_flood_depth",
+        "flood_status"
+      ],
+      "provider": "demo",
+      "product": "data-01-synthetic-fixture",
+      "version": "1",
+      "record_ref": "example-only:data-01/dynamic",
+      "observed_at": "2026-10-08T02:30:00Z",
+      "available_at": "2026-10-08T02:30:00Z",
+      "valid_until": "2026-10-08T03:00:00Z",
+      "method": "simulated"
+    }
+  ],
+  "quality_score": 0.0,
+  "quality_flags": [
+    {
+      "field": "latitude",
+      "code": "simulated",
+      "detail": "Data-01 synthetic documentation fixture; not a real measurement."
+    },
+    {
+      "field": "longitude",
+      "code": "simulated",
+      "detail": "Data-01 synthetic documentation fixture; not a real measurement."
+    },
+    {
+      "field": "rainfall_30m",
+      "code": "simulated",
+      "detail": "Data-01 synthetic documentation fixture; not a real measurement."
+    },
+    {
+      "field": "rainfall_1h",
+      "code": "simulated",
+      "detail": "Data-01 synthetic documentation fixture; not a real measurement."
+    },
+    {
+      "field": "rainfall_3h",
+      "code": "simulated",
+      "detail": "Data-01 synthetic documentation fixture; not a real measurement."
+    },
+    {
+      "field": "soil_moisture",
+      "code": "simulated",
+      "detail": "Data-01 synthetic documentation fixture; not a real measurement."
+    },
+    {
+      "field": "elevation",
+      "code": "simulated",
+      "detail": "Data-01 synthetic documentation fixture; not a real measurement."
+    },
+    {
+      "field": "slope",
+      "code": "simulated",
+      "detail": "Data-01 synthetic documentation fixture; not a real measurement."
+    },
+    {
+      "field": "twi",
+      "code": "simulated",
+      "detail": "Data-01 synthetic documentation fixture; not a real measurement."
+    },
+    {
+      "field": "traffic_speed",
+      "code": "simulated",
+      "detail": "Data-01 synthetic documentation fixture; not a real measurement."
+    },
+    {
+      "field": "free_flow_speed",
+      "code": "simulated",
+      "detail": "Data-01 synthetic documentation fixture; not a real measurement."
+    },
+    {
+      "field": "historical_flood_count",
+      "code": "simulated",
+      "detail": "Data-01 synthetic documentation fixture; not a real measurement."
+    },
+    {
+      "field": "current_flood_depth",
+      "code": "simulated",
+      "detail": "Data-01 synthetic documentation fixture; not a real measurement."
+    },
+    {
+      "field": "flood_status",
+      "code": "simulated",
+      "detail": "Data-01 synthetic documentation fixture; not a real measurement."
+    }
+  ]
+}
