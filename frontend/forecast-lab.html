@@ -6,12 +6,12 @@
     <title>VietSafe · Thực nghiệm dự báo</title>
     <link rel="stylesheet" href="/css/ai-forecast.css" />
   </head>
-  <body>
+  <body class="ai-forecast-page">
     <header>
       <a class="brand" href="/">VIETSAFE <span>/ AI RESEARCH</span></a
       ><a href="/">← Về bản đồ</a>
     </header>
-    <main>
+    <main class="forecast-module-content">
       <div class="eyebrow">PHÒNG THỬ NGHIỆM DỰ BÁO</div>
       <h1>Thực nghiệm dự báo</h1>
       <p class="lead">
@@ -29,15 +29,19 @@
           công cộng hoặc quyết định tuyến đi.
         </p>
       </aside>
-      <aside class="notice">
+      <aside class="notice standalone-promo">
         <strong>Mô phỏng xuất hiện ngập và độ sâu</strong>
-        <p>Điều chỉnh mưa và khả năng thoát nước tại một điểm giả định, xem diễn biến trong 30–60 phút. <a href="/flood-simulator.html">Mở mô phỏng ngập đô thị →</a></p>
+        <p>
+          Điều chỉnh mưa và khả năng thoát nước tại một điểm giả định, xem diễn
+          biến trong 30–60 phút.
+          <a href="/flood-simulator.html">Mở mô phỏng ngập đô thị →</a>
+        </p>
       </aside>
       <section aria-label="Chọn bài toán">
         <div id="ai-tasks" class="tasks"></div>
       </section>
-      <section class="workspace">
-        <div class="workspace-heading">
+      <section class="ai-workspace">
+        <div class="ai-workspace-heading">
           <div>
             <div class="eyebrow">THIẾT LẬP LẦN CHẠY</div>
             <h2 id="ai-heading">Đang kết nối mô hình…</h2>

@@ -1,0 +1,114 @@
+/* Only the forecast workspace; never restyle the surrounding app/navigation. */
+.forecast-workspace-heading {
+  margin-bottom: 20px;
+}
+.forecast-workspace-heading h2 {
+  font-size: 25px;
+}
+.forecast-workspace-heading p {
+  color: var(--muted);
+  margin-top: 6px;
+}
+.forecast-tabs {
+  display: flex;
+  gap: 6px;
+  padding: 6px;
+  background: #eaf0ed;
+  border-radius: 12px;
+  margin-bottom: 26px;
+  width: fit-content;
+  max-width: 100%;
+}
+.forecast-tabs [role="tab"] {
+  padding: 12px 20px;
+  border-radius: 8px;
+  color: #536e64;
+  font-size: 13px;
+  font-weight: 600;
+}
+.forecast-tabs [aria-selected="true"] {
+  background: white;
+  color: var(--teal-dark);
+  box-shadow: 0 2px 8px #173f3010;
+}
+.forecast-loading {
+  padding: 22px 0;
+  color: var(--muted);
+}
+.forecast-embedded {
+  background: transparent;
+  min-width: 0;
+}
+.forecast-embedded .forecast-module-content {
+  max-width: none;
+  margin: 0;
+  padding: 0;
+}
+.forecast-embedded .module-title {
+  font-size: 27px;
+  letter-spacing: -0.5px;
+}
+.forecast-embedded .forecast-inline-link {
+  background: transparent;
+  color: var(--teal-dark);
+  border: 0;
+  padding: 0;
+  text-decoration: underline;
+  font: inherit;
+  text-align: left;
+}
+.forecast-embedded .layout {
+  grid-template-columns: minmax(280px, 350px) minmax(0, 1fr);
+}
+.forecast-embedded .chart svg,
+.forecast-embedded .rain-chart svg,
+.forecast-embedded svg.chart {
+  stroke: none;
+}
+.forecast-embedded label {
+  font-weight: 400;
+  margin-bottom: 0;
+}
+.forecast-embedded .help {
+  display: block;
+}
+.forecast-embedded .standalone-promo {
+  display: none;
+}
+.forecast-embedded .notice {
+  margin: 20px 0;
+}
+.forecast-embedded .forecast-module-content > footer {
+  margin-top: 20px;
+}
+@media (max-width: 1100px) {
+  .forecast-embedded .layout {
+    grid-template-columns: 1fr;
+  }
+  .forecast-embedded .tasks {
+    grid-template-columns: 1fr;
+  }
+  .forecast-embedded #ai-form {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+@media (max-width: 600px) {
+  .forecast-tabs {
+    width: 100%;
+    gap: 2px;
+  }
+  .forecast-tabs [role="tab"] {
+    flex: 1;
+    padding: 10px 6px;
+    font-size: 11px;
+  }
+  .forecast-embedded .module-title {
+    font-size: 23px;
+  }
+  .forecast-embedded #ai-form {
+    grid-template-columns: 1fr;
+  }
+  .forecast-embedded .ai-workspace-heading {
+    flex-wrap: wrap;
+  }
+}

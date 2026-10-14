@@ -106,5 +106,5 @@ class ScenarioHttpTests(ServerTestCase):
         self.assertEqual(self.api("/api/flood-simulation/predict", {"rain_mm_h": [1]})[0], 400)
         for path in ("/flood-simulator.html", "/css/flood-simulator.css", "/js/views/flood-simulator.js"):
             self.assertEqual(self.request(path)[0], 200)
-        self.assertIn(b"/flood-simulator.html", self.request("/")[2])
+        self.assertIn(b"forecast-simulation-panel", self.request("/")[2])
         self.assertIn(b"/flood-simulator.html", self.request("/forecast-lab.html")[2])

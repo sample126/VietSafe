@@ -23,6 +23,9 @@
     <link rel="stylesheet" href="/css/rescue.css" />
     <link rel="stylesheet" href="/css/map-overrides.css" />
     <link rel="stylesheet" href="/css/responsive.css" />
+    <link rel="stylesheet" href="/css/ai-forecast.css" />
+    <link rel="stylesheet" href="/css/flood-simulator.css" />
+    <link rel="stylesheet" href="/css/forecast-workspace.css" />
     <script defer src="/vendor/leaflet.js"></script>
     <script type="module" src="/js/main.js"></script>
   </head>
@@ -120,8 +123,8 @@
         <button class="nav-item active" data-view="map" title="Bản đồ">
           <svg><use href="#i-map" /></svg><span>Bản đồ</span>
         </button>
-        <button class="nav-item" data-view="forecast" title="Thực nghiệm dự báo">
-          <svg><use href="#i-chart" /></svg><span>Thực nghiệm<br />dự báo</span>
+        <button class="nav-item" data-view="forecast" title="Dự báo">
+          <svg><use href="#i-chart" /></svg><span>Dự báo</span>
         </button>
         <button class="nav-item" data-view="rescue" title="Ứng cứu khẩn cấp">
           <svg><use href="#i-rescue" /></svg><span>Ứng cứu</span>
@@ -361,7 +364,7 @@
                 <div class="eyebrow teal-text">ĐOẠN ĐƯỜNG ĐANG THEO DÕI</div>
                 <h3 id="insight-road">Láng Hạ</h3>
                 <p id="insight-summary">Đang tổng hợp dữ liệu…</p>
-                <button class="text-button" data-view="forecast">Xem thực nghiệm dự báo <span>→</span></button>
+                <button class="text-button" data-view="forecast" data-forecast-mode="map">Xem kịch bản dự báo <span>→</span></button>
               </div>
               <div id="mini-forecast" class="mini-forecast"></div>
               <div class="insight-note">
@@ -375,31 +378,84 @@
           </section>
         </section>
         <section id="forecast-view" class="view" hidden>
-          <div class="section-card">
-            <div class="section-title">
-              <div>
-                <h2>Thực nghiệm dự báo</h2>
-                <p>Chạy mô hình đã huấn luyện trên dữ liệu quan trắc quốc tế. Chọn điểm và thời điểm lịch sử để xem kết quả; chưa hiệu chỉnh cho Hà Nội.</p>
-              </div>
-              <a class="button secondary" href="/forecast-lab.html">Mở thực nghiệm →</a>
-            </div>
+          <div class="forecast-workspace-heading">
+            <h2>Dự báo</h2>
+            <p>
+              Thử kịch bản ngập hoặc chạy mô hình nghiên cứu ngay trong
+              VietSafe.
+            </p>
           </div>
-          <div class="section-card">
-            <div class="section-title">
-              <div>
-                <h2>Mô phỏng xuất hiện ngập và độ sâu</h2>
-                <p>Điều chỉnh mưa, độ sâu ban đầu và khả năng thoát nước tại một vùng trũng giả định. Xem diễn biến và kết quả sau 30/60 phút.</p>
-              </div>
-              <a class="button secondary" href="/flood-simulator.html">Mở mô phỏng →</a>
-            </div>
+          <div class="forecast-tabs" role="tablist" aria-label="Công cụ dự báo">
+            <button
+              type="button"
+              id="forecast-simulation-tab"
+              role="tab"
+              aria-selected="true"
+              aria-controls="forecast-simulation-panel"
+              data-forecast-mode="simulation"
+            >
+              Mô phỏng ngập
+            </button>
+            <button
+              type="button"
+              id="forecast-ai-tab"
+              role="tab"
+              aria-selected="false"
+              aria-controls="forecast-ai-panel"
+              tabindex="-1"
+              data-forecast-mode="ai"
+            >
+              AI nghiên cứu
+            </button>
+            <button
+              type="button"
+              id="forecast-map-tab"
+              role="tab"
+              aria-selected="false"
+              aria-controls="forecast-map-panel"
+              tabindex="-1"
+              data-forecast-mode="map"
+            >
+              Kịch bản bản đồ
+            </button>
           </div>
-          <div class="section-card">
+          <div
+            id="forecast-simulation-panel"
+            role="tabpanel"
+            aria-labelledby="forecast-simulation-tab"
+            data-forecast-panel="simulation"
+            tabindex="0"
+          ></div>
+          <div
+            id="forecast-ai-panel"
+            role="tabpanel"
+            aria-labelledby="forecast-ai-tab"
+            data-forecast-panel="ai"
+            tabindex="0"
+            hidden
+          ></div>
+          <div
+            id="forecast-map-panel"
+            class="section-card"
+            role="tabpanel"
+            aria-labelledby="forecast-map-tab"
+            data-forecast-panel="map"
+            tabindex="0"
+            hidden
+          >
             <div class="section-title">
               <div>
                 <h2>Kịch bản bản đồ — mô phỏng</h2>
-                <p>Ước lượng theo quy tắc và kịch bản cho các đoạn đường Hà Nội. Đây là phần kiểm tra giao diện, chưa phải kết quả của mô hình AI nghiên cứu.</p>
+                <p>
+                  Ước lượng theo quy tắc và kịch bản cho các đoạn đường Hà Nội.
+                  Đây là phần kiểm tra giao diện, chưa phải kết quả của mô hình
+                  AI nghiên cứu.
+                </p>
               </div>
-              <a class="button secondary" href="/api/export/predictions" download
+              <a
+                class="button secondary"
+                href="/api/export/predictions"
+                download
                 ><svg><use href="#i-download" /></svg>Nhật ký dự báo</a
               >
             </div>

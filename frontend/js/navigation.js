@@ -4,11 +4,15 @@ import { authState, state } from "./state.js";
 import { $$, toast } from "./utils.js";
 import { map } from "./map.js";
 import { renderForecast } from "./views/forecast.js";
+import { showForecastWorkspace } from "./views/forecast-workspace.js";
 import { loadReports } from "./views/reports.js";
 
-export function setView(view) {
+export function setView(view, forecastMode) {
   // Admin-only views
-  if (ADMIN_VIEWS.includes(view) && (!authState.user || authState.user.role !== "admin")) {
+  if (
+    ADMIN_VIEWS.includes(view) &&
+    (!authState.user || authState.user.role !== "admin")
+  ) {
     toast("Vui lòng đăng nhập tài khoản quản trị để truy cập.");
     return;
   }
@@ -20,12 +24,14 @@ export function setView(view) {
   );
   if (view === "map") requestAnimationFrame(() => map.invalidateSize());
   if (view === "forecast" && state.data) renderForecast();
+  if (view === "forecast") void showForecastWorkspace(forecastMode);
   if (view === "reports") loadReports();
 }
 
 export function initNavigation() {
   document.addEventListener("click", (e) => {
     const button = e.target.closest("button");
-    if (button && button.dataset.view) setView(button.dataset.view);
+    if (button && button.dataset.view)
+      setView(button.dataset.view, button.dataset.forecastMode);
   });
 }

@@ -270,3 +270,20 @@ Kết quả cũ bị ẩn ngay khi sửa đầu vào; phản hồi muộn bị b
 Không cần CDN hoặc model AI. Test: `node frontend/tests/flood-simulator-smoke.mjs`.
 Trên Windows, đặt `PYTHONUTF8=1` khi chạy các smoke test chung để console in được tiếng Việt.
 Chi tiết: [FLOOD_SIMULATOR.md](FLOOD_SIMULATOR.md).
+
+## Dự báo tích hợp trong giao diện chính
+
+Tab **Dự báo** có ba panel: Mô phỏng ngập, AI nghiên cứu và Kịch bản bản đồ.
+`views/forecast-workspace.js` gắn chúng vào hệ thống view hiện có, chỉ nạp công cụ
+khi người dùng mở panel. Biểu mẫu, kết quả, thanh điều hướng và bản đồ ở cùng
+document; chuyển panel giữ thông số và phiên đăng nhập, không dùng iframe.
+
+Hai tệp `forecast-lab.html` và `flood-simulator.html` tiếp tục làm nguồn nội dung
+dùng chung: workspace chỉ lấy phần `main`, bỏ khung trang và script, rồi gọi hàm
+khởi tạo của ES module tương ứng. Các URL cũ vẫn hoạt động ở chế độ toàn trang.
+CSS của mỗi module được giới hạn trong `.ai-forecast-page` hoặc
+`.flood-simulator-page`; `forecast-workspace.css` điều chỉnh bố cục khi hiển thị
+trong web chính. Không thêm framework hoặc đổi cấu trúc backend/API.
+
+Kiểm tra luồng tích hợp: `node frontend/tests/forecast-workspace-smoke.mjs`.
+Đặt `VIETSAFE_AI_VERIFY_ROOT` để kiểm tra thêm suy luận với artifact thật.

@@ -3,6 +3,7 @@ import { state } from "../state.js";
 import { $, esc } from "../utils.js";
 import { changeScenario } from "../scenario.js";
 import { renderInsight } from "./insight.js";
+import { initForecastWorkspace } from "./forecast-workspace.js";
 
 export function renderForecast() {
   const r = state.data.roads.find((r) => r.id === $("#forecast-road").value);
@@ -14,7 +15,8 @@ export function renderForecast() {
   }
   const xs = [65, 270, 475, 680, 885],
     y = (v) => 205 - v * 1.75;
-  const path = (key) => r.forecast.map((f, i) => `${i ? "L" : "M"}${xs[i]},${y(f[key])}`).join(" ");
+  const path = (key) =>
+    r.forecast.map((f, i) => `${i ? "L" : "M"}${xs[i]},${y(f[key])}`).join(" ");
   let svg = `<svg class="large-chart" viewBox="0 0 950 245" role="img" aria-label="Dự báo điểm nguy cơ ngập và rủi ro tổng hợp cho ${esc(r.name)}">`;
   for (const v of [0, 25, 50, 75, 100])
     svg += `<line x1="65" y1="${y(v)}" x2="885" y2="${y(v)}" stroke="#e7ede7" stroke-dasharray="4 5"/><text x="30" y="${y(v) + 4}" fill="#91a494">${v}</text>`;
@@ -29,10 +31,13 @@ export function renderForecast() {
 }
 
 export function initForecast() {
+  initForecastWorkspace();
   $("#forecast-road").addEventListener("change", () => {
     state.selected = $("#forecast-road").value;
     renderForecast();
     renderInsight();
   });
-  $("#forecast-scenario").addEventListener("change", (e) => changeScenario(e.target.value));
+  $("#forecast-scenario").addEventListener("change", (e) =>
+    changeScenario(e.target.value),
+  );
 }

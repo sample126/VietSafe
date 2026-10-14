@@ -48,7 +48,7 @@ function invalidate() {
 function options(id, values, preferred) {
   const select = $(id);
   select.replaceChildren(
-    ...values.map(({ id: value, label }) => new Option(label, value)),
+    ...values.map(({ id: value, label }) => new window.Option(label, value)),
   );
   if (values.some((row) => row.id === preferred)) select.value = preferred;
   select.disabled = values.length === 0;
@@ -196,7 +196,7 @@ export function renderResult(data) {
   $("ai-result").hidden = false;
 }
 
-export async function initAI() {
+async function initializeAI() {
   $("ai-site").addEventListener("change", () => loadDays());
   $("ai-day").addEventListener("change", () => loadTimes());
   $("ai-origin").addEventListener("change", () => {
@@ -264,4 +264,15 @@ export async function initAI() {
   }
 }
 
-if (document.getElementById("ai-form")) initAI();
+let initializedForm, initialization;
+export function initAI() {
+  const form = $("ai-form");
+  if (!form) return Promise.resolve();
+  if (form !== initializedForm) {
+    initializedForm = form;
+    initialization = initializeAI();
+  }
+  return initialization;
+}
+
+if (document.body.classList.contains("ai-forecast-page")) void initAI();
