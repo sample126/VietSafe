@@ -71,6 +71,21 @@ class HTTPTests(ServerTestCase):
         self.assertEqual(self.request("/%2e%2e/backend/vietsafe/config.py")[0], 404)
         self.assertEqual(self.request("/%2e%2e/%2e%2e/etc/passwd")[0], 404)
 
+    def test_private_ipv4_host_is_allowed_only_on_server_port(self):
+        port = self.server.server_port
+        self.assertEqual(
+            self.request("/api/health", headers={"Host": f"192.168.1.48:{port}"})[0],
+            200,
+        )
+        self.assertEqual(
+            self.request("/api/health", headers={"Host": f"192.168.1.48:{port + 1}"})[0],
+            403,
+        )
+        self.assertEqual(
+            self.request("/api/health", headers={"Host": f"8.8.8.8:{port}"})[0],
+            403,
+        )
+
     def test_unknown_routes(self):
         self.assertEqual(self.request("/api/khong-ton-tai")[0], 404)
         self.assertEqual(self.request("/khong-co-file.js")[0], 404)

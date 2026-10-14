@@ -12,6 +12,9 @@ python3 -m vietsafe --port 9000 --host 127.0.0.1
 ```
 
 Lần chạy đầu tạo `data/vietsafe.sqlite3` (ở thư mục gốc repo) và 2 tài khoản demo. Mặc định máy chủ chỉ lắng nghe ở `localhost`.
+Để thử trên điện thoại cùng mạng Wi-Fi, lấy IPv4 riêng của máy tính rồi bind máy chủ vào địa chỉ đó, ví dụ:
+`python -m vietsafe --host 192.168.1.48 --port 8766`; mở `http://192.168.1.48:8766` trên điện thoại.
+Chỉ chia sẻ trong mạng tin cậy; không bind `0.0.0.0` trên mạng công cộng.
 
 ## Cấu hình
 
@@ -41,7 +44,7 @@ Hằng số khác trong `config.py` (không có biến môi trường):
 | `REPORT_MAX_DISTANCE_KM`             | 1                                                                                 | Vị trí phản ánh phải gần một đoạn đường trong mạng thử nghiệm                |
 | `MAX_BODY_BYTES`                     | 2.200.000                                                                         | Kích thước body POST tối đa                                                  |
 | `PILOT_LAT_RANGE`, `PILOT_LNG_RANGE` | `(20.98, 21.065)`, `(105.77, 105.88)`                                             | Vùng thử nghiệm — **phải khớp** `PILOT_BOUNDS` trong `frontend/js/config.js` |
-| `ALLOWED_HOST_SUFFIXES`              | `.trycloudflare.com`, `.loca.lt`, `.ngrok.io`, `.ngrok-free.app`, `.onrender.com` | Hậu tố Host được phép ngoài localhost                                        |
+| `ALLOWED_HOST_SUFFIXES`              | `.trycloudflare.com`, `.loca.lt`, `.ngrok.io`, `.ngrok-free.app`, `.onrender.com` | Hậu tố Host được phép ngoài localhost; IPv4 riêng chỉ được phép trên đúng cổng máy chủ |
 | `PREDICTION_LOG_RETENTION_TICKS`     | 8640 (24 giờ)                                                                     | Thời gian giữ nhật ký dự báo (1 tick = 10 giây)                              |
 | `PREDICTION_LOG_EXPORT_LIMIT`        | 500                                                                               | Số bản ghi tối đa khi xuất nhật ký dự báo                                    |
 

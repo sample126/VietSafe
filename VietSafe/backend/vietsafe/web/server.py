@@ -5,6 +5,7 @@ ghi phản hồi. Mọi logic endpoint nằm ở các controller trong web/contr
 """
 
 import json
+import ipaddress
 import traceback
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from urllib.parse import parse_qs, urlparse
@@ -68,6 +69,13 @@ class Handler(BaseHTTPRequestHandler):
         port = self.server.server_port
         if host in (f"127.0.0.1:{port}", f"localhost:{port}"):
             return True
+        domain, separator, host_port = host.rpartition(":")
+        if separator and host_port == str(port):
+            try:
+                if ipaddress.ip_address(domain).is_private:
+                    return True
+            except ValueError:
+                pass
         domain = host.split(":")[0].lower()
         return any(domain.endswith(suffix) for suffix in config.ALLOWED_HOST_SUFFIXES)
 

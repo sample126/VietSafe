@@ -522,6 +522,15 @@
     gap: 16px;
   }
 
+  #rescue-view #rescue-service-list {
+    max-height: min(70vh, 640px);
+  }
+
+  .rescue-form-pair {
+    grid-template-columns: 1fr;
+    gap: 0;
+  }
+
   .rescue-card,
   .rescue-form-box,
   .safety-box {
@@ -678,10 +687,16 @@
 
   #rescue-view .rescue-form-box {
     order: 10;
+    margin-top: 16px;
   }
 
   #rescue-view .rescue-services-col > h3 {
     order: 1;
+    margin-bottom: 22px;
+  }
+
+  #rescue-view #rescue-service-list {
+    order: 2;
   }
 
   #rescue-view .rescue-card {
@@ -689,6 +704,146 @@
   }
 
   #rescue-view .safety-box {
-    order: 0;
+    margin-block: 12px;
+  }
+}
+
+@media (min-width: 601px) and (max-width: 900px) {
+  #rescue-view .rescue-form-pair {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 10px;
+  }
+
+  #rescue-view #rescue-note {
+    height: auto;
+    min-height: 64px;
+  }
+}
+
+@media (min-width: 901px) {
+  main:has(#rescue-view:not([hidden])) {
+    padding-top: 16px;
+  }
+
+  #rescue-view .section-card {
+    padding: 20px;
+  }
+
+  #rescue-view .section-title {
+    margin-bottom: 14px;
+  }
+
+  #rescue-view .safety-box {
+    margin-bottom: 12px;
+    padding: 12px 14px;
+  }
+
+  #rescue-view .safety-box[open] ol {
+    margin-top: 8px;
+  }
+
+  #rescue-view .safety-box ol {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 4px 20px;
+  }
+
+  #rescue-view .rescue-main-grid {
+    gap: 16px;
+  }
+
+  #rescue-view .rescue-distance-search {
+    gap: 8px;
+    margin-bottom: 14px;
+    padding: 12px;
+  }
+
+  #rescue-view .rescue-distance-search > .button {
+    min-height: 36px;
+    padding-block: 8px;
+  }
+
+  #rescue-view .rescue-services-col > h3 {
+    margin-bottom: 18px;
+  }
+
+  #rescue-view #rescue-service-list {
+    gap: 10px;
+  }
+
+  #rescue-view .rescue-card {
+    padding: 14px;
+  }
+
+  #rescue-view .rescue-card-top {
+    gap: 8px;
+    margin-bottom: 6px;
+  }
+
+  #rescue-view .rescue-card-top h4 {
+    font-size: 15px;
+  }
+
+  #rescue-view .rescue-card-summary {
+    margin-bottom: 8px;
+    font-size: 11px;
+    line-height: 1.45;
+  }
+
+  #rescue-view .rescue-card-call {
+    min-height: 36px;
+  }
+
+  #rescue-view .rescue-card-details {
+    margin-top: 6px;
+  }
+
+  #rescue-view .rescue-card-details summary {
+    min-height: 32px;
+  }
+
+  #rescue-view .rescue-side-col {
+    gap: 14px;
+  }
+
+  #rescue-view .rescue-form-box {
+    padding: 16px;
+  }
+
+  #rescue-view .form-box-head p {
+    margin-bottom: 10px;
+  }
+
+  #rescue-view #rescue-request-form {
+    display: grid;
+    gap: 8px;
+  }
+
+  #rescue-view .rescue-form-pair {
+    gap: 8px;
+  }
+
+  #rescue-view .rescue-form-field label {
+    margin: 0 0 4px;
+  }
+
+  #rescue-view .rescue-form-field input,
+  #rescue-view .rescue-form-field select,
+  #rescue-view .rescue-form-field textarea {
+    padding: 8px 10px;
+  }
+
+  #rescue-view .rescue-form-field textarea {
+    height: 38px;
+    min-height: 38px;
+  }
+
+  #rescue-view .rescue-loc-row {
+    margin: 4px 0 0;
+  }
+
+  #rescue-view #submit-rescue-btn {
+    min-height: 36px;
+    margin-top: 0;
   }
 }

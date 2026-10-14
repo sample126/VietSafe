@@ -540,6 +540,38 @@
                 <span class="live-dot"></span>Trực ban 24/7
               </div>
             </div>
+            <details class="safety-box">
+              <summary class="safety-box-toggle">
+                <span class="safety-box-heading"
+                  >⚠️ 4 NGUYÊN TẮC VÀNG KHI XE BỊ NGẬP NƯỚC</span
+                >
+                <span class="safety-box-preview"
+                  >Xe chết máy trong nước: không đề nổ lại.</span
+                >
+              </summary>
+              <ol>
+                <li>
+                  <strong>TUYỆT ĐỐI KHÔNG ĐỀ NỔ LẠI:</strong> Với ô tô, việc đề
+                  nổ khi nước đã lọt vào buồng đốt sẽ gây hiện tượng
+                  <em>thủy kích</em> làm cong tay biên, vỡ lốc máy (thiệt hại
+                  hàng trăm triệu đồng).
+                </li>
+                <li>
+                  <strong>TẮT KHÓA ĐIỆN NGAY LẬP TỨC:</strong> Rút chìa khóa
+                  điện để ngắt nguồn, tránh chập cháy hộp điều khiển ECU và hệ
+                  thống dây điện.
+                </li>
+                <li>
+                  <strong>ĐẨY XE LÊN KHU VỰC CAO RÁO:</strong> Nếu an toàn, đẩy
+                  xe máy/ô tô lên vỉa hè hoặc đoạn đường dốc cao hơn mép nước.
+                </li>
+                <li>
+                  <strong>GỌI CỨU HỘ KÉO VỀ GARA:</strong> Để thợ kỹ thuật tháo
+                  bugi, xả nước buồng đốt, thay dầu nhớt trước khi khởi động lại
+                  động cơ.
+                </li>
+              </ol>
+            </details>
             <div class="rescue-main-grid">
               <div class="rescue-services-col">
                 <section
@@ -562,7 +594,12 @@
                   ></p>
                 </section>
                 <h3>Đơn vị cứu hộ tại Hà Nội</h3>
-                <div id="rescue-service-list" aria-live="polite">
+                <div
+                  id="rescue-service-list"
+                  aria-label="Danh sách đơn vị cứu hộ, cuộn để xem thêm"
+                  aria-live="polite"
+                  tabindex="0"
+                >
                   <p class="muted">Đang tải danh sách cứu hộ…</p>
                 </div>
               </div>
@@ -573,74 +610,83 @@
                     <p>Gửi thông tin sự cố để kết nối đội cứu hộ phù hợp</p>
                   </div>
                   <form id="rescue-request-form">
-                    <label for="rescue-vehicle"
-                      >Loại phương tiện gặp sự cố</label
-                    >
-                    <select id="rescue-vehicle">
-                      <option value="motorbike">
-                        Xe máy (Xe ga, Xe số, Phân khối lớn)
-                      </option>
-                      <option value="car">Ô tô con 4–7 chỗ</option>
-                      <option value="truck">Xe tải / Xe khách</option>
-                    </select>
-                    <label for="rescue-type" style="margin-top: 10px"
-                      >Tình trạng sự cố</label
-                    >
-                    <select id="rescue-type">
-                      <option value="flood_dead">
-                        Chết máy do đi qua vùng ngập nước
-                      </option>
-                      <option value="hydro">
-                        Nghi ngờ thủy kích (ô tô chết máy trong nước sâu)
-                      </option>
-                      <option value="battery">
-                        Hỏng ắc quy / Không đề nổ được
-                      </option>
-                      <option value="tire">Hỏng lốp / Nổ lốp giữa đường</option>
-                      <option value="accident">
-                        Va chạm / Tai nạn giao thông
-                      </option>
-                    </select>
-                    <label for="rescue-address" style="margin-top: 10px"
-                      >Vị trí hiện tại của bạn</label
-                    >
-                    <input
-                      id="rescue-address"
-                      placeholder="Ví dụ: Trước cổng ĐH Giao thông Vận tải, Cầu Giấy"
-                      required
-                    />
-                    <div class="rescue-loc-row">
-                      <button
-                        type="button"
-                        id="rescue-loc-btn"
-                        class="text-button"
-                      >
-                        <svg><use href="#i-target" /></svg>Lấy vị trí GPS hiện
-                        tại
-                      </button>
+                    <div class="rescue-form-pair">
+                      <div class="rescue-form-field">
+                        <label for="rescue-vehicle"
+                          >Loại phương tiện gặp sự cố</label
+                        >
+                        <select id="rescue-vehicle">
+                          <option value="motorbike">
+                            Xe máy (Xe ga, Xe số, Phân khối lớn)
+                          </option>
+                          <option value="car">Ô tô con 4–7 chỗ</option>
+                          <option value="truck">Xe tải / Xe khách</option>
+                        </select>
+                      </div>
+                      <div class="rescue-form-field">
+                        <label for="rescue-type">Tình trạng sự cố</label>
+                        <select id="rescue-type">
+                          <option value="flood_dead">
+                            Chết máy do đi qua vùng ngập nước
+                          </option>
+                          <option value="hydro">
+                            Nghi ngờ thủy kích (ô tô chết máy trong nước sâu)
+                          </option>
+                          <option value="battery">
+                            Hỏng ắc quy / Không đề nổ được
+                          </option>
+                          <option value="tire">
+                            Hỏng lốp / Nổ lốp giữa đường
+                          </option>
+                          <option value="accident">
+                            Va chạm / Tai nạn giao thông
+                          </option>
+                        </select>
+                      </div>
                     </div>
-                    <label for="rescue-phone" style="margin-top: 10px"
-                      >Số điện thoại liên hệ</label
-                    >
-                    <input
-                      id="rescue-phone"
-                      type="tel"
-                      placeholder="Nhập số điện thoại để cứu hộ gọi lại"
-                      pattern="[0-9]{10,11}"
-                      required
-                    />
-                    <label for="rescue-note" style="margin-top: 10px"
-                      >Ghi chú thêm</label
-                    >
-                    <textarea
-                      id="rescue-note"
-                      rows="2"
-                      placeholder="Biển số, màu xe, mực nước ngập đến đâu..."
-                    ></textarea>
+                    <div class="rescue-form-field rescue-form-location">
+                      <label for="rescue-address"
+                        >Vị trí hiện tại của bạn</label
+                      >
+                      <input
+                        id="rescue-address"
+                        placeholder="Ví dụ: Trước cổng ĐH Giao thông Vận tải, Cầu Giấy"
+                        required
+                      />
+                      <div class="rescue-loc-row">
+                        <button
+                          type="button"
+                          id="rescue-loc-btn"
+                          class="text-button"
+                        >
+                          <svg><use href="#i-target" /></svg>Lấy vị trí GPS hiện
+                          tại
+                        </button>
+                      </div>
+                    </div>
+                    <div class="rescue-form-pair">
+                      <div class="rescue-form-field">
+                        <label for="rescue-phone">Số điện thoại liên hệ</label>
+                        <input
+                          id="rescue-phone"
+                          type="tel"
+                          placeholder="Nhập số điện thoại để cứu hộ gọi lại"
+                          pattern="[0-9]{10,11}"
+                          required
+                        />
+                      </div>
+                      <div class="rescue-form-field">
+                        <label for="rescue-note">Ghi chú thêm</label>
+                        <textarea
+                          id="rescue-note"
+                          rows="2"
+                          placeholder="Biển số, màu xe, mực nước ngập đến đâu..."
+                        ></textarea>
+                      </div>
+                    </div>
                     <button
                       type="submit"
                       class="button primary full"
-                      style="margin-top: 14px"
                       id="submit-rescue-btn"
                     >
                       <svg><use href="#i-rescue" /></svg>Gửi yêu cầu & Kết nối
@@ -652,32 +698,6 @@
                     class="rescue-form-result"
                     hidden
                   ></div>
-                </div>
-                <div class="safety-box">
-                  <h4>⚠️ 4 NGUYÊN TẮC VÀNG KHI XE BỊ NGẬP NƯỚC</h4>
-                  <ol>
-                    <li>
-                      <strong>TUYỆT ĐỐI KHÔNG ĐỀ NỔ LẠI:</strong> Với ô tô, việc
-                      đề nổ khi nước đã lọt vào buồng đốt sẽ gây hiện tượng
-                      <em>thủy kích</em> làm cong tay biên, vỡ lốc máy (thiệt
-                      hại hàng trăm triệu đồng).
-                    </li>
-                    <li>
-                      <strong>TẮT KHÓA ĐIỆN NGAY LẬP TỨC:</strong> Rút chìa khóa
-                      điện để ngắt nguồn, tránh chập cháy hộp điều khiển ECU và
-                      hệ thống dây điện.
-                    </li>
-                    <li>
-                      <strong>ĐẨY XE LÊN KHU VỰC CAO RÁO:</strong> Nếu an toàn,
-                      đẩy xe máy/ô tô lên vỉa hè hoặc đoạn đường dốc cao hơn mép
-                      nước.
-                    </li>
-                    <li>
-                      <strong>GỌI CỨU HỘ KÉO VỀ GARA:</strong> Để thợ kỹ thuật
-                      tháo bugi, xả nước buồng đốt, thay dầu nhớt trước khi khởi
-                      động lại động cơ.
-                    </li>
-                  </ol>
                 </div>
               </div>
             </div>

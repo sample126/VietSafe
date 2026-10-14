@@ -319,6 +319,23 @@ const rescueListLoaded = await waitFor(
   () => $$("#rescue-service-list .rescue-card[data-rescue-service]").length > 0,
   { label: "danh sách cứu hộ từ JSON" },
 );
+check(
+  "nguyên tắc vàng thu gọn mặc định và vẫn hiện lời nhắc chính",
+  !$(".safety-box").open &&
+    $(".safety-box-preview").textContent.includes("không đề nổ lại"),
+);
+click($(".safety-box-toggle"));
+check(
+  "mở khung để xem đủ bốn nguyên tắc",
+  $(".safety-box").open && $$(".safety-box li").length === 4,
+);
+click($(".safety-box-toggle"));
+check("có thể thu gọn khung nguyên tắc vàng", !$(".safety-box").open);
+check(
+  "danh sách cứu hộ có khung cuộn truy cập được bằng bàn phím",
+  $("#rescue-service-list").tabIndex === 0 &&
+    $("#rescue-service-list").getAttribute("aria-label").includes("cuộn"),
+);
 const rescueCards = $$(".rescue-card[data-rescue-service]");
 const rescueDataResponse = await fetch(`${BASE}/data/rescue-services.json`);
 const rescueData = rescueDataResponse.ok ? await rescueDataResponse.json() : [];
@@ -336,6 +353,30 @@ check(
     ),
 );
 check(
+  "có đúng sáu đơn vị cứu hộ giả định",
+  rescueData.length === 9 &&
+    rescueData.filter((service) => service.simulated === true).length === 6,
+);
+check(
+  "đơn vị giả định có số mẫu riêng, được cảnh báo và không thể gọi",
+  rescueData.filter((service) => service.simulated === true).length === 6 &&
+    new Set(
+      rescueData
+        .filter((service) => service.simulated === true)
+        .map((service) => service.hotline),
+    ).size === 6 &&
+    rescueCards
+      .filter((card) => card.querySelector(".rescue-demo-notice"))
+      .every(
+        (card) =>
+          card.querySelector(".rescue-card-call")?.disabled &&
+          card
+            .querySelector(".rescue-card-call")
+            .textContent.includes("Số giả định:") &&
+          !card.querySelector('a[href^="tel:"]'),
+      ),
+);
+check(
   "danh sách cứu hộ không còn hàng hotline trùng",
   !$(".rescue-hotline-bar"),
 );
@@ -343,7 +384,9 @@ check(
   "mỗi đơn vị có đúng một nút gọi",
   rescueCards.length > 0 &&
     rescueCards.every(
-      (card) => card.querySelectorAll('a[href^="tel:"]').length === 1,
+      (card) =>
+        card.querySelectorAll('a[href^="tel:"]').length ===
+        (card.querySelector(".rescue-demo-notice") ? 0 : 1),
     ),
 );
 check(
@@ -392,28 +435,58 @@ check(
     !$("#rescue-sort-coordinates") &&
     $("#rescue-distance-status").textContent === "",
 );
-const motorbikeReference = rescueData.find(
-  (service) => service.vehicle === "motorbike",
-);
+Object.defineProperty(window, "isSecureContext", {
+  configurable: true,
+  value: false,
+});
+let gpsRequestCount = 0;
+const geolocation = {
+  getCurrentPosition(onSuccess) {
+    gpsRequestCount += 1;
+    onSuccess({
+      coords: {
+        latitude: motorbikeReference?.referenceLat,
+        longitude: motorbikeReference?.referenceLng,
+        accuracy: 24,
+      },
+    });
+  },
+};
 Object.defineProperty(window.navigator, "geolocation", {
   configurable: true,
-  value: {
-    getCurrentPosition(onSuccess) {
-      onSuccess({
-        coords: {
-          latitude: motorbikeReference.referenceLat,
-          longitude: motorbikeReference.referenceLng,
-        },
-      });
-    },
-  },
+  value: geolocation,
 });
 click($("#rescue-sort-gps"));
 check(
-  "dùng GPS tự sắp xếp cứu hộ gần nhất lên đầu",
+  "không gọi GPS qua HTTP không an toàn và hướng dẫn dùng HTTPS",
+  gpsRequestCount === 0 &&
+    $("#rescue-distance-status").textContent.includes("HTTPS"),
+);
+Object.defineProperty(window, "isSecureContext", {
+  configurable: true,
+  value: true,
+});
+const motorbikeReference = rescueData.find(
+  (service) => service.vehicle === "motorbike",
+);
+geolocation.getCurrentPosition = (onSuccess) => {
+  gpsRequestCount += 1;
+  onSuccess({
+    coords: {
+      latitude: motorbikeReference.referenceLat,
+      longitude: motorbikeReference.referenceLng,
+      accuracy: 24,
+    },
+  });
+};
+click($("#rescue-sort-gps"));
+check(
+  "dùng GPS nhận tọa độ và tự sắp xếp cứu hộ gần nhất lên đầu",
   $("#rescue-service-list .rescue-card").dataset.rescueService ===
     "motorbike" &&
-    $("#rescue-distance-status").textContent.includes("đã được sắp xếp"),
+    $("#rescue-distance-status").textContent.includes("đã được sắp xếp") &&
+    $("#rescue-distance-status").textContent.includes("24 m") &&
+    $("#rescue-distance-status").textContent.includes("ước tính"),
 );
 check(
   "hiển thị khoảng cách ước tính sau khi lấy GPS",

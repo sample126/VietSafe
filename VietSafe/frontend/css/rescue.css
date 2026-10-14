@@ -63,6 +63,19 @@
   display: grid;
   grid-template-columns: minmax(0, 1fr);
   gap: 16px;
+  max-height: min(65vh, 560px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: #f8faf8;
+  scrollbar-gutter: stable;
+}
+
+#rescue-service-list:focus-visible {
+  outline: 2px solid #81d2c5;
+  outline-offset: 2px;
 }
 
 .rescue-card {
@@ -72,11 +85,6 @@
   border-radius: 12px;
   padding: 20px;
   margin: 0;
-}
-
-.rescue-card.is-recommended {
-  border-color: #9bcfbd;
-  box-shadow: 0 0 0 2px #e7f4ee;
 }
 
 .rescue-card-top {
@@ -130,8 +138,26 @@
   line-height: 1.6;
 }
 
+.rescue-demo-notice {
+  margin: 0 0 8px;
+  color: #8c6218;
+  font-size: 11px;
+  font-weight: 600;
+}
+
 .rescue-card-call {
   min-height: 44px;
+  background: #c94436;
+  box-shadow: 0 3px 8px #c944361f;
+}
+
+.rescue-card-call:disabled {
+  cursor: not-allowed;
+  opacity: 0.75;
+}
+
+.rescue-card-call:hover {
+  background: #a9362b;
 }
 
 .rescue-card-details {
@@ -225,10 +251,21 @@
 }
 
 .rescue-form-box {
+  order: 1;
   background: #f8faf8;
   border: 1px solid #e2ede5;
   border-radius: 12px;
   padding: 22px;
+}
+
+.rescue-form-pair {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.rescue-form-field {
+  min-width: 0;
 }
 
 .form-box-head h3 {
@@ -255,25 +292,73 @@
 }
 
 .safety-box {
+  order: 0;
   background: #fffbf0;
   border: 1.5px solid #f6dfa9;
   border-radius: 12px;
   padding: 20px;
 }
 
-.safety-box h4 {
+.safety-box-toggle {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 4px 12px;
+  cursor: pointer;
+  list-style: none;
+}
+
+.safety-box-toggle::-webkit-details-marker {
+  display: none;
+}
+
+.safety-box-toggle:focus-visible {
+  outline: 2px solid #8c6218;
+  outline-offset: 4px;
+  border-radius: 3px;
+}
+
+.safety-box-heading {
   font-size: 13px;
   color: #8c6218;
-  margin-bottom: 12px;
   font-weight: 700;
+}
+
+.safety-box-toggle::after {
+  content: "+";
+  grid-column: 2;
+  grid-row: 1 / span 2;
+  color: #8c6218;
+  font-size: 20px;
+  line-height: 1;
+}
+
+.safety-box[open] .safety-box-toggle::after {
+  content: "-";
+}
+
+.safety-box-preview {
+  grid-column: 1;
+  color: #7a6230;
+  font-size: 11px;
+  line-height: 1.5;
+}
+
+.safety-box[open] .safety-box-preview {
+  display: none;
 }
 
 .safety-box ol {
   margin: 0;
+  margin-top: 12px;
   padding-left: 18px;
   font-size: 11px;
   color: #7a6230;
   line-height: 1.7;
+}
+
+.safety-box:not([open]) ol {
+  display: none;
 }
 
 .safety-box li {
