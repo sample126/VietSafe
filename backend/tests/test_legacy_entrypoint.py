@@ -50,8 +50,8 @@ class LegacyEntrypointTests(unittest.TestCase):
                     with urllib.request.urlopen(base, timeout=3) as r:
                         page = r.read()
                     self.assertIn(b'/js/main.js', page)
-                    self.assertIn(b'/forecast-lab.html', page)
-                    self.assertIn(b'/flood-simulator.html', page)
+                    self.assertIn(b'forecast-ai-panel', page)
+                    self.assertIn(b'forecast-simulation-panel', page)
                     for path in ('/forecast-lab.html', '/flood-simulator.html'):
                         with urllib.request.urlopen(base + path, timeout=3) as r:
                             self.assertEqual(r.status, 200)

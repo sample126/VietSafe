@@ -92,7 +92,7 @@ class AIHttpTests(ServerTestCase):
         for path in ("/forecast-lab.html", "/js/views/ai-forecast.js", "/css/ai-forecast.css"):
             with self.subTest(path=path):
                 self.assertEqual(self.request(path)[0], 200)
-        self.assertIn(b"/forecast-lab.html", self.request("/")[2])
+        self.assertIn(b"forecast-ai-panel", self.request("/")[2])
 
     def test_ai_post_requires_existing_same_origin_header(self):
         # No request body: avoid a Windows TCP reset when the guard rejects before reading it.

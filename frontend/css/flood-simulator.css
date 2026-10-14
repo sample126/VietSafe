@@ -1,26 +1,26 @@
-:root {
+.flood-simulator-page {
   font-family: "Segoe UI", Arial, sans-serif;
   color: #172f32;
   background: #f2f5f5;
   color-scheme: light;
 }
-* {
+.flood-simulator-page * {
   box-sizing: border-box;
 }
-body {
+body.flood-simulator-page {
   margin: 0;
 }
-[hidden] {
+.flood-simulator-page [hidden] {
   display: none !important;
 }
-a {
+.flood-simulator-page a {
   color: #127466;
   text-decoration: none;
 }
-a:hover {
+.flood-simulator-page a:hover {
   text-decoration: underline;
 }
-.topbar {
+.flood-simulator-page .topbar {
   padding: 22px max(4vw, 22px);
   background: #fff;
   border-bottom: 1px solid #dfe6e5;
@@ -29,55 +29,56 @@ a:hover {
   align-items: center;
   gap: 20px;
 }
-.brand {
+.flood-simulator-page .brand {
   font-weight: 850;
   letter-spacing: 2px;
   color: #143c39;
 }
-.brand span {
+.flood-simulator-page .brand span {
   font-size: 10px;
   letter-spacing: 1.5px;
   font-weight: 600;
   color: #748b89;
   margin-left: 15px;
 }
-nav {
+.flood-simulator-page nav {
   display: flex;
   gap: 24px;
   font-size: 13px;
 }
-main {
+.flood-simulator-page .forecast-module-content {
   max-width: 1390px;
   margin: 0 auto;
   padding: 38px 30px 25px;
 }
-.intro {
+.flood-simulator-page .intro {
   display: flex;
   justify-content: space-between;
   align-items: start;
   gap: 20px;
 }
-.eyebrow {
+.flood-simulator-page .eyebrow {
   color: #517b77;
   font-size: 10px;
   letter-spacing: 2px;
   font-weight: 750;
   margin: 0 0 12px;
 }
-h1 {
+.flood-simulator-page h1,
+.flood-simulator-page .module-title {
   font-size: clamp(28px, 3.5vw, 42px);
   font-weight: 650;
   letter-spacing: -1.3px;
   margin: 0 0 14px;
 }
-.lead {
+.flood-simulator-page .lead {
   font-size: 15px;
   line-height: 1.7;
   color: #607776;
   max-width: 740px;
   margin: 0;
 }
-.badge {
+.flood-simulator-page .badge {
   background: #fff0d9;
   border: 1px solid #edd7ae;
   border-radius: 5px;
@@ -89,14 +90,14 @@ h1 {
   white-space: nowrap;
   margin-top: 8px;
 }
-.badge.small {
+.flood-simulator-page .badge.small {
   color: #537974;
   background: #e8f1ee;
   border-color: #d5e3df;
   font-size: 9px;
   margin: 0;
 }
-.notice {
+.flood-simulator-page .notice {
   border-left: 3px solid #d3a959;
   color: #6c603f;
   background: #f8f4e9;
@@ -105,49 +106,49 @@ h1 {
   line-height: 1.65;
   margin: 23px 0 28px;
 }
-.layout {
+.flood-simulator-page .layout {
   display: grid;
   grid-template-columns: 370px minmax(0, 1fr);
   align-items: start;
   gap: 26px;
 }
-.panel {
+.flood-simulator-page .panel {
   background: #fff;
   border: 1px solid #dde5e3;
   border-radius: 12px;
   padding: 24px;
 }
-.controls {
+.flood-simulator-page .controls {
   padding: 24px 22px;
 }
-.section-top {
+.flood-simulator-page .section-top {
   display: flex;
   gap: 10px;
   align-items: center;
 }
-.step {
+.flood-simulator-page .step {
   color: #63938b;
   font-size: 12px;
   font-weight: 750;
 }
-h2 {
+.flood-simulator-page h2 {
   font-size: 19px;
   font-weight: 650;
   margin: 0;
 }
-h3 {
+.flood-simulator-page h3 {
   font-size: 16px;
   font-weight: 650;
   margin: 0 0 12px;
 }
-.preset-label {
+.flood-simulator-page .preset-label {
   display: block;
   color: #647b76;
   font-size: 11px;
   margin: 24px 0 8px;
 }
-select,
-input {
+.flood-simulator-page select,
+.flood-simulator-page input {
   font: inherit;
   width: 100%;
   border: 1px solid #ccdcd7;
@@ -156,71 +157,71 @@ input {
   color: #1c4540;
   min-width: 0;
 }
-select {
+.flood-simulator-page select {
   padding: 11px 9px;
   font-size: 13px;
 }
-input {
+.flood-simulator-page input {
   margin-top: 7px;
   padding: 9px 10px;
   font-size: 14px;
 }
-input:focus-visible,
-select:focus-visible,
-button:focus-visible,
-a:focus-visible,
-summary:focus-visible {
+.flood-simulator-page input:focus-visible,
+.flood-simulator-page select:focus-visible,
+.flood-simulator-page button:focus-visible,
+.flood-simulator-page a:focus-visible,
+.flood-simulator-page summary:focus-visible {
   outline: 3px solid #9bcbbf;
   outline-offset: 2px;
 }
-fieldset {
+.flood-simulator-page fieldset {
   margin: 24px 0 0;
   padding: 16px 0 0;
   border: 0;
   border-top: 1px solid #e4ebe9;
 }
-legend {
+.flood-simulator-page legend {
   color: #244f46;
   font-size: 12px;
   font-weight: 700;
   padding-right: 10px;
 }
-.field-grid {
+.flood-simulator-page .field-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 15px 12px;
 }
-label {
+.flood-simulator-page label {
   display: block;
   color: #4b6561;
   font-size: 11px;
   line-height: 1.4;
 }
-label span {
+.flood-simulator-page label span {
   color: #8a9a94;
 }
-.help {
+.flood-simulator-page .help {
   font-size: 11px;
   line-height: 1.65;
   color: #6d817c;
   margin: 11px 0 0;
 }
-.rain-grid {
+.flood-simulator-page .rain-grid {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 12px 7px;
   margin-top: 15px;
 }
-.rain-grid label {
+.flood-simulator-page .rain-grid label {
   text-align: center;
   font-size: 9px;
 }
-.rain-grid input {
+.flood-simulator-page .rain-grid input {
   text-align: center;
   padding: 8px 1px;
   font-size: 12px;
 }
-button {
+.flood-simulator-page button {
   cursor: pointer;
   font: inherit;
   border: 1px solid #cdded7;
@@ -230,11 +231,11 @@ button {
   padding: 11px 14px;
   font-size: 12px;
 }
-button:disabled {
+.flood-simulator-page button:disabled {
   opacity: 0.5;
   cursor: wait;
 }
-.primary {
+.flood-simulator-page .primary {
   background: #166c5c;
   border-color: #166c5c;
   color: #fff;
@@ -244,41 +245,41 @@ button:disabled {
   font-weight: 600;
   font-size: 13px;
 }
-.primary:hover {
+.flood-simulator-page .primary:hover {
   background: #0b5749;
 }
-.output {
+.flood-simulator-page .output {
   min-width: 0;
 }
-.output-heading {
+.flood-simulator-page .output-heading {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 10px;
 }
-#scenario-status {
+.flood-simulator-page #scenario-status {
   font-size: 12px;
   color: #608078;
   line-height: 1.5;
   margin: 12px 0 18px;
 }
-#scenario-status[data-error="true"] {
+.flood-simulator-page #scenario-status[data-error="true"] {
   color: #a53a25;
 }
-.empty {
+.flood-simulator-page .empty {
   text-align: center;
   padding: 70px 20px;
   color: #6c8380;
 }
-.empty p {
+.flood-simulator-page .empty p {
   font-size: 14px;
   line-height: 1.8;
 }
-.water-icon {
+.flood-simulator-page .water-icon {
   color: #5f9e91;
   font-size: 64px;
 }
-.summary {
+.flood-simulator-page .summary {
   font-size: 13px;
   color: #3f655c;
   background: #e5efeb;
@@ -287,40 +288,40 @@ button:disabled {
   border-radius: 8px;
   margin-bottom: 18px;
 }
-.horizon-cards {
+.flood-simulator-page .horizon-cards {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 16px;
   margin-bottom: 20px;
 }
-.horizon {
+.flood-simulator-page .horizon {
   padding: 23px;
   background: #fff;
   border: 1px solid #dce5e2;
   border-radius: 12px;
 }
-.horizon .eyebrow {
+.flood-simulator-page .horizon .eyebrow {
   margin-bottom: 13px;
 }
-.depth-value {
+.flood-simulator-page .depth-value {
   font-size: 42px;
   font-weight: 650;
   color: #194c42;
   letter-spacing: -1.5px;
   line-height: 1.1;
 }
-.depth-value span {
+.flood-simulator-page .depth-value span {
   font-size: 18px;
   letter-spacing: 0;
   font-weight: 400;
   color: #6e8880;
 }
-.depth-caption {
+.flood-simulator-page .depth-caption {
   font-size: 11px;
   margin: 7px 0 17px;
   color: #778c84;
 }
-.event-label {
+.flood-simulator-page .event-label {
   font-size: 12px;
   font-weight: 600;
   border-top: 1px solid #e5ebe8;
@@ -328,42 +329,42 @@ button:disabled {
   color: #237f68;
   line-height: 1.5;
 }
-.event-label.flood {
+.flood-simulator-page .event-label.flood {
   color: #a36625;
 }
-.event-label.initial {
+.flood-simulator-page .event-label.initial {
   color: #607886;
 }
-.event-help {
+.flood-simulator-page .event-help {
   font-size: 10px;
   color: #7a8c85;
   margin: 7px 0 0;
   line-height: 1.6;
 }
-.chart-panel,
-.comparison-panel,
-.details-panel {
+.flood-simulator-page .chart-panel,
+.flood-simulator-page .comparison-panel,
+.flood-simulator-page .details-panel {
   margin-bottom: 18px;
 }
-.chart-heading {
+.flood-simulator-page .chart-heading {
   display: flex;
   justify-content: space-between;
   gap: 15px;
   align-items: center;
 }
-.chart-heading .eyebrow {
+.flood-simulator-page .chart-heading .eyebrow {
   margin-bottom: 7px;
   font-size: 9px;
 }
-.chart-heading h3 {
+.flood-simulator-page .chart-heading h3 {
   margin: 0;
 }
-.unit {
+.flood-simulator-page .unit {
   font-size: 10px;
   color: #7c938b;
   white-space: nowrap;
 }
-.legend {
+.flood-simulator-page .legend {
   display: flex;
   flex-wrap: wrap;
   gap: 10px 18px;
@@ -371,85 +372,85 @@ button:disabled {
   color: #667e74;
   margin: 19px 0 8px;
 }
-.legend span {
+.flood-simulator-page .legend span {
   display: flex;
   align-items: center;
   gap: 6px;
 }
-.legend i {
+.flood-simulator-page .legend i {
   display: inline-block;
   width: 14px;
   height: 3px;
   background: #15816b;
 }
-.legend .orange {
+.flood-simulator-page .legend .orange {
   background: #c48944;
 }
-.legend .dashed {
+.flood-simulator-page .legend .dashed {
   height: 0;
   background: none;
   border-top: 2px dashed #8fa39a;
 }
-.chart svg,
-.rain-chart svg {
+.flood-simulator-page .chart svg,
+.flood-simulator-page .rain-chart svg {
   width: 100%;
   display: block;
   height: auto;
 }
-.chart {
+.flood-simulator-page .chart {
   margin-bottom: 3px;
 }
-.chart-panel > .help {
+.flood-simulator-page .chart-panel > .help {
   margin: 0 0 24px;
 }
-.comparison-panel {
+.flood-simulator-page .comparison-panel {
   padding-bottom: 15px;
 }
-table {
+.flood-simulator-page table {
   width: 100%;
   border-collapse: collapse;
   font-size: 12px;
 }
-th,
-td {
+.flood-simulator-page th,
+.flood-simulator-page td {
   text-align: right;
   padding: 11px 5px;
   border-bottom: 1px solid #e6ece8;
   line-height: 1.5;
 }
-th:first-child,
-td:first-child {
+.flood-simulator-page th:first-child,
+.flood-simulator-page td:first-child {
   text-align: left;
 }
-th {
+.flood-simulator-page th {
   font-size: 10px;
   color: #7b8e83;
   font-weight: 500;
 }
-td {
+.flood-simulator-page td {
   color: #325f4e;
 }
-.downloads {
+.flood-simulator-page .downloads {
   display: flex;
   gap: 10px;
   margin-bottom: 15px;
 }
-details {
+.flood-simulator-page details {
   border-top: 1px solid #e4ebe7;
   padding-top: 15px;
   color: #617f72;
   font-size: 12px;
   line-height: 1.8;
 }
-summary {
+.flood-simulator-page summary {
   cursor: pointer;
   color: #356b54;
   font-weight: 650;
 }
-details ul {
+.flood-simulator-page details ul {
   padding-left: 20px;
 }
-pre {
+.flood-simulator-page pre {
   white-space: pre-wrap;
   overflow-wrap: anywhere;
   background: #f4f7f5;
@@ -458,22 +459,22 @@ pre {
   max-height: 300px;
   overflow: auto;
 }
-.next-step {
+.flood-simulator-page .next-step {
   padding: 24px 5px;
 }
-.next-step h3 {
+.flood-simulator-page .next-step h3 {
   color: #3c6455;
 }
-.next-step p:not(.eyebrow) {
+.flood-simulator-page .next-step p:not(.eyebrow) {
   font-size: 12px;
   line-height: 1.8;
   color: #788c81;
   max-width: 650px;
 }
-.next-step a {
+.flood-simulator-page .next-step a {
   font-size: 12px;
 }
-footer {
+.flood-simulator-page footer {
   border-top: 1px solid #dfe7e1;
   padding-top: 20px;
   margin-top: 34px;
@@ -482,66 +483,66 @@ footer {
   line-height: 1.7;
 }
 @media (max-width: 1000px) {
-  main {
+  .flood-simulator-page .forecast-module-content {
     padding: 30px 20px;
   }
-  .layout {
+  .flood-simulator-page .layout {
     grid-template-columns: 310px minmax(0, 1fr);
     gap: 18px;
   }
-  .controls,
-  .panel {
+  .flood-simulator-page .controls,
+  .flood-simulator-page .panel {
     padding: 20px 16px;
   }
-  .brand span {
+  .flood-simulator-page .brand span {
     display: none;
   }
-  .chart-heading {
+  .flood-simulator-page .chart-heading {
     flex-wrap: wrap;
   }
 }
 @media (max-width: 760px) {
-  .layout {
+  .flood-simulator-page .layout {
     grid-template-columns: 1fr;
   }
-  main {
+  .flood-simulator-page .forecast-module-content {
     padding: 26px 16px;
   }
-  .intro {
+  .flood-simulator-page .intro {
     flex-wrap: wrap;
     gap: 7px;
   }
-  .topbar {
+  .flood-simulator-page .topbar {
     padding: 17px 16px;
   }
-  nav {
+  .flood-simulator-page nav {
     gap: 15px;
     font-size: 11px;
   }
-  .horizon {
+  .flood-simulator-page .horizon {
     padding: 18px 15px;
   }
-  .depth-value {
+  .flood-simulator-page .depth-value {
     font-size: 36px;
   }
-  .output {
+  .flood-simulator-page .output {
     margin-top: 12px;
   }
-  .field-grid {
+  .flood-simulator-page .field-grid {
     gap: 15px 18px;
   }
-  .rain-grid {
+  .flood-simulator-page .rain-grid {
     grid-template-columns: repeat(6, minmax(0, 1fr));
   }
-  .output-heading {
+  .flood-simulator-page .output-heading {
     flex-wrap: wrap;
   }
 }
 @media (max-width: 380px) {
-  .horizon-cards {
+  .flood-simulator-page .horizon-cards {
     grid-template-columns: 1fr;
   }
-  .rain-grid {
+  .flood-simulator-page .rain-grid {
     grid-template-columns: repeat(4, minmax(0, 1fr));
   }
 }

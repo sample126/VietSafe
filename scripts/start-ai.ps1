@@ -11,7 +11,7 @@ $env:MKL_NUM_THREADS = "2"
 $env:OPENBLAS_NUM_THREADS = "2"
 $env:PYTHONUTF8 = "1"
 $env:PYTHONPATH = Join-Path $repo "backend"
-Write-Host "VietSafe AI: http://127.0.0.1:$Port/forecast-lab.html"
+Write-Host "VietSafe: http://127.0.0.1:$Port/ (open Du bao > AI nghien cuu)"
 Write-Host "Historical research replay. No training or public alerts."
 Push-Location $repo
 try {

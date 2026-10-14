@@ -273,7 +273,7 @@ function download(kind) {
   setTimeout(() => window.URL.revokeObjectURL(url), 1000);
 }
 
-async function init() {
+async function initializeSimulator() {
   window.addEventListener("resize", () => {
     if (latest && !$("scenario-result").hidden) chart(latest);
   });
@@ -323,4 +323,16 @@ async function init() {
   }
 }
 
-void init();
+let initializedForm, initialization;
+export function initSimulator() {
+  const form = $("scenario-form");
+  if (!form) return Promise.resolve();
+  if (form !== initializedForm) {
+    initializedForm = form;
+    initialization = initializeSimulator();
+  }
+  return initialization;
+}
+
+if (document.body.classList.contains("flood-simulator-page"))
+  void initSimulator();
