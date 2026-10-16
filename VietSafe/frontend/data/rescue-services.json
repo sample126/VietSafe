@@ -1,6 +1,7 @@
 [
   {
     "vehicle": "motorbike",
+    "verified": false,
     "category": "Xe máy lưu động",
     "categoryClass": "tag-teal",
     "name": "Cứu Hộ Xe Máy 247",
@@ -17,10 +18,12 @@
     "referenceLng": 105.8352,
     "referenceNote": "Tọa độ ước tính theo khu vực địa chỉ; cứu hộ lưu động có thể xuất phát từ nơi khác.",
     "hours": "Phục vụ 24/7",
-    "cost": "Chưa có bảng giá được xác minh; vui lòng gọi hỏi chi phí trước khi điều xe."
+    "cost": "Chưa có bảng giá được xác minh; vui lòng gọi hỏi chi phí trước khi điều xe.",
+    "simulated": false
   },
   {
     "vehicle": "car",
+    "verified": false,
     "category": "Ô tô con & Du lịch",
     "categoryClass": "tag-blue",
     "name": "Cứu Hộ Ô Tô 24h",
@@ -37,10 +40,12 @@
     "referenceLng": 105.7982,
     "referenceNote": "Tọa độ ước tính khu đô thị Xa La; dịch vụ lưu động có thể xuất phát từ gara/chi nhánh khác.",
     "hours": "Luôn trực máy 24/24 giờ",
-    "cost": "Chưa có bảng giá được xác minh; vui lòng gọi hỏi chi phí trước khi điều xe."
+    "cost": "Chưa có bảng giá được xác minh; vui lòng gọi hỏi chi phí trước khi điều xe.",
+    "simulated": false
   },
   {
     "vehicle": "truck",
+    "verified": false,
     "category": "Tổng đài cứu hộ 116",
     "categoryClass": "tag-red",
     "name": "Trung Tâm Cứu Hộ Giao Thông 116",
@@ -50,17 +55,19 @@
     "website": "https://trungtamcuuho116.vn/dich-vu-cuu-ho-giao-thong-116/",
     "websiteLabel": "trungtamcuuho116.vn",
     "description": "Có xe cẩu 3 chức năng, tời kéo xe ngập sâu và hỗ trợ cứu hộ tai nạn giao thông trên các trục vành đai, cao tốc.",
-    "location": "Phục vụ Hà Nội và các tỉnh lân cận",
-    "address": "Chi nhánh tham khảo: 239A Hùng Vương, phường Hồng Bàng, Hải Phòng",
+    "location": "Khu vực phục vụ chưa được xác minh",
+    "address": "Địa chỉ tham khảo tại Hải Phòng, chưa được xác minh",
     "mapsQuery": "239A Hùng Vương, phường Hồng Bàng, Hải Phòng",
     "referenceLat": 20.8642,
     "referenceLng": 106.6833,
     "referenceNote": "Tọa độ ước tính theo khu vực địa chỉ chi nhánh; tổng đài có thể điều xe từ cơ sở khác.",
     "hours": "Tổng đài tiếp nhận 24/7",
-    "cost": "Chưa có bảng giá được xác minh; vui lòng gọi hỏi chi phí trước khi điều xe."
+    "cost": "Chưa có bảng giá được xác minh; vui lòng gọi hỏi chi phí trước khi điều xe.",
+    "simulated": false
   },
   {
     "vehicle": "motorbike",
+    "verified": false,
     "category": "Xe máy lưu động · Giả định",
     "categoryClass": "tag-teal",
     "name": "Điểm Cứu Hộ Xe Máy Mẫu Cầu Giấy",
@@ -82,6 +89,7 @@
   },
   {
     "vehicle": "motorbike",
+    "verified": false,
     "category": "Xe máy lưu động · Giả định",
     "categoryClass": "tag-teal",
     "name": "Cứu Hộ Xe Máy Mẫu Hà Đông",
@@ -103,6 +111,7 @@
   },
   {
     "vehicle": "car",
+    "verified": false,
     "category": "Ô tô con & Du lịch · Giả định",
     "categoryClass": "tag-blue",
     "name": "Cứu Hộ Ô Tô Mẫu Long Biên",
@@ -124,6 +133,7 @@
   },
   {
     "vehicle": "car",
+    "verified": false,
     "category": "Ô tô con & Du lịch · Giả định",
     "categoryClass": "tag-blue",
     "name": "Cứu Hộ Ô Tô Mẫu Thanh Xuân",
@@ -145,6 +155,7 @@
   },
   {
     "vehicle": "truck",
+    "verified": false,
     "category": "Xe tải & xe chuyên dụng · Giả định",
     "categoryClass": "tag-red",
     "name": "Cứu Hộ Xe Tải Mẫu Nam Từ Liêm",
@@ -166,6 +177,7 @@
   },
   {
     "vehicle": "truck",
+    "verified": false,
     "category": "Xe tải & xe chuyên dụng · Giả định",
     "categoryClass": "tag-red",
     "name": "Cứu Hộ Xe Tải Mẫu Gia Lâm",

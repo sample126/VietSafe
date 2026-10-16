@@ -1,9 +1,8 @@
 /**
- * Trang "Ứng cứu": hotline cứu hộ và form yêu cầu cứu hộ.
- * Hiện CHỈ chạy ở phía trình duyệt (tra dịch vụ theo loại xe rồi hướng dẫn gọi hotline);
- * chưa có API điều phối ở backend.
+ * Trang "Ứng cứu": danh bạ cứu hộ tham khảo và form demo.
+ * Chưa có API điều phối; chỉ dịch vụ đã xác minh mới được cung cấp liên kết liên hệ.
  */
-import { rescueProblemTypes } from "../data/rescue.js";
+import { api } from "../api.js";
 import { state } from "../state.js";
 import { $, esc, icon, toast } from "../utils.js";
 
@@ -33,12 +32,17 @@ function validateRescueServices(data) {
     ) {
       throw new Error("Mỗi đơn vị cứu hộ phải có loại phương tiện hợp lệ.");
     }
-    if (
-      service.simulated !== undefined &&
-      typeof service.simulated !== "boolean"
-    ) {
+    if (typeof service.simulated !== "boolean") {
       throw new Error(
         `Cờ dữ liệu giả định không hợp lệ ở đơn vị ${service.vehicle}.`,
+      );
+    }
+    if (
+      typeof service.verified !== "boolean" ||
+      (service.simulated && service.verified)
+    ) {
+      throw new Error(
+        `Trạng thái xác minh không hợp lệ ở đơn vị ${service.vehicle}.`,
       );
     }
     for (const field of [
@@ -123,6 +127,11 @@ function renderRescueServices(services, container) {
     const category = document.createElement("span");
     category.className = `tag ${service.categoryClass}`;
     category.textContent = service.category;
+    const verification = document.createElement("span");
+    verification.className = "rescue-verification-label";
+    verification.textContent = service.simulated
+      ? "Dữ liệu mẫu"
+      : "Chưa xác minh";
     const name = document.createElement("h4");
     name.textContent = service.name;
     const match = document.createElement("span");
@@ -132,17 +141,20 @@ function renderRescueServices(services, container) {
     const distance = document.createElement("span");
     distance.className = "rescue-distance-label";
     distance.hidden = true;
-    heading.append(category, name, match, distance);
+    heading.append(category, verification, name, match, distance);
 
     const summary = document.createElement("p");
     summary.className = "rescue-card-summary";
     summary.textContent = service.summary;
-    const call = document.createElement(service.simulated ? "button" : "a");
+    const canContact = service.verified && !service.simulated;
+    const call = document.createElement(canContact ? "a" : "button");
     call.className = "button primary full rescue-card-call";
-    if (service.simulated) {
+    if (!canContact) {
       call.type = "button";
       call.disabled = true;
-      call.textContent = `Số giả định: ${service.hotline} — không thể gọi`;
+      call.textContent = service.simulated
+        ? "Thông tin mẫu — không thể gọi"
+        : "Thông tin chưa xác minh — chưa thể gọi";
     } else {
       call.href = service.tel;
       call.innerHTML = `${icon("phone")}Gọi ${esc(service.hotline)}`;
@@ -152,10 +164,14 @@ function renderRescueServices(services, container) {
     details.className = "rescue-card-details";
     const detailsSummary = document.createElement("summary");
     detailsSummary.textContent = "Thông tin dịch vụ";
-    const website = document.createElement(service.simulated ? "span" : "a");
+    const website = document.createElement(canContact ? "a" : "span");
     website.className = "service-link";
-    website.textContent = service.websiteLabel;
-    if (!service.simulated) {
+    website.textContent = canContact
+      ? service.websiteLabel
+      : service.simulated
+        ? service.websiteLabel
+        : `${service.websiteLabel} (chưa xác minh)`;
+    if (canContact) {
       website.href = service.website;
       website.target = "_blank";
       website.rel = "noopener";
@@ -181,11 +197,12 @@ function renderRescueServices(services, container) {
     addFact("Chi phí", document.createTextNode(service.cost));
 
     details.append(detailsSummary, website, description, info);
-    if (service.simulated) {
+    if (service.simulated || !service.verified) {
       const notice = document.createElement("p");
       notice.className = "rescue-demo-notice";
-      notice.textContent =
-        "Thông tin giả định để minh họa, không phải dịch vụ thật.";
+      notice.textContent = service.simulated
+        ? "Thông tin giả định để minh họa, không phải dịch vụ thật."
+        : "Thông tin tham khảo chưa được xác minh độc lập; không dùng để yêu cầu cứu hộ thực tế.";
       card.append(heading, notice, summary, call, details);
     } else {
       card.append(heading, summary, call, details);
@@ -251,7 +268,7 @@ export function initRescue() {
         .forEach((card) => rescueServiceList.append(card));
     }
   };
-  const setRescueOrigin = (lat, lng) => {
+  const setRescueOrigin = (lat, lng, description = "vị trí hiện tại") => {
     if (
       !Number.isFinite(lat) ||
       lat < -90 ||
@@ -268,8 +285,7 @@ export function initRescue() {
       return false;
     }
     userLocation = { lat, lng };
-    rescueDistanceStatus.textContent =
-      "Danh sách đơn vị cứu hộ đã được sắp xếp theo vị trí hiện tại.";
+    rescueDistanceStatus.textContent = `Danh sách đơn vị cứu hộ đã được sắp xếp theo ${description}.`;
     updateRescueCardPriority();
     return true;
   };
@@ -346,6 +362,77 @@ export function initRescue() {
   $("#rescue-sort-gps").addEventListener("click", (event) =>
     requestRescueOriginGps(event.currentTarget),
   );
+  const searchRescueOrigin = async () => {
+    const input = $("#rescue-origin-address");
+    const button = $("#rescue-search-address");
+    const query = input.value.trim();
+    if (!query) {
+      rescueDistanceStatus.textContent =
+        "Vui lòng nhập tên địa điểm hoặc đường phố.";
+      input.focus();
+      return;
+    }
+
+    button.disabled = true;
+    button.textContent = "Đang tìm địa điểm...";
+    rescueDistanceStatus.textContent =
+      "Đang tìm địa điểm trong danh mục bản đồ...";
+    try {
+      const { results } = await api(
+        `/api/search?q=${encodeURIComponent(query)}`,
+      );
+      if (!Array.isArray(results)) {
+        throw new Error("Dữ liệu địa điểm trả về không hợp lệ.");
+      }
+      const normalize = (value) =>
+        value
+          .normalize("NFD")
+          .replace(/[\u0300-\u036f]/g, "")
+          .replace(/[đĐ]/g, (letter) => (letter === "Đ" ? "D" : "d"))
+          .toLocaleLowerCase("vi");
+      const exactMatches = results.filter(
+        (place) => normalize(place.name) === normalize(query),
+      );
+      const matches = exactMatches.length ? exactMatches : results;
+      if (!matches.length) {
+        rescueDistanceStatus.textContent =
+          "Không tìm thấy địa điểm. Hãy thử tên nút giao hoặc đường phố khác. Vị trí đang dùng chưa thay đổi.";
+        return;
+      }
+      if (matches.length > 1) {
+        rescueDistanceStatus.textContent =
+          "Có nhiều địa điểm phù hợp. Hãy nhập tên cụ thể hơn để chọn đúng vị trí. Vị trí đang dùng chưa thay đổi.";
+        return;
+      }
+
+      const [place] = matches;
+      if (
+        typeof place.name !== "string" ||
+        !Number.isFinite(place.lat) ||
+        !Number.isFinite(place.lng)
+      ) {
+        throw new Error("Địa điểm này chưa có tọa độ để tính khoảng cách.");
+      }
+      if (setRescueOrigin(place.lat, place.lng, `địa điểm ${place.name}`)) {
+        $("#rescue-address").value = place.name;
+        rescueDistanceStatus.textContent +=
+          " Khoảng cách tới các điểm cứu hộ là ước tính theo tọa độ tham chiếu.";
+      }
+    } catch (error) {
+      rescueDistanceStatus.textContent =
+        error.message || "Không thể tìm địa điểm lúc này.";
+    } finally {
+      button.disabled = false;
+      button.textContent = "Tìm theo địa điểm";
+    }
+  };
+  $("#rescue-search-address").addEventListener("click", searchRescueOrigin);
+  $("#rescue-origin-address").addEventListener("keydown", (event) => {
+    if (event.key === "Enter") {
+      event.preventDefault();
+      searchRescueOrigin();
+    }
+  });
 
   const rescueServicesPromise = fetch("/data/rescue-services.json")
     .then((response) => {
@@ -388,48 +475,16 @@ export function initRescue() {
         return;
       }
       const vehicle = $("#rescue-vehicle").value;
-      const typeKey = $("#rescue-type").value;
-      const address = $("#rescue-address").value.trim();
-      const phone = $("#rescue-phone").value.trim();
-      const note = $("#rescue-note").value.trim();
       const srv = services.find((service) => service.vehicle === vehicle);
       if (!srv) {
         toast("Chưa có đơn vị cứu hộ cho loại phương tiện đã chọn.");
         return;
       }
-      const probLabel = rescueProblemTypes[typeKey] || "Sự cố ngập nước";
-
       const resultBox = $("#rescue-form-result");
       resultBox.hidden = false;
-      resultBox.innerHTML = `
-        <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
-          <span style="display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;border-radius:50%;background:#087f72;color:white;flex-shrink:0;">${icon("check")}</span>
-          <div>
-            <strong style="font-size:14px;color:#087f72;display:block;">Đã tiếp nhận yêu cầu ứng cứu!</strong>
-            <span style="font-size:11px;color:#537365;">Đơn vị phụ trách đề xuất: <b>${esc(srv.name)}</b></span>
-          </div>
-        </div>
-        <div style="font-size:11px;line-height:1.6;background:white;padding:10px 12px;border-radius:8px;border:1px solid #d0e7dc;margin-bottom:12px;color:#354e43;">
-          <div>📍 <b>Vị trí:</b> ${esc(address)}</div>
-          <div>📞 <b>SĐT liên hệ:</b> ${esc(phone)}</div>
-          <div>⚠️ <b>Tình trạng:</b> ${esc(probLabel)}${note ? " (" + esc(note) + ")" : ""}</div>
-        </div>
-        <div style="display:flex;gap:10px;flex-wrap:wrap;">
-          <a href="${esc(srv.tel)}" class="button primary" style="background:#de4c3c!important;flex:1;min-height:38px;justify-content:center;text-decoration:none;">
-            ${icon("phone")}Bấm gọi Hotline: ${srv.hotline}
-          </a>
-          <a href="${esc(srv.website)}" target="_blank" rel="noopener" class="button secondary" style="min-height:38px;justify-content:center;text-decoration:none;">
-            ${icon("external")}Mở website
-          </a>
-        </div>
-        <div style="margin-top:10px;font-size:10px;color:#6b8577;line-height:1.5;">
-          💡 <b>Lưu ý an toàn:</b> Nhấn nút <i>"Bấm gọi Hotline"</i> để tổng đài viên điều xe cứu hộ gần nhất tiếp cận hiện trường nhanh nhất (15–20 phút).
-        </div>
-      `;
-
-      toast(
-        `Đã tiếp nhận! Vui lòng gọi hotline ${srv.hotline} để được cứu hộ hỗ trợ tức thì.`,
-      );
+      resultBox.textContent =
+        "Đây là bản demo: yêu cầu chưa được gửi và thông tin liên hệ cứu hộ chưa được xác minh. Không nhập thông tin cá nhân nếu chỉ đang trải nghiệm giao diện.";
+      toast("Bản demo chưa gửi yêu cầu cứu hộ.");
     });
   }
 }

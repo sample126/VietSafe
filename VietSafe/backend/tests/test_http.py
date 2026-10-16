@@ -27,7 +27,19 @@ class HTTPTests(ServerTestCase):
         code, headers, body = self.request("/data/rescue-services.json")
         self.assertEqual(code, 200)
         self.assertIn("application/json", headers["Content-Type"])
-        self.assertEqual(len(json.loads(body)), 3)
+        rescue_services = json.loads(body)
+        self.assertEqual(len(rescue_services), 9)
+        self.assertTrue(
+            all(
+                isinstance(service.get("simulated"), bool)
+                and isinstance(service.get("verified"), bool)
+                for service in rescue_services
+            )
+        )
+        self.assertEqual(
+            sum(service["simulated"] for service in rescue_services), 6
+        )
+        self.assertFalse(any(service["verified"] for service in rescue_services))
 
     def test_security_headers_present(self):
         _, headers, _ = self.request("/")

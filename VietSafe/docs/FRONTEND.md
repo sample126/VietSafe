@@ -53,16 +53,17 @@ index.html
 Các `*.js` đứng ngoài `views/` là hạ tầng dùng chung; mỗi file trong `views/` là **một khu vực giao diện**.
 
 Danh sách đơn vị cứu hộ được lưu trong `frontend/data/rescue-services.json`, không viết lặp trong HTML hay JavaScript.
-Khi mở trang, `views/rescue.js` tải JSON, kiểm tra dữ liệu rồi tạo các thẻ trong `#rescue-service-list`; cùng dữ liệu
-đó cũng được dùng cho hotline và website trong kết quả biểu mẫu ứng cứu. Có thể thêm hoặc sửa đơn vị bằng cách cập
-nhật JSON; mỗi mục cần có các trường cùng cấu trúc với những mục hiện có. Chi tiết từng đơn vị nằm trong thẻ
+Khi mở trang, `views/rescue.js` tải JSON, kiểm tra dữ liệu rồi tạo các thẻ trong `#rescue-service-list`. Mỗi mục phải
+có cờ `simulated` và `verified`; chỉ mục đã xác minh, không giả định mới được hiển thị với liên kết gọi/website hoạt động.
+Các mục hiện tại đều chưa xác minh độc lập hoặc là dữ liệu mẫu, nên không được dùng để yêu cầu cứu hộ thực tế. Form
+ứng cứu chỉ là giao diện demo, không gửi yêu cầu. Cập nhật JSON khi thêm/sửa mục và chỉ đặt `verified: true` sau khi
+xác minh độc lập số điện thoại, địa chỉ, khu vực phục vụ, giờ hoạt động và website. Chi tiết hiển thị trong thẻ
 thu gọn/mở rộng và danh sách được trình bày một cột.
 
-Người dùng bấm nút lấy vị trí hiện tại để sắp xếp đơn vị cứu hộ; không cần tự nhập tọa độ. Tọa độ GPS chỉ dùng
-trong trình duyệt để tính khoảng cách đường chim bay và sắp xếp thẻ, không gửi tới dịch vụ bản đồ. Tọa độ chi
-nhánh trong JSON là mốc ước tính theo các địa chỉ tham khảo, không phải vị trí xe cứu hộ trực tiếp. Khoảng cách
-và thứ tự vì vậy chỉ mang tính tham khảo; cần xác minh địa chỉ/chi nhánh với đơn vị trước khi điều phối. Giá chưa
-xác minh phải ghi rõ trạng thái; liên kết Google Maps mở trang tìm kiếm theo địa chỉ tham khảo.
+Người dùng bấm nút lấy vị trí hiện tại để sắp xếp các mục tham khảo; không cần tự nhập tọa độ. Tọa độ GPS chỉ dùng
+trong trình duyệt để tính khoảng cách đường chim bay và sắp xếp thẻ, không gửi tới dịch vụ bản đồ. Tọa độ trong JSON
+là mốc ước tính, không phải vị trí xe cứu hộ trực tiếp. Khoảng cách và thứ tự chỉ mang tính minh họa. Form không
+gửi yêu cầu cứu hộ và không lưu dữ liệu người dùng; không nhập thông tin cá nhân thật trong prototype.
 
 ## 3. Mô hình hoạt động
 

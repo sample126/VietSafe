@@ -94,6 +94,12 @@ for idx, (name, a, b, susceptibility, speed, event) in enumerate(EDGE_ROWS):
             seed_event=event,
         )
     )
+# Ghi đè vị trí hiển thị icon sự kiện cho một số đoạn — đặt icon đúng chỗ thực tế
+# (ví dụ đoạn "Đường Láng" chỉ dừng ở Nguyễn Chí Thanh, nhưng sự cố ngập đang xem ở khu Thịnh Quang).
+EVENT_AT = {"HN-017": [21.0110, 105.8130]}
+for _road in ROADS:
+    if _road["id"] in EVENT_AT:
+        _road["event_at"] = EVENT_AT[_road["id"]]
 ROAD_INDEX = {r["id"]: r for r in ROADS}
 
 

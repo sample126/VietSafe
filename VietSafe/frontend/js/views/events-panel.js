@@ -7,7 +7,9 @@ import { selectRoad, showRoadDetails } from "./road-details.js";
 
 export function renderEvents() {
   if (!state.data) return;
-  const events = state.data.events.filter((e) => state.filter === "all" || e.type === state.filter);
+  const events = state.data.events.filter(
+    (e) => state.filter === "all" || e.type === state.filter,
+  );
   $("#event-list").innerHTML = events.length
     ? events
         .map((e) => {
@@ -24,7 +26,7 @@ export function renderEvents() {
           return `<button class="event-item" data-event="${esc(e.id)}"><span class="event-type-icon ${typeColors[e.type]}">${icon(typeIcons[e.type])}</span><div class="event-copy"><h3>${esc(e.name)}</h3><p>${esc(summary)}</p><div class="event-meta"><span class="tag tag-${e.status === "pending" ? "gray" : typeColors[e.type]}">${e.status === "pending" ? "Chờ xác minh" : typeNames[e.type]}</span><span>${e.origin === "demo" ? "Mô phỏng" : "Tại máy"} · ${ago(e.updated_at)}</span></div></div></button>`;
         })
         .join("")
-    : `<div class="empty-state">${icon("check")}Không có cảnh báo thuộc nhóm này trong kịch bản hiện tại.</div>`;
+    : `<div class="empty-state">${icon("check")}Không có mục mô phỏng hoặc phản ánh thuộc nhóm này.</div>`;
 }
 
 export function showEvent(id) {

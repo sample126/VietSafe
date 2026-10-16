@@ -41,6 +41,31 @@
   margin-bottom: 12px;
 }
 
+.prototype-notice {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin-bottom: 15px;
+  padding: 12px 15px;
+  border: 1px solid #ead7ae;
+  border-radius: 8px;
+  background: #fff8e9;
+  color: #705522;
+  font-size: 11px;
+  line-height: 1.55;
+}
+
+.prototype-notice svg {
+  width: 17px;
+  height: 17px;
+  flex: 0 0 auto;
+  margin-top: 1px;
+}
+
+.prototype-notice p {
+  margin: 0;
+}
+
 .alert-banner {
   display: flex;
   align-items: center;

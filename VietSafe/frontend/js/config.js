@@ -21,7 +21,11 @@ export const DEFAULT_SELECTED_ROAD = "HN-019";
  */
 export const PILOT_BOUNDS = { lat: [20.98, 21.065], lng: [105.77, 105.88] };
 
-export const typeNames = { flood: "Ngập đường", traffic: "Ùn tắc", incident: "Sự cố giao thông" };
+export const typeNames = {
+  flood: "Ngập đường",
+  traffic: "Ùn tắc",
+  incident: "Sự cố giao thông",
+};
 export const typeIcons = { flood: "water", traffic: "car", incident: "alert" };
 export const typeColors = { flood: "blue", traffic: "orange", incident: "red" };
 export const statuses = {
@@ -32,9 +36,10 @@ export const statuses = {
   expired: "Hết hạn",
 };
 
-export const FOOTNOTE_ONLINE = "Mạng đường giản lược · Không dùng để dẫn đường thực tế";
+export const FOOTNOTE_ONLINE =
+  "Mạng đường và trạng thái mô phỏng · Không dùng để dẫn đường";
 export const FOOTNOTE_OFFLINE =
-  "Sơ đồ ngoại tuyến · Mạng đường giản lược · Không dùng để dẫn đường";
+  "Sơ đồ ngoại tuyến · Mạng đường mô phỏng · Không dùng để dẫn đường";
 
 // === Tile providers ===
 // Nền chính: Stadia Maps "Alidade Smooth" (dữ liệu OSM, nền xám nhạt để lớp đoạn đường nổi rõ).

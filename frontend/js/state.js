@@ -10,7 +10,7 @@ export const state = {
   filter: "all",
   horizon: 0,
   selected: DEFAULT_SELECTED_ROAD,
-  layers: { flood: true, traffic: true, incident: true, pending: true },
+  layers: { roads: false, flood: true, traffic: true, incident: true, pending: true },
   reportPosition: null,
   picking: false,
   reports: [],

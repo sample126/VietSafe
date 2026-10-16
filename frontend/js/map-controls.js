@@ -1,5 +1,5 @@
 /** Điều khiển trên bản đồ: lớp hiển thị, nền bản đồ, thu phóng, vị trí của tôi, mốc thời gian. */
-import { map, renderMap, setBaseTiles } from "./map.js";
+import { map, renderMap, setBaseStyle } from "./map.js";
 import { state } from "./state.js";
 import { $, $$ } from "./utils.js";
 import { geolocate } from "./views/report-form.js";
@@ -23,7 +23,12 @@ export function initMapControls() {
       if (state.data) renderMap();
     }),
   );
-  $("#base-tiles").addEventListener("change", (e) => setBaseTiles(e.target.checked));
+  // Chọn kiểu nền bản đồ: Đường phố / Vệ tinh / Ngoại tuyến.
+  $$('input[name="base-style"]').forEach((radio) =>
+    radio.addEventListener("change", () => {
+      if (radio.checked) setBaseStyle(radio.value);
+    }),
+  );
   $("#fit-map").addEventListener("click", () => {
     if (state.data)
       map.fitBounds(

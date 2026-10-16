@@ -29,12 +29,13 @@ export async function refresh() {
     state.connected = true;
     state.lastGood = Date.now();
     $("#connection-error").hidden = true;
-    $("#sync-status").textContent = "Kết nối local · Dữ liệu mô phỏng";
+    $("#sync-status").textContent = "Kết nối local · Kịch bản mô phỏng";
     $(".status-dot").style.background = "#49a68b";
     if (first) populateControls();
     updateDashboard();
     updateAlertBanner();
     if (state.view === "reports") await loadReports();
+    return true;
   } catch (e) {
     // Lỗi trong lúc VẼ cũng rơi vào đây và hiện như "mất kết nối" - nên luôn ghi ra console.
     console.error("refresh thất bại:", e);
@@ -44,6 +45,7 @@ export async function refresh() {
       ? "Mất kết nối · Dữ liệu đã cũ"
       : "Chưa kết nối máy chủ";
     $(".status-dot").style.background = "#d86b5c";
+    return false;
   } finally {
     refreshing = false;
     complete();
@@ -90,7 +92,7 @@ export function updateDashboard() {
     $(`#stat-${type}`).textContent = String(d.counts[type]).padStart(2, "0");
   $("#stat-rain").innerHTML = `${d.rainfall}<em>mm/h</em>`;
   $("#weather-caption").textContent =
-    `${{ normal: "Trời khô", rain: "Mưa lớn", storm: "Mưa rất lớn" }[d.scenario]} · ${d.temperature}°C`;
+    `Mô phỏng: ${{ normal: "Trời khô", rain: "Mưa lớn", storm: "Mưa rất lớn" }[d.scenario]} · ${d.temperature}°C`;
   $("#map-clock").textContent = timeText(d.generated_at);
   $("#event-total").textContent = d.events.length;
   $("#nav-count").textContent = d.pending;
@@ -104,6 +106,6 @@ export function updateDashboard() {
   if (state.routes) {
     const label = $("#route-calculation-note");
     if (label)
-      label.textContent = `Tính lúc ${timeText(state.routes.calculated_at)} · Bấm tìm tuyến để cập nhật.`;
+      label.textContent = `Tuyến mô phỏng, tính lúc ${timeText(state.routes.calculated_at)} · Bấm tìm tuyến để cập nhật.`;
   }
 }

@@ -177,7 +177,7 @@ export function renderMap() {
       dashArray: r.known ? null : "5 6",
     }).addTo(roadLayer);
     line.bindTooltip(
-      `<strong>${esc(r.name)}</strong><br>${!r.known ? "Chưa đủ dữ liệu" : state.horizon ? `Dự báo +${state.horizon} phút · Nguy cơ ${f.risk}/100` : `${r.speed} km/h · ${r.blocked ? "Đóng trong kịch bản" : "Dữ liệu thử nghiệm"}`}`,
+      `<strong>${esc(r.name)}</strong><br>${!r.known ? "Chưa đủ dữ liệu" : state.horizon ? `Mô phỏng +${state.horizon} phút · Nguy cơ ${f.risk}/100` : `${r.speed} km/h · ${r.blocked ? "Đóng trong kịch bản mô phỏng" : r.origin === "local_report" ? "Có phản ánh đã xác minh tại máy · số liệu còn lại là mô phỏng" : "Dữ liệu mô phỏng"}`}`,
     );
     line.on("click", (e) => {
       L.DomEvent.stopPropagation(e);
@@ -200,14 +200,14 @@ export function renderMap() {
         title: `${typeNames[e.type]}: ${e.name}`,
       }).addTo(eventLayer);
       marker.bindTooltip(
-        `${esc(e.name)} · ${e.status === "pending" ? "Chờ xác minh" : typeNames[e.type]}`,
+        `${esc(e.name)} · ${e.status === "pending" ? "Phản ánh chờ xác minh" : e.origin === "demo" ? `Sự kiện mô phỏng: ${typeNames[e.type]}` : `Phản ánh cộng đồng đã xác minh tại máy: ${typeNames[e.type]}`}`,
       );
       marker.on("click", () => showEvent(e.id));
     }
   $("#map-mode-label").hidden = !state.horizon;
   $("#map-mode-label").textContent =
-    `Dự báo +${state.horizon} phút · Nguy cơ thấp → trung bình → cao`;
+    `Kịch bản mô phỏng +${state.horizon} phút · Nguy cơ thấp → trung bình → cao`;
   $(".map-legend").innerHTML = state.horizon
-    ? '<span><i class="legend-dot green"></i>Thấp &lt;35</span><span><i class="legend-dot orange-bg"></i>Trung bình 35–64</span><span><i class="legend-dot red-bg"></i>Cao ≥65</span><span><i class="legend-dot gray-bg"></i>Chưa đủ dữ liệu</span>'
-    : '<span><i class="legend-dot green"></i>Thông thoáng</span><span><i class="legend-dot orange-bg"></i>Ùn tắc</span><span><i class="legend-dot blue-bg"></i>Ngập</span><span><i class="legend-dot red-bg"></i>Sự cố / đóng</span><span><i class="legend-dot gray-bg"></i>Chưa có dữ liệu</span>';
+    ? '<span><i class="legend-dot green"></i>Thấp (mô phỏng)</span><span><i class="legend-dot orange-bg"></i>Trung bình (mô phỏng)</span><span><i class="legend-dot red-bg"></i>Cao (mô phỏng)</span><span><i class="legend-dot gray-bg"></i>Chưa đủ dữ liệu</span>'
+    : '<span><i class="legend-dot green"></i>Ít rủi ro (mô phỏng)</span><span><i class="legend-dot orange-bg"></i>Ùn tắc (mô phỏng)</span><span><i class="legend-dot blue-bg"></i>Ngập (mô phỏng)</span><span><i class="legend-dot red-bg"></i>Sự cố / đóng (mô phỏng)</span><span><i class="legend-dot gray-bg"></i>Chưa có dữ liệu</span>';
 }

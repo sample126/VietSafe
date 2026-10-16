@@ -239,12 +239,21 @@
                   </button>
                   <div id="layer-menu" hidden>
                     <strong>Lớp dữ liệu</strong
+                    ><label
+                      ><input type="checkbox" data-layer="roads" />Đường minh hoạ (mạng
+                      giản lược)</label
                     ><label><input type="checkbox" data-layer="flood" checked />Điểm ngập</label
                     ><label><input type="checkbox" data-layer="traffic" checked />Ùn tắc</label
                     ><label><input type="checkbox" data-layer="incident" checked />Sự cố</label
                     ><label><input type="checkbox" data-layer="pending" checked />Chờ xác minh</label
-                    ><label><input type="checkbox" id="base-tiles" checked />Bản đồ nền trực tuyến</label
-                    ><small>Tắt bản đồ nền để xem sơ đồ ngoại tuyến.</small>
+                    ><strong>Nền bản đồ</strong
+                    ><label><input type="radio" name="base-style" value="street" checked />Đường phố</label
+                    ><label><input type="radio" name="base-style" value="satellite" />Vệ tinh</label
+                    ><label><input type="radio" name="base-style" value="offline" />Ngoại tuyến</label
+                    ><small
+                      >Đường minh hoạ ẩn mặc định trên nền bản đồ thật; bật lại khi cần xem định
+                      tuyến. "Vệ tinh" xem ảnh vệ tinh thực tế.</small
+                    >
                   </div>
                 </div>
                 <div class="map-left-bottom">

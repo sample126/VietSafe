@@ -1,7 +1,9 @@
 /** Bản đồ Leaflet: khởi tạo, nền (tile), các lớp (layer) và vẽ đoạn đường / sự kiện. */
 import {
+  BASE_STYLES,
   FOOTNOTE_OFFLINE,
   FOOTNOTE_ONLINE,
+  FOOTNOTE_SATELLITE,
   HANOI_BOUNDS,
   TILE_ORDER,
   TILE_PROVIDERS,
@@ -21,46 +23,56 @@ import { finishPick } from "./views/report-form.js";
 export let map, baseTiles, roadLayer, eventLayer, routeLayer, selectionLayer, placeLayer;
 let geographyLayer;
 let tileErrorCount = 0;
-let tileProviderIndex = 0;
+let currentStyleId = "street"; // khóa của kiểu nền đang chọn (trong BASE_STYLES)
+let styleProviders = TILE_ORDER; // chuỗi nhà cung cấp dự phòng của kiểu nền hiện tại
+let providerIndex = 0;
 
 function buildTileLayer(key) {
   const cfg = TILE_PROVIDERS[key];
   const layer = L.tileLayer(cfg.url, { maxZoom: cfg.maxZoom, attribution: cfg.attr });
   layer.on("tileerror", () => {
-    if (++tileErrorCount >= 6 && map.hasLayer(layer)) switchTileProvider();
+    if (++tileErrorCount >= 6 && map.hasLayer(layer)) fallbackProvider();
   });
   return layer;
 }
 
-// Hết nhà cung cấp tile thì rơi xuống sơ đồ ngoại tuyến (nền lưới CSS + hồ vẽ tay).
-function switchTileProvider() {
+// Kiểu nền đang xem bị lỗi tile: rơi sang nhà cung cấp kế tiếp, hết thì về sơ đồ ngoại tuyến.
+function fallbackProvider() {
   map.removeLayer(baseTiles);
   tileErrorCount = 0;
-  if (++tileProviderIndex < TILE_ORDER.length) {
-    baseTiles = buildTileLayer(TILE_ORDER[tileProviderIndex]);
+  if (++providerIndex < styleProviders.length) {
+    baseTiles = buildTileLayer(styleProviders[providerIndex]);
     baseTiles.addTo(map);
     return;
   }
-  tileProviderIndex = 0;
-  baseTiles = buildTileLayer(TILE_ORDER[0]);
-  setBaseTiles(false);
-  $("#base-tiles").checked = false;
+  setBaseStyle("offline");
   toast("Không tải được bản đồ nền. Đang hiển thị sơ đồ ngoại tuyến.");
 }
 
-export function setBaseTiles(on) {
-  if (on) {
-    if (!map.hasLayer(baseTiles)) {
-      tileErrorCount = 0;
-      baseTiles.addTo(map);
-    }
-    map.removeLayer(geographyLayer);
-    $("#map-footnote").textContent = FOOTNOTE_ONLINE;
+// Chuyển kiểu nền: "street" (đường phố), "satellite" (ảnh vệ tinh) hoặc "offline" (ngoại tuyến).
+export function setBaseStyle(styleId) {
+  const style = BASE_STYLES.find((s) => s.id === styleId) || BASE_STYLES[0];
+  currentStyleId = style.id;
+  if (baseTiles && map.hasLayer(baseTiles)) map.removeLayer(baseTiles);
+  if (map.hasLayer(geographyLayer)) map.removeLayer(geographyLayer);
+  tileErrorCount = 0;
+  providerIndex = 0;
+
+  if (style.provider) {
+    // Lớp "Đường phố" có chuỗi dự phòng (osm -> stadia); "Vệ tinh" chỉ một nhà cung cấp.
+    styleProviders = style.id === "street" ? TILE_ORDER : [style.provider];
+    baseTiles = buildTileLayer(styleProviders[0]);
+    baseTiles.addTo(map);
+    $("#map-footnote").textContent =
+      style.id === "satellite" ? FOOTNOTE_SATELLITE : FOOTNOTE_ONLINE;
   } else {
-    if (map.hasLayer(baseTiles)) map.removeLayer(baseTiles);
+    styleProviders = [];
     geographyLayer.addTo(map);
     $("#map-footnote").textContent = FOOTNOTE_OFFLINE;
   }
+  // Đồng bộ radio nền bản đồ trong menu Lớp (nếu có).
+  const radio = document.querySelector(`input[name="base-style"][value="${currentStyleId}"]`);
+  if (radio) radio.checked = true;
 }
 
 export function initializeMap() {
@@ -72,8 +84,6 @@ export function initializeMap() {
     maxBoundsViscosity: 1,
   }).setView([21.025, 105.83], 13);
   L.control.zoom({ position: "bottomright" }).addTo(map);
-  baseTiles = buildTileLayer(TILE_ORDER[tileProviderIndex]);
-  baseTiles.addTo(map);
   // Hồ vẽ tay chỉ dùng cho sơ đồ ngoại tuyến; trên nền tile thật hồ đã được vẽ đúng hình.
   geographyLayer = L.layerGroup();
   const lakes = [
@@ -134,6 +144,8 @@ export function initializeMap() {
   routeLayer = L.layerGroup().addTo(map);
   eventLayer = L.layerGroup().addTo(map);
   selectionLayer = L.layerGroup().addTo(map);
+  // Nền mặc định: lớp "Đường phố" (OpenStreetMap chi tiết). Người dùng đổi sang "Vệ tinh" trong menu Lớp.
+  setBaseStyle("street");
   map.on("click", (e) => {
     if (state.picking) finishPick(e.latlng.lat, e.latlng.lng);
   });
@@ -148,32 +160,36 @@ export function roadColor(r) {
   }
   if (r.blocked) return "#c95650";
   if (r.event_type && state.layers[r.event_type])
-    return { flood: "#568eeb", traffic: "#e9a34d", incident: "#df7469" }[r.event_type];
+    return { flood: "#1a4fa8", traffic: "#e9a34d", incident: "#df7469" }[r.event_type];
   return "#86b9a0";
 }
 
 export function renderMap() {
   roadLayer.clearLayers();
   eventLayer.clearLayers();
-  for (const r of state.data.roads) {
-    const f = r.forecast[state.horizon / 15];
-    const color = roadColor(r),
-      weight = r.id === state.selected ? 7 : 4;
-    const line = L.polyline(r.coordinates, {
-      color,
-      weight,
-      opacity: 0.88,
-      dashArray: r.known ? null : "5 6",
-    }).addTo(roadLayer);
-    line.bindTooltip(
-      `<strong>${esc(r.name)}</strong><br>${!r.known ? "Chưa đủ dữ liệu" : state.horizon ? `Dự báo +${state.horizon} phút · Nguy cơ ${f.risk}/100` : `${r.speed} km/h · ${r.blocked ? "Đóng trong kịch bản" : "Dữ liệu thử nghiệm"}`}`,
-    );
-    line.on("click", (e) => {
-      L.DomEvent.stopPropagation(e);
-      if (state.picking) finishPick(e.latlng.lat, e.latlng.lng);
-      else selectRoad(r.id, true);
-    });
-  }
+  // Đường minh hoạ (đồ thị mạng đường giản lược) ẩn mặc định trên nền bản đồ thật;
+  // bật lại trong menu Lớp khi cần xem từng đoạn / dẫn đường. Dữ liệu `state.data.roads`
+  // vẫn luôn đủ cho định tuyến và bảng chi tiết, chỉ là không vẽ polyline đè lên bản đồ.
+  if (state.layers.roads)
+    for (const r of state.data.roads) {
+      const f = r.forecast[state.horizon / 15];
+      const color = roadColor(r),
+        weight = r.id === state.selected ? 7 : 4;
+      const line = L.polyline(r.coordinates, {
+        color,
+        weight,
+        opacity: 0.88,
+        dashArray: r.known ? null : "5 6",
+      }).addTo(roadLayer);
+      line.bindTooltip(
+        `<strong>${esc(r.name)}</strong><br>${!r.known ? "Chưa đủ dữ liệu" : state.horizon ? `Dự báo +${state.horizon} phút · Nguy cơ ${f.risk}/100` : `${r.speed} km/h · ${r.blocked ? "Đóng trong kịch bản" : "Dữ liệu thử nghiệm"}`}`,
+      );
+      line.on("click", (e) => {
+        L.DomEvent.stopPropagation(e);
+        if (state.picking) finishPick(e.latlng.lat, e.latlng.lng);
+        else selectRoad(r.id, true);
+      });
+    }
   if (!state.horizon)
     for (const e of state.data.events) {
       if (!state.layers[e.type] || (e.status === "pending" && !state.layers.pending)) continue;

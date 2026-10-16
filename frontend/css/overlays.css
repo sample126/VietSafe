@@ -19,7 +19,7 @@
 }
 
 .event-marker.flood {
-  color: var(--blue);
+  color: var(--flood);
 }
 
 .event-marker.traffic {

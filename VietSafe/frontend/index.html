@@ -22,7 +22,7 @@
     <link rel="stylesheet" href="/css/auth-alert.css" />
     <link
       rel="stylesheet"
-      href="/css/rescue.css?v=consolidated-rescue-cards-20261014"
+      href="/css/rescue.css?v=inline-safety-icon-20261014"
     />
     <link rel="stylesheet" href="/css/map-overrides.css" />
     <link
@@ -190,10 +190,20 @@
             </button>
           </div>
         </section>
+        <div class="prototype-notice" role="note">
+          <svg aria-hidden="true"><use href="#i-info" /></svg>
+          <p>
+            <strong>Bản thử nghiệm, không dùng cho quyết định đi đường.</strong>
+            Tình trạng đường, mưa, tốc độ, độ sâu, dự báo và tuyến gợi ý được mô
+            phỏng theo kịch bản, không phải dữ liệu quan trắc trực tiếp. Phản
+            ánh cộng đồng được phân biệt riêng; chỉ phản ánh đã xác minh mới ảnh
+            hưởng trạng thái đường.
+          </p>
+        </div>
         <div id="alert-banner" class="alert-banner" hidden>
           <svg><use href="#i-alert" /></svg
           ><span id="alert-text"
-            >Một số đoạn đường bị chặn do ngập sâu hoặc sự cố.</span
+            >Một số đoạn được đánh dấu đóng trong kịch bản mô phỏng.</span
           ><button class="alert-dismiss" id="dismiss-alert">×</button>
         </div>
         <div id="connection-error" class="connection-error" role="alert" hidden>
@@ -207,7 +217,7 @@
               ></span>
               <div>
                 <span>Điểm ngập</span><strong id="stat-flood">—</strong
-                ><small>trên mạng thử nghiệm</small>
+                ><small>mô phỏng + phản ánh đã xác minh</small>
               </div>
               <span class="stat-link">↗</span>
             </button>
@@ -217,7 +227,7 @@
               ></span>
               <div>
                 <span>Đoạn ùn tắc</span><strong id="stat-traffic">—</strong
-                ><small>cần lưu ý khi di chuyển</small>
+                ><small>mô phỏng + phản ánh đã xác minh</small>
               </div>
               <span class="stat-link">↗</span>
             </button>
@@ -228,7 +238,7 @@
               <div>
                 <span>Sự cố giao thông</span
                 ><strong id="stat-incident">—</strong
-                ><small>trong kịch bản hiện tại</small>
+                ><small>mô phỏng + phản ánh đã xác minh</small>
               </div>
               <span class="stat-link">↗</span>
             </button>
@@ -239,7 +249,7 @@
               <div>
                 <span>Thời tiết mô phỏng</span
                 ><strong id="stat-rain">—<em>mm/h</em></strong
-                ><small id="weather-caption">Mưa lớn · 27°C</small>
+                ><small id="weather-caption">Kịch bản mưa · 27°C</small>
               </div>
               <div class="weather-decoration">☂</div>
             </div>
@@ -248,8 +258,7 @@
             <section class="map-card">
               <div class="map-toolbar">
                 <div class="map-title">
-                  <span class="live-dot"></span
-                  ><strong>Bản đồ tình trạng đường</strong>
+                  <strong>Mạng đường mô phỏng</strong>
                 </div>
                 <div
                   class="segmented"
@@ -306,17 +315,23 @@
                 </div>
                 <div class="map-left-bottom">
                   <div class="map-legend">
-                    <span><i class="legend-dot green"></i>Thông thoáng</span
-                    ><span><i class="legend-dot orange-bg"></i>Ùn tắc</span
-                    ><span><i class="legend-dot blue-bg"></i>Ngập</span
-                    ><span><i class="legend-dot red-bg"></i>Sự cố / đóng</span
+                    <span
+                      ><i class="legend-dot green"></i>Ít rủi ro (mô
+                      phỏng)</span
+                    ><span
+                      ><i class="legend-dot orange-bg"></i>Ùn tắc (mô
+                      phỏng)</span
+                    ><span
+                      ><i class="legend-dot blue-bg"></i>Ngập (mô phỏng)</span
+                    ><span
+                      ><i class="legend-dot red-bg"></i>Sự cố / đóng (mô
+                      phỏng)</span
                     ><span
                       ><i class="legend-dot gray-bg"></i>Chưa có dữ liệu</span
                     >
                   </div>
                   <span class="map-footnote" id="map-footnote"
-                    >Mạng đường giản lược · Không dùng để dẫn đường thực
-                    tế</span
+                    >Mạng đường mô phỏng · Không dùng để dẫn đường</span
                   >
                 </div>
                 <div class="map-bottom-right">
@@ -345,7 +360,8 @@
                     >Đang kết nối máy chủ local…</span
                   ></span
                 ><span
-                  >Cập nhật mỗi 10 giây <span class="dot-separator">·</span>
+                  >Làm mới mô phỏng mỗi 10 giây
+                  <span class="dot-separator">·</span>
                   <span id="map-clock">—</span></span
                 >
               </div>
@@ -354,7 +370,7 @@
               <div class="panel-heading">
                 <div>
                   <h2>Cảnh báo khu vực <span id="event-total">0</span></h2>
-                  <p>Thông tin trên mạng đường thử nghiệm</p>
+                  <p>Mô phỏng và phản ánh cộng đồng đã xác minh</p>
                 </div>
                 <svg><use href="#i-alert" /></svg>
               </div>
@@ -370,17 +386,17 @@
               <button class="route-open" id="open-route">
                 <span class="route-open-icon"
                   ><svg><use href="#i-route" /></svg></span
-                ><span
-                  ><strong>Tìm tuyến thay thế</strong
-                  ><small>Thêm góc nhìn trước khi khởi hành</small></span
+                ><span>
+                  <strong>Tìm tuyến minh họa</strong
+                  ><small>Thử nghiệm trên mạng đường mô phỏng</small></span
                 ><span>→</span>
               </button>
             </aside>
             <aside class="route-panel" id="route-panel" hidden>
               <div class="panel-heading">
                 <div>
-                  <h2>Hành trình của bạn</h2>
-                  <p>Tìm tuyến trên mạng đường thử nghiệm</p>
+                  <h2>Tuyến đường minh họa</h2>
+                  <p>Thử nghiệm trên đồ thị đường dựng tay</p>
                 </div>
                 <button
                   class="icon-button"
@@ -419,8 +435,8 @@
                   <svg><use href="#i-map" /></svg>
                   <h3>Chọn điểm đi và điểm đến</h3>
                   <p>
-                    Ưu tiên tránh đường đóng, vùng nguy cơ ngập cao và đoạn chưa
-                    có dữ liệu.
+                    Mô hình ưu tiên tránh đoạn đóng, nguy cơ mô phỏng cao và
+                    đoạn thiếu dữ liệu; kết quả không phải chỉ dẫn đi đường.
                   </p>
                 </div>
               </div>
@@ -436,10 +452,10 @@
                 ><svg><use href="#i-chart" /></svg
               ></span>
               <div>
-                <h2>Nhìn trước hành trình</h2>
-                <p>Nguy cơ ngập & giao thông trong 60 phút tới</p>
+                <h2>Thực nghiệm kịch bản</h2>
+                <p>Chỉ số mô phỏng theo kịch bản 0–60 phút</p>
               </div>
-              <span class="outline-chip">Dự báo minh họa</span>
+              <span class="outline-chip">Kịch bản mô phỏng</span>
             </div>
             <div class="insight-body">
               <div class="insight-copy">
@@ -454,8 +470,8 @@
               <div class="insight-note">
                 <svg><use href="#i-info" /></svg>
                 <p>
-                  Điểm nguy cơ <strong>0–100</strong> được tính theo quy tắc từ
-                  mưa, hiện trạng và đoạn đường lân cận.
+                  Điểm nguy cơ <strong>0–100</strong> được tính theo quy tắc mô
+                  phỏng từ mưa, hiện trạng và đoạn đường lân cận.
                   <strong>Không phải xác suất xảy ra.</strong>
                 </p>
               </div>
@@ -466,11 +482,12 @@
           <div class="section-card">
             <div class="section-title">
               <div>
-                <h2>Thực nghiệm dự báo</h2>
+                <h2>Thực nghiệm AI nghiên cứu (dữ liệu lịch sử)</h2>
                 <p>
-                  Chạy mô hình đã huấn luyện trên dữ liệu quan trắc quốc tế.
-                  Chọn điểm và thời điểm lịch sử để xem kết quả; chưa hiệu chỉnh
-                  cho Hà Nội.
+                  Chạy riêng các checkpoint nghiên cứu trên dữ liệu lịch sử khi
+                  artifact được cấu hình tại máy. Đây không phải dự báo trực
+                  tuyến; các mô hình chưa hiệu chỉnh cho Hà Nội và không phát
+                  cảnh báo công khai.
                 </p>
               </div>
               <a class="button secondary" href="/forecast-lab.html"
@@ -497,9 +514,9 @@
               <div>
                 <h2>Kịch bản bản đồ — mô phỏng</h2>
                 <p>
-                  Ước lượng theo quy tắc và kịch bản cho các đoạn đường Hà Nội.
-                  Đây là phần kiểm tra giao diện, chưa phải kết quả của mô hình
-                  AI nghiên cứu.
+                  Chỉ số nguy cơ, tốc độ và độ sâu được ước lượng bằng quy tắc
+                  trên kịch bản giả lập. Đây không phải dữ liệu quan trắc hay
+                  kết quả của các mô hình AI nghiên cứu.
                 </p>
               </div>
               <a
@@ -526,20 +543,19 @@
           <div class="section-card">
             <div class="section-title">
               <div>
-                <h2>Mạng Lưới Ứng Cứu & Cứu Hộ Giao Thông Khẩn Cấp</h2>
+                <h2>Danh bạ cứu hộ tham khảo</h2>
                 <p>
-                  Hỗ trợ khẩn cấp 24/7 cho phương tiện bị ngập nước, chết máy,
-                  tai nạn hoặc hư hỏng trên địa bàn Hà Nội.
+                  Danh sách hiện có dữ liệu mẫu và liên hệ chưa xác minh;
+                  VietSafe chưa cung cấp dịch vụ trực ban hay điều phối cứu hộ.
                 </p>
               </div>
-              <div class="rescue-online-tag">
-                <span class="live-dot"></span>Trực ban 24/7
-              </div>
+              <div class="rescue-online-tag">Bản demo · Chưa điều phối</div>
             </div>
             <details class="safety-box">
               <summary class="safety-box-toggle">
                 <span class="safety-box-heading"
-                  >⚠️ 4 NGUYÊN TẮC VÀNG KHI XE BỊ NGẬP NƯỚC</span
+                  ><svg aria-hidden="true"><use href="#i-shield" /></svg>4
+                  NGUYÊN TẮC VÀNG KHI XE BỊ NGẬP NƯỚC</span
                 >
                 <span class="safety-box-preview"
                   >Xe chết máy trong nước: không đề nổ lại.</span
@@ -582,6 +598,23 @@
                   >
                     <svg><use href="#i-target" /></svg>Dùng vị trí hiện tại
                   </button>
+                  <label for="rescue-origin-address"
+                    >Hoặc nhập địa điểm của bạn</label
+                  >
+                  <input
+                    id="rescue-origin-address"
+                    type="search"
+                    maxlength="150"
+                    placeholder="Ví dụ: Cầu Giấy, Đường Láng"
+                    autocomplete="street-address"
+                  />
+                  <button
+                    type="button"
+                    class="button secondary"
+                    id="rescue-search-address"
+                  >
+                    Tìm theo địa điểm
+                  </button>
                   <p
                     id="rescue-distance-status"
                     class="rescue-distance-status"
@@ -589,7 +622,7 @@
                     aria-live="polite"
                   ></p>
                 </section>
-                <h3>Đơn vị cứu hộ tại Hà Nội</h3>
+                <h3>Danh sách cứu hộ tham khảo (chưa xác minh)</h3>
                 <div
                   id="rescue-service-list"
                   aria-label="Danh sách đơn vị cứu hộ, cuộn để xem thêm"
@@ -602,8 +635,11 @@
               <div class="rescue-side-col">
                 <div class="rescue-form-box">
                   <div class="form-box-head">
-                    <h3>Yêu cầu ứng cứu nhanh</h3>
-                    <p>Gửi thông tin sự cố để kết nối đội cứu hộ phù hợp</p>
+                    <h3>Biểu mẫu ứng cứu (bản demo)</h3>
+                    <p>
+                      Chưa gửi yêu cầu hoặc dữ liệu đi đâu. Không nhập thông tin
+                      cá nhân thật khi trải nghiệm bản demo.
+                    </p>
                   </div>
                   <form id="rescue-request-form">
                     <div class="rescue-form-pair">
@@ -662,11 +698,13 @@
                     </div>
                     <div class="rescue-form-pair">
                       <div class="rescue-form-field">
-                        <label for="rescue-phone">Số điện thoại liên hệ</label>
+                        <label for="rescue-phone"
+                          >Số điện thoại (chỉ nhập dữ liệu mẫu)</label
+                        >
                         <input
                           id="rescue-phone"
                           type="tel"
-                          placeholder="Nhập số điện thoại để cứu hộ gọi lại"
+                          placeholder="Không nhập số điện thoại thật trong bản demo"
                           pattern="[0-9]{10,11}"
                           required
                         />
@@ -685,8 +723,8 @@
                       class="button primary full"
                       id="submit-rescue-btn"
                     >
-                      <svg><use href="#i-rescue" /></svg>Gửi yêu cầu & Kết nối
-                      cứu hộ
+                      <svg><use href="#i-rescue" /></svg>Thử biểu mẫu demo
+                      (không gửi)
                     </button>
                   </form>
                   <div
@@ -703,10 +741,11 @@
           <div class="section-card">
             <div class="section-title">
               <div>
-                <h2>Dữ liệu rõ nguồn. Cảnh báo có cơ sở.</h2>
+                <h2>Nguồn dữ liệu và giới hạn prototype</h2>
                 <p>
-                  Phân biệt dữ liệu mô phỏng, phản ánh tại máy và các nguồn chưa
-                  kết nối.
+                  Các nguồn ngoài dưới đây là kế hoạch tham khảo, chưa cấp dữ
+                  liệu cho bản đồ. Chỉ mô phỏng tại máy và phản ánh cộng đồng
+                  mới được dùng trong prototype.
                 </p>
               </div>
               <span class="outline-chip">Local workspace</span>
@@ -714,7 +753,7 @@
             <div class="source-grid" id="source-grid"></div>
             <div class="scenario-box">
               <div>
-                <h3>Điều khiển kịch bản trình diễn</h3>
+                <h3>Điều khiển kịch bản mưa mô phỏng</h3>
                 <p>
                   Thay đổi lượng mưa để quan sát bản đồ, dự báo và tuyến thay
                   thế.
@@ -727,9 +766,9 @@
               </select>
             </div>
             <div class="pipeline">
-              <span>Thu thập</span><b>→</b><span>Gán đoạn đường</span><b>→</b
-              ><span>Xác minh</span><b>→</b><span>Dự báo</span><b>→</b
-              ><span>Cảnh báo & tuyến</span>
+              <span>Kịch bản mô phỏng</span><b>+</b><span>Phản ánh</span><b>→</b
+              ><span>Quản trị viên xác minh</span><b>→</b><span>Snapshot</span
+              ><b>→</b><span>Hiển thị thử nghiệm</span>
             </div>
             <p class="muted">
               Ảnh bản đồ nền do OpenStreetMap cung cấp khi có Internet. Thư viện
@@ -837,6 +876,18 @@
         <p id="report-coordinates" class="field-hint">
           Dùng GPS để xác định tọa độ; địa chỉ bổ sung giúp mô tả vị trí rõ hơn.
         </p>
+        <div class="report-location-confirmation">
+          <input
+            id="report-location-confirm"
+            type="checkbox"
+            required
+            disabled
+          />
+          <label for="report-location-confirm">
+            Tôi xác nhận vị trí GPS và địa chỉ bổ sung (nếu có) là chính xác.
+          </label>
+        </div>
+        <p id="report-location-confirm-hint" class="field-hint" hidden></p>
         <label for="report-severity">Mức độ ảnh hưởng</label
         ><select id="report-severity">
           <option value="1">Nhẹ — vẫn lưu thông</option>
@@ -903,6 +954,13 @@
         </p>
         <p id="report-error" class="form-error" role="alert" hidden></p>
         <div class="dialog-footer">
+          <p
+            id="report-submit-status"
+            class="report-submit-status"
+            role="status"
+            aria-live="polite"
+            hidden
+          ></p>
           <span
             ><svg><use href="#i-shield" /></svg>Chờ xác minh trước khi dùng cho
             định tuyến</span
@@ -927,10 +985,12 @@
         dị: giúp mọi người về nhà an toàn hơn.
       </p>
       <p>
-        Chúng tôi tin rằng công nghệ chỉ thực sự có ý nghĩa khi nó phục vụ con
-        người. Vì thế, VietSafe kết hợp trí tuệ nhân tạo, dữ liệu vệ tinh của
-        NASA và sức mạnh cộng đồng để cảnh báo sớm ngập lụt, gợi ý tuyến đường
-        an toàn và kết nối cứu hộ khi bạn cần nhất.
+        VietSafe hiện là prototype: mạng đường được dựng giản lược, trạng thái
+        mưa/ngập/ùn tắc và chỉ số dự báo được mô phỏng theo kịch bản. Phản ánh
+        do người dùng gửi được chờ quản trị viên xác minh; các phản ánh đã xác
+        minh được hiển thị riêng với dữ liệu mô phỏng. Hệ thống chưa kết nối dữ
+        liệu vệ tinh, khí tượng, camera hoặc giao thông trực tiếp, chưa cung cấp
+        chỉ dẫn tuyến đường an toàn hay điều phối cứu hộ.
       </p>
       <p>
         Dự án được phát triển trong khuôn khổ cuộc thi

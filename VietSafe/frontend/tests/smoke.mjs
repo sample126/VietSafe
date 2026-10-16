@@ -127,8 +127,32 @@ dialogProto.close = function () {
 };
 // fetch của Node cần URL tuyệt đối; ứng dụng gọi đường dẫn tương đối như ở trình duyệt.
 const nodeFetch = globalThis.fetch;
-globalThis.fetch = (url, opts) =>
-  nodeFetch(String(url).startsWith("/") ? BASE + url : url, opts);
+let reportFetchOverride = null;
+let snapshotFetchOverride = null;
+const reportRequestBodies = [];
+globalThis.fetch = (url, opts) => {
+  const absoluteUrl = String(url).startsWith("/") ? BASE + url : url;
+  if (absoluteUrl === `${BASE}/api/reports` && opts?.method === "POST") {
+    reportRequestBodies.push(JSON.parse(opts.body));
+  }
+  if (
+    reportFetchOverride &&
+    absoluteUrl === `${BASE}/api/reports` &&
+    opts?.method === "POST"
+  ) {
+    return reportFetchOverride(absoluteUrl, opts);
+  }
+  if (
+    snapshotFetchOverride &&
+    absoluteUrl === `${BASE}/api/snapshot` &&
+    (!opts?.method || opts.method === "GET")
+  ) {
+    const override = snapshotFetchOverride;
+    snapshotFetchOverride = null;
+    return override(absoluteUrl, opts);
+  }
+  return nodeFetch(absoluteUrl, opts);
+};
 // Leaflet là script cổ điển nạp bằng <script> trong index.html
 window.eval(readFileSync(path.join(FRONTEND, "vendor/leaflet.js"), "utf8"));
 globalThis.L = window.L;
@@ -170,9 +194,24 @@ const loaded = await waitFor(() => state.data, { label: "snapshot đầu tiên" 
 check("lấy được snapshot từ API", loaded);
 check("snapshot có 36 đoạn đường", state.data?.roads?.length === 36);
 check(
+  "thông báo prototype luôn phân biệt mô phỏng với phản ánh đã xác minh",
+  $(".prototype-notice")?.textContent.includes(
+    "không dùng cho quyết định đi đường",
+  ) &&
+    $(".prototype-notice")?.textContent.includes(
+      "không phải dữ liệu quan trắc trực tiếp",
+    ) &&
+    $(".prototype-notice")?.textContent.includes("phản ánh đã xác minh"),
+);
+check(
   "thẻ thống kê được điền",
   /\d/.test($("#stat-flood").textContent),
   $("#stat-flood").textContent,
+);
+check(
+  "nhãn bản đồ và thời tiết nói rõ dữ liệu mô phỏng",
+  $(".map-title").textContent.includes("Mạng đường mô phỏng") &&
+    $("#weather-caption").textContent.includes("Mô phỏng:"),
 );
 check("danh sách sự kiện có phần tử", $$("#event-list button").length > 0);
 check(
@@ -196,6 +235,13 @@ check(
   "biểu đồ dự báo được vẽ",
   $("#forecast-chart").innerHTML.includes("<svg"),
 );
+check(
+  "dự báo gắn nhãn mô phỏng và AI nghiên cứu không phát cảnh báo",
+  $("#forecast-chart").textContent.includes("không phải số đo hiện trường") &&
+    $("#forecast-view .section-title p")
+      .textContent.replace(/\s+/g, " ")
+      .includes("không phát cảnh báo công khai"),
+);
 click($('[data-view="rescue"]'));
 check("mở trang Ứng cứu", visible($("#rescue-view")));
 click($('[data-view="map"]'));
@@ -212,9 +258,11 @@ $("#route-destination").value = "hoankiem";
 submit($("#route-form"));
 check(
   "nhận và hiển thị kết quả tuyến",
-  await waitFor(() => $$("#route-results .route-choice").length > 0, {
+  (await waitFor(() => $$("#route-results .route-choice").length > 0, {
     label: "kết quả tuyến",
-  }),
+  })) &&
+    $("#route-results").textContent.includes("Minh họa") &&
+    $("#route-results").textContent.includes("Không phải chỉ dẫn đi đường"),
 );
 click($("#close-route"));
 check(
@@ -321,17 +369,164 @@ click($("#report-gps"));
 check(
   "xác định tọa độ phản ánh bằng GPS",
   state.reportPosition?.lat === node0.lat &&
-    state.reportPosition?.lng === node0.lng,
+    state.reportPosition?.lng === node0.lng &&
+    /Lấy lúc \d{1,2}:\d{2}/.test($("#report-coordinates").textContent) &&
+    !$("#report-location-confirm").disabled,
+);
+$("#report-location-confirm").checked = true;
+$("#report-dialog").close();
+click($("#open-report"));
+check(
+  "mở lại biểu mẫu yêu cầu xác nhận vị trí lần nữa",
+  !$("#report-location-confirm").checked &&
+    !$("#report-location-confirm").disabled &&
+    $("#report-coordinates").textContent.includes("Lấy lúc"),
 );
 $("#report-address").value = node0.name;
 $("#report-severity").value = "3";
 $("#report-description").value = "Nước ngập sâu, xe máy không thể đi qua được.";
+let rejectPendingReport;
+let reportRequestCount = 0;
 submit($("#report-form"));
 check(
-  "gửi phản ánh thành công (chờ xác minh)",
-  await waitFor(() => $("#toast").textContent.includes("Đã lưu"), {
-    label: "thông báo đã lưu",
+  "bắt buộc xác nhận vị trí trước khi gửi",
+  !$("#report-error").hidden &&
+    $("#report-error").textContent.includes("xác nhận") &&
+    reportRequestCount === 0,
+);
+$("#report-location-confirm").checked = true;
+change($("#report-location-confirm"));
+$("#report-address").value = `${node0.name} (gần cổng)`;
+$("#report-address").dispatchEvent(
+  new window.Event("input", { bubbles: true }),
+);
+check(
+  "thay đổi địa chỉ yêu cầu xác nhận lại",
+  !$("#report-location-confirm").checked &&
+    !$("#report-location-confirm-hint").hidden &&
+    $("#report-location-confirm-hint").textContent.includes("xác nhận lại"),
+);
+$("#report-address").value = node0.name;
+$("#report-address").dispatchEvent(
+  new window.Event("input", { bubbles: true }),
+);
+$("#report-location-confirm").checked = true;
+change($("#report-location-confirm"));
+reportFetchOverride = () => {
+  reportRequestCount += 1;
+  return new Promise((resolve, reject) => {
+    rejectPendingReport = reject;
+  });
+};
+const retryPhoto = new window.File(
+  [Uint8Array.of(0xff, 0xd8, 0xff)],
+  "vi-tri-ngap.jpg",
+  { type: "image/jpeg" },
+);
+Object.defineProperty($("#report-camera"), "files", {
+  configurable: true,
+  value: [retryPhoto],
+});
+change($("#report-camera"));
+submit($("#report-form"));
+const reportButton = $("#submit-report");
+check(
+  "hiển thị trạng thái đang gửi và khóa nút gửi",
+  await waitFor(
+    () =>
+      reportButton.disabled &&
+      reportButton.getAttribute("aria-busy") === "true" &&
+      $("#report-submit-status").textContent.includes("Đang gửi"),
+    { label: "trạng thái gửi phản ánh" },
+  ),
+);
+submit($("#report-form"));
+check(
+  "không gửi lặp khi đang chờ phản hồi máy chủ",
+  await waitFor(() => reportRequestCount === 1, {
+    label: "ngăn gửi phản ánh lặp",
   }),
+);
+rejectPendingReport(new TypeError("Failed to fetch"));
+check(
+  "lỗi mạng hướng dẫn thử lại và giữ nguyên nội dung",
+  await waitFor(
+    () =>
+      !reportButton.disabled &&
+      $("#report-submit-status").hidden &&
+      !$("#report-error").hidden &&
+      $("#report-error").textContent.includes("thử lại") &&
+      $("#report-dialog").hasAttribute("open") &&
+      $("#report-description").value ===
+        "Nước ngập sâu, xe máy không thể đi qua được." &&
+      $("#report-address").value === node0.name &&
+      $("#report-image-status").textContent.includes("vi-tri-ngap.jpg") &&
+      state.reportPosition?.lat === node0.lat &&
+      reportButton.textContent.includes("Gửi phản ánh"),
+    { label: "hướng dẫn thử lại khi mất mạng" },
+  ),
+);
+rejectPendingReport = null;
+reportFetchOverride = () =>
+  new Promise((resolve, reject) => {
+    rejectPendingReport = reject;
+  });
+submit($("#report-form"));
+check(
+  "máy chủ phản hồi chậm cũng hướng dẫn thử lại",
+  await waitFor(() => reportButton.disabled && Boolean(rejectPendingReport), {
+    label: "chờ phản hồi máy chủ chậm",
+  }),
+);
+rejectPendingReport(new Error("Máy chủ phản hồi chậm. Hãy thử lại."));
+check(
+  "lỗi máy chủ chậm vẫn giữ ảnh, địa chỉ và vị trí",
+  await waitFor(
+    () =>
+      !reportButton.disabled &&
+      !$("#report-error").hidden &&
+      $("#report-error").textContent.includes("kiểm tra mạng") &&
+      $("#report-description").value ===
+        "Nước ngập sâu, xe máy không thể đi qua được." &&
+      $("#report-address").value === node0.name &&
+      $("#report-image-status").textContent.includes("vi-tri-ngap.jpg") &&
+      state.reportPosition?.lat === node0.lat,
+    { label: "giữ dữ liệu sau timeout" },
+  ),
+);
+reportFetchOverride = null;
+snapshotFetchOverride = () =>
+  Promise.resolve(
+    new Response(JSON.stringify({ error: "Tạm mất kết nối" }), {
+      status: 503,
+      headers: { "Content-Type": "application/json" },
+    }),
+  );
+submit($("#report-form"));
+check(
+  "gửi lại thành công với ảnh, vị trí và nội dung được giữ nguyên",
+  await waitFor(
+    () =>
+      reportRequestBodies.length === 3 &&
+      reportRequestBodies[2].image?.startsWith("data:image/jpeg;base64,") &&
+      reportRequestBodies[2].lat === node0.lat &&
+      reportRequestBodies[2].lng === node0.lng &&
+      reportRequestBodies[2].description ===
+        "Nước ngập sâu, xe máy không thể đi qua được." &&
+      $("#toast").textContent.includes(
+        "Phản ánh đã được gửi và lưu thành công",
+      ),
+    { label: "gửi lại phản ánh sau khi có mạng" },
+  ),
+);
+check(
+  "lỗi cập nhật bản đồ không làm mất báo gửi thành công",
+  await waitFor(
+    () =>
+      $("#connection-error").hidden === false &&
+      $("#toast").textContent.includes("Bản đồ chưa cập nhật được"),
+    { label: "thông báo riêng lỗi cập nhật bản đồ" },
+  ),
 );
 click($('[data-view="reports"]'));
 const reviewBtn = () => $('[data-review-id][data-status="verified"]');
@@ -376,6 +571,13 @@ check(
 click($(".safety-box-toggle"));
 check("có thể thu gọn khung nguyên tắc vàng", !$(".safety-box").open);
 check(
+  "biểu tượng khiên nằm trong khung nguyên tắc, không che danh sách",
+  $(".safety-box-heading svg use").getAttribute("href") === "#i-shield" &&
+    !$("#safety-quick-access") &&
+    !document.querySelector(".safety-quick-access"),
+);
+$(".safety-box").open = false;
+check(
   "danh sách cứu hộ có khung cuộn truy cập được bằng bàn phím",
   $("#rescue-service-list").tabIndex === 0 &&
     $("#rescue-service-list").getAttribute("aria-label").includes("cuộn"),
@@ -397,12 +599,13 @@ check(
     ),
 );
 check(
-  "có đúng sáu đơn vị cứu hộ giả định",
+  "có chín mục, gồm sáu dữ liệu mẫu và ba mục chưa xác minh",
   rescueData.length === 9 &&
-    rescueData.filter((service) => service.simulated === true).length === 6,
+    rescueData.filter((service) => service.simulated === true).length === 6 &&
+    rescueData.filter((service) => service.verified === false).length === 9,
 );
 check(
-  "đơn vị giả định có số mẫu riêng, được cảnh báo và không thể gọi",
+  "dữ liệu mẫu được cảnh báo rõ và không thể gọi",
   rescueData.filter((service) => service.simulated === true).length === 6 &&
     new Set(
       rescueData
@@ -410,27 +613,43 @@ check(
         .map((service) => service.hotline),
     ).size === 6 &&
     rescueCards
-      .filter((card) => card.querySelector(".rescue-demo-notice"))
+      .filter((card) => rescueData[Number(card.dataset.rescueIndex)].simulated)
       .every(
         (card) =>
           card.querySelector(".rescue-card-call")?.disabled &&
           card
             .querySelector(".rescue-card-call")
-            .textContent.includes("Số giả định:") &&
+            .textContent.includes("Thông tin mẫu") &&
           !card.querySelector('a[href^="tel:"]'),
       ),
+);
+check(
+  "các mục chưa xác minh được cảnh báo và không cung cấp liên kết liên hệ",
+  rescueCards
+    .filter((card) => !rescueData[Number(card.dataset.rescueIndex)].simulated)
+    .every(
+      (card) =>
+        card
+          .querySelector(".rescue-demo-notice")
+          ?.textContent.includes("chưa được xác minh") &&
+        card.querySelector(".rescue-verification-label")?.textContent ===
+          "Chưa xác minh" &&
+        card.querySelector(".rescue-card-call")?.disabled &&
+        !card.querySelector('a[href^="tel:"]') &&
+        !card.querySelector(".service-link[href]"),
+    ),
 );
 check(
   "danh sách cứu hộ không còn hàng hotline trùng",
   !$(".rescue-hotline-bar"),
 );
 check(
-  "mỗi đơn vị có đúng một nút gọi",
+  "chỉ đơn vị đã xác minh mới có nút gọi hoạt động",
   rescueCards.length > 0 &&
     rescueCards.every(
       (card) =>
         card.querySelectorAll('a[href^="tel:"]').length ===
-        (card.querySelector(".rescue-demo-notice") ? 0 : 1),
+        (rescueData[Number(card.dataset.rescueIndex)].verified ? 1 : 0),
     ),
 );
 check(
@@ -536,20 +755,63 @@ check(
       card.querySelector(".rescue-distance-label").textContent.includes("km"),
   ),
 );
+$("#rescue-origin-address").value = "Ngã Tư Sở";
+click($("#rescue-search-address"));
+check(
+  "nhập địa điểm tìm được sắp xếp cứu hộ và điền địa chỉ yêu cầu",
+  (await waitFor(
+    () =>
+      $("#rescue-distance-status").textContent.includes("địa điểm Ngã Tư Sở"),
+    { label: "tìm địa điểm cứu hộ" },
+  )) &&
+    $("#rescue-address").value === "Ngã Tư Sở" &&
+    $("#rescue-distance-status").textContent.includes("ước tính") &&
+    rescueCards.every(
+      (card) => !card.querySelector(".rescue-distance-label").hidden,
+    ),
+);
+$("#rescue-origin-address").value = "Cầu Giấy";
+click($("#rescue-search-address"));
+check(
+  "địa điểm trùng tên yêu cầu nhập cụ thể hơn mà không báo thành công",
+  (await waitFor(
+    () =>
+      $("#rescue-distance-status").textContent.includes(
+        "Có nhiều địa điểm phù hợp",
+      ),
+    { label: "xử lý địa điểm mơ hồ" },
+  )) &&
+    $("#rescue-distance-status").textContent.includes(
+      "Vị trí đang dùng chưa thay đổi",
+    ),
+);
+$("#rescue-origin-address").value = "dia-diem-khong-ton-tai-vietsafe";
+click($("#rescue-search-address"));
+check(
+  "địa điểm không tìm thấy hiển thị hướng dẫn rõ ràng",
+  (await waitFor(
+    () =>
+      $("#rescue-distance-status").textContent.includes(
+        "Không tìm thấy địa điểm",
+      ),
+    { label: "địa điểm không tồn tại" },
+  )) &&
+    $("#rescue-distance-status").textContent.includes(
+      "Vị trí đang dùng chưa thay đổi",
+    ),
+);
 $("#rescue-vehicle").value = "motorbike";
 $("#rescue-address").value = "Phố Giảng Võ";
 $("#rescue-phone").value = "0900000000";
 submit($("#rescue-request-form"));
 check(
-  "form cứu hộ trả kết quả",
-  await waitFor(() => $("#rescue-form-result").innerHTML.trim().length > 0, {
+  "form cứu hộ cảnh báo rằng bản demo không gửi yêu cầu",
+  (await waitFor(() => $("#rescue-form-result").innerHTML.trim().length > 0, {
     label: "kết quả yêu cầu cứu hộ",
-  }),
-);
-check(
-  "hotline trong kết quả lấy từ JSON",
-  $("#rescue-form-result a[href^='tel:']")?.getAttribute("href") ===
-    rescueData.find((service) => service.vehicle === "motorbike")?.tel,
+  })) &&
+    $("#rescue-form-result").textContent.includes("yêu cầu chưa được gửi") &&
+    !$("#rescue-form-result").querySelector('a[href^="tel:"]') &&
+    !$("#rescue-form-result").textContent.includes($("#rescue-phone").value),
 );
 
 console.log("\n[7] Đăng xuất");

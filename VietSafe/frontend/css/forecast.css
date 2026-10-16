@@ -23,6 +23,16 @@
   margin-top: 6px;
 }
 
+.forecast-simulation-note {
+  margin: 14px 0;
+  padding: 10px 12px;
+  border-left: 3px solid #c79946;
+  background: #fff8e9;
+  color: #705522;
+  font-size: 11px;
+  line-height: 1.5;
+}
+
 .forecast-controls {
   display: flex;
   gap: 18px;

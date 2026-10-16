@@ -1,19 +1,19 @@
-# VietSafe AI — Bản Đồ Cảnh Báo Ngập, Ùn Tắc Và Sự Cố Giao Thông Thời Gian Thực
+# VietSafe — Prototype Bản Đồ Mô Phỏng Ngập, Ùn Tắc Và Sự Cố Giao Thông
 
 > **Đề tài dự thi Cuộc thi Dữ liệu vì Cuộc sống — Data for Life 2026**  
-> _Bản mẫu thực nghiệm giải pháp (Proof-of-Concept / MVP) hỗ trợ dự báo sớm 30–60 phút và gợi ý tuyến tránh rủi ro._
+> _Prototype giao diện và quy trình phản ánh cộng đồng. Bản đồ, dự báo và tuyến đường dùng dữ liệu mô phỏng; không phải dịch vụ cảnh báo hoặc dẫn đường thực tế._
 
 [![Python](https://img.shields.io/badge/Python-3.10%2B-blue.svg)](https://www.python.org/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-teal.svg)](LICENSE)
-[![Platform](https://img.shields.io/badge/Platform-Web%20%7C%20Mobile%20Responsive-orange.svg)]()
-[![Zero Dependency](https://img.shields.io/badge/Dependencies-Zero%20External%20Pip-green.svg)]()
+[![Platform](https://img.shields.io/badge/Platform-Web%20%7C%20Mobile%20Responsive-orange.svg)](<>)
+[![Zero Dependency](https://img.shields.io/badge/Dependencies-Zero%20External%20Pip-green.svg)](<>)
 
 ---
 
 ## 📌 Bối cảnh vấn đề và định hướng giải pháp
 
-- **Thực trạng**: Các ứng dụng bản đồ hiện nay (Google Maps, Apple Maps...) thường chỉ thông báo khi tuyến đường đã bị ngập hoặc tắc nghẽn (phản ứng sau sự việc). Người dân chuẩn bị ra đường lúc trời bắt đầu mưa không thể biết trước đoạn nào sẽ ngập sâu trong 30–60 phút tới để chủ động chọn lộ trình phù hợp.
-- **Giải pháp VietSafe AI**: Nền tảng tổng hợp dữ liệu thời tiết (lượng mưa), độ trũng địa hình, lịch sử giao thông và phản ánh cộng đồng; ứng dụng mô hình dự báo không-thời gian để đưa ra cảnh báo sớm đón đầu trước 30–60 phút và điều hướng tìm tuyến tránh an toàn theo từng loại phương tiện (xe máy vs ô tô).
+- **Mục tiêu nghiên cứu**: Khảo sát cách kết hợp thông tin giao thông, tình trạng ngập và phản ánh cộng đồng để hỗ trợ nhận biết rủi ro.
+- **Phạm vi prototype hiện tại**: Ứng dụng dựng tay mạng đường 36 đoạn/25 nút; sinh trạng thái mưa, tốc độ, độ sâu và chỉ số nguy cơ bằng kịch bản/quy tắc. Không kết nối dữ liệu khí tượng, cảm biến, camera, giao thông hay dữ liệu vệ tinh. Tuyến gợi ý chỉ để minh họa thuật toán, không phải tuyến an toàn.
 
 ---
 
@@ -21,28 +21,27 @@
 
 1. **Bản đồ trực quan tương tác (Interactive Map)**:
    - Giám sát 36 đoạn đường và 25 nút giao trọng điểm nội thành Hà Nội (mạng đường giản lược, dựng tay trong `core/network.py`).
-   - Phân cấp trực quan: Xanh (Thông thoáng), Cam (Ùn tắc), Xanh dương (Ngập nước), Đỏ (Sự cố nghiêm trọng / Chặn đường).
-   - Chuyển nhanh thời điểm hiển thị: **Hiện tại**, **+30 phút**, **+60 phút**; dữ liệu tự làm mới mỗi 10 giây.
+   - Màu sắc thể hiện trạng thái trong kịch bản mô phỏng; phản ánh đã được quản trị viên xác minh được gắn nhãn riêng.
+   - Chuyển mốc kịch bản: **Hiện tại**, **+30 phút**, **+60 phút**; snapshot mô phỏng được làm mới mỗi 10 giây, không có nghĩa là dữ liệu hiện trường được cập nhật.
    - Tìm địa điểm (không phân biệt dấu tiếng Việt), danh sách sự kiện có bộ lọc, banner cảnh báo khi có đoạn đường bị chặn.
 2. **Dự báo rủi ro (Forecast Engine)**:
-   - Biểu đồ đường kép: chỉ số nguy cơ ngập (/100) và rủi ro tổng hợp (/100) tại các mốc Hiện tại, +15, +30, +45, +60 phút.
-   - Bảng chi tiết theo từng đoạn đường (nguy cơ ngập, tốc độ ước tính, rủi ro tổng hợp). Đoạn chưa đủ dữ liệu hiển thị
-     "Chưa đủ dữ liệu" thay vì số bịa.
+   - Biểu đồ theo quy tắc cho nguy cơ ngập (/100), rủi ro tổng hợp (/100) và tốc độ ước tính ở các mốc Hiện tại, +15, +30, +45, +60 phút.
+   - Các con số là chỉ số mô phỏng, không phải đo đạc hiện trường hoặc xác suất đã hiệu chỉnh. Đoạn chưa đủ dữ liệu được ghi rõ.
 3. **Định tuyến thông minh né điểm ngập (Smart Routing)**:
-   - Thuật toán Dijkstra có phạt theo rủi ro dự báo, tính riêng cho **xe máy** và **ô tô**, tại thời điểm hiện tại / +30 / +60 phút.
-   - Loại khỏi tuyến: đoạn bị chặn (ngập ≥ 30 cm hoặc phản ánh mức 3 đã xác minh), đoạn chưa đủ dữ liệu, và đoạn có nguy cơ ngập dự báo
+   - Thuật toán Dijkstra có phạt theo chỉ số rủi ro mô phỏng, tính riêng cho **xe máy** và **ô tô**, tại các mốc hiện tại / +30 / +60 phút.
+   - Loại khỏi tuyến minh họa: đoạn được đánh dấu đóng trong kịch bản (ngập mô phỏng ≥ 30 cm hoặc phản ánh mức 3 đã xác minh), đoạn chưa đủ dữ liệu, và đoạn có nguy cơ ngập mô phỏng
      từ 82/100 (xe máy) hoặc 88/100 (ô tô).
-   - Gợi ý tối đa 2 phương án: **Ưu tiên ít rủi ro** và **Ưu tiên thời gian** (chỉ hiện một nếu hai tuyến trùng nhau).
+   - Gợi ý tối đa 2 phương án: **Ưu tiên ít rủi ro mô phỏng** và **Ưu tiên thời gian ước tính**. Không dùng để dẫn đường.
 4. **Phản ánh từ cộng đồng (Crowdsourcing)**:
    - Người dân (cần đăng nhập) gửi phản ánh ngập / ùn tắc / sự cố kèm định vị GPS hoặc ghim trên bản đồ, và ảnh hiện trường (JPG/PNG/WebP, ≤ 1,5 MB).
    - Chống lạm dụng: giới hạn 10 phản ánh/phút/IP, chặn gửi trùng trong 5 phút, kiểm tra chữ ký file ảnh, phản ánh tự hết hạn sau 2 giờ.
    - Phản ánh mới ở trạng thái **chờ xác minh** và chưa ảnh hưởng bản đồ hay định tuyến; chỉ phản ánh đã được admin xác minh mới có tác dụng.
 5. **Ứng cứu khẩn cấp (Rescue)**:
-   - Một danh sách thẻ cứu hộ gộp thông tin dịch vụ và nút gọi, tự đưa đơn vị phù hợp với loại xe đã chọn lên đầu trên màn hình điện thoại; thông tin chi tiết nằm trong mục mở rộng.
-   - Hiện chạy hoàn toàn ở trình duyệt, chưa có API điều phối ở backend; số hotline là dữ liệu tĩnh cần xác minh trước khi công khai.
+   - Danh sách hiện có 6 mục giả định và 3 mục tham khảo chưa xác minh; chưa có dịch vụ được xác minh để gọi. Các liên hệ chỉ được kích hoạt sau khi xác minh độc lập.
+   - Biểu mẫu chỉ dùng trình diễn ở trình duyệt, không gửi yêu cầu hay dữ liệu cá nhân đến backend. Không nhập thông tin thật khi dùng demo.
 6. **Bàn làm việc Quản trị viên (Admin)**:
    - Kiểm duyệt phản ánh (_Chờ xác minh → Đã xác minh → Đã xử lý_, hoặc _Từ chối_).
-   - Đổi kịch bản thời tiết tức thì: _Trời khô (0 mm/h)_, _Mưa lớn (28 mm/h)_, _Mưa rất lớn (55 mm/h)_.
+   - Đổi kịch bản mưa mô phỏng: _Trời khô (0 mm/h)_, _Mưa lớn (28 mm/h)_, _Mưa rất lớn (55 mm/h)_.
    - Trang **Nguồn dữ liệu** (chỉ admin) và xuất dữ liệu: phản ánh dạng CSV, nhật ký dự báo dạng JSON.
 
 ---
@@ -50,38 +49,19 @@
 ## 🏛️ Kiến trúc hệ thống và mô hình dự báo
 
 ```
-                          ┌─────────────────────────────────────────────────────────┐
-                          │         Nguồn dữ liệu đa tầng và Viễn thám NASA         │
-                          │ • Lượng mưa vệ tinh radar NASA GPM (IMERG 30 phút)      │
-                          │ • Độ ẩm đất bão hòa NASA SMAP và Địa hình NASA SRTM DEM │
-                          │ • Phản ánh cộng đồng (Ảnh hiện trường) + Trạm quan trắc │
-                          │ • Mạng đường bộ (Đồ thị không gian OpenStreetMap)       │
-                          └───────────────────────────┬─────────────────────────────┘
-                                                      │
-                                                      ▼
-    ┌─────────────────────────────────────────────────────────────────────────────────┐
-    │                           MÔ HÌNH DỰ BÁO 2 TẦNG                                 │
-    │                                                                                 │
-    │  [Tầng 1 - Bản thử nghiệm Web PoC / MVP]                                        │
-    │  • Spatial-Rule Baseline (spatial-rule-demo-1.0):                               │
-    │    Mô hình quy tắc không-thời gian giải thích được (Explainable AI),            │
-    │    chạy nhẹ trên CPU không đòi hỏi GPU/Kafka.                                   │
-    │                                                                                 │
-    │  [Tầng 2 - Đề tài Nghiên cứu Khoa học Data for Life]                            │
-    │  • T-GCN (Temporal Graph Convolutional Network) + Physics-Informed AI:          │
-    │    GCN học tương quan không gian mạng đường + GRU học chuỗi thời gian,          │
-    │    tích hợp đặc trưng viễn thám NASA GPM, SMAP và chỉ số trũng địa hình TWI.    │
-    └─────────────────────────────────────────┬───────────────────────────────────────┘
-                                              │
-                                              ▼
-    ┌─────────────────────────────────────────────────────────────────────────────────┐
-    │                                GIAO DIỆN WEB                                    │
-    │   • Bản đồ cảnh báo thời gian thực        • Điều hướng né ngập thông minh       │
-    │   • Biểu đồ dự báo 30-60 phút             • Tiếp nhận và duyệt phản ánh         │
-    └─────────────────────────────────────────────────────────────────────────────────┘
+  Mạng đường dựng tay (25 nút, 36 đoạn) ─┐
+  Kịch bản mưa + quy tắc mô phỏng ────────┼─> Snapshot mô phỏng
+  Phản ánh do người dùng gửi ─────────────┘       │
+      (pending không ảnh hưởng đường;             ├─> Bản đồ / biểu đồ minh họa
+       verified được áp dụng riêng)               └─> Tuyến đường thử nghiệm
+
+  Nghiên cứu AI tùy chọn: checkpoint cục bộ + dữ liệu lịch sử
+  (tách biệt với bản đồ chính; không hiệu chỉnh Hà Nội/không cảnh báo công khai)
 ```
 
-Chi tiết các lớp, luồng dữ liệu và quyết định thiết kế: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
+Không có nguồn quan trắc ngoài nào đang cấp dữ liệu cho bản đồ. Danh mục nguồn ở giao diện là kế hoạch tham khảo, không phải kết nối đã triển khai. Các phản ánh đã xác minh vẫn là báo cáo người dùng được kiểm tra thủ công, không thay thế cảm biến hay xác minh hiện trường độc lập.
+
+Chi tiết luồng dữ liệu và quyết định thiết kế: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
 
 Chạy đúng giao diện mới trên local/Render và xử lý lệnh chạy cũ:
 [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md).
@@ -178,8 +158,8 @@ vietsafe/
 Dự án có bộ kiểm thử tự động cho cả backend và giao diện:
 
 ```bash
-cd backend && python3 -m unittest discover -s tests -t .   # 51 test backend
-npm install && npm run test:frontend                       # 34 kiểm tra giao diện (cần Node 20+)
+cd backend && python3 -m unittest discover -s tests -t .   # Backend unittest suite
+npm install && npm run test:frontend                       # Frontend smoke tests (cần Node 20+)
 ```
 
 Tình trạng hiện tại của các lệnh kiểm thử và công cụ format/lint: xem [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md#8-vấn-đề-đã-biết).

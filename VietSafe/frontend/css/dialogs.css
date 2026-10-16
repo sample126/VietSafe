@@ -123,6 +123,39 @@ dialog::backdrop {
   color: var(--teal);
 }
 
+.report-location-confirmation {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin-top: 10px;
+  padding: 11px 12px;
+  border: 1px solid #dce9e2;
+  border-radius: 8px;
+  background: #f8fbf9;
+}
+
+.report-location-confirmation input {
+  width: 18px;
+  height: 18px;
+  flex: 0 0 18px;
+  margin: 1px 0 0;
+}
+
+.report-location-confirmation input:disabled {
+  cursor: not-allowed;
+}
+
+.report-location-confirmation label {
+  margin: 0;
+  color: #46685b;
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+#report-location-confirm-hint {
+  color: #94611b;
+}
+
 .report-image-actions {
   display: flex;
   width: 100%;
@@ -174,6 +207,20 @@ dialog::backdrop {
   box-shadow: 0 -10px 16px #ffffffed;
 }
 
+#submit-report {
+  background: #c94436;
+  box-shadow: 0 3px 8px #c944361f;
+}
+
+#submit-report:hover {
+  background: #a9362b;
+}
+
+#submit-report:disabled {
+  cursor: wait;
+  opacity: 0.75;
+}
+
 .dialog-footer > span {
   font-size: 10px;
   color: #91a293;
@@ -181,6 +228,44 @@ dialog::backdrop {
   align-items: center;
   gap: 6px;
   max-width: 225px;
+}
+
+.report-submit-status {
+  display: flex;
+  flex: 1 1 auto;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  color: #46685b;
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+.report-submit-status::before {
+  width: 14px;
+  height: 14px;
+  flex: 0 0 14px;
+  border: 2px solid #d7e8e1;
+  border-top-color: var(--teal);
+  border-radius: 50%;
+  content: "";
+  animation: report-submit-spin 0.8s linear infinite;
+}
+
+#report-submit-status[hidden] {
+  display: none;
+}
+
+@keyframes report-submit-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .report-submit-status::before {
+    animation: none;
+  }
 }
 
 .dialog-footer svg {

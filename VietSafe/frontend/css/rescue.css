@@ -47,16 +47,28 @@
   width: 100%;
 }
 
+.rescue-distance-search > label {
+  margin: 0 0 -6px;
+  color: #6d8475;
+  font-size: 11px;
+}
+
+.rescue-distance-search > input {
+  min-width: 0;
+  padding: 10px 12px;
+  font-size: 12px;
+}
+
+.rescue-distance-search > #rescue-search-address {
+  min-height: 40px;
+  padding-block: 8px;
+}
+
 .rescue-distance-search .rescue-distance-status {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  padding: 0;
-  margin: -1px;
-  overflow: hidden;
-  clip: rect(0, 0, 0, 0);
-  white-space: nowrap;
-  border: 0;
+  margin: 0;
+  color: #6d8475;
+  font-size: 11px;
+  line-height: 1.5;
 }
 
 #rescue-service-list {
@@ -106,6 +118,15 @@
   border-radius: 5px;
   background: #e8f5ef;
   color: #28735d;
+  font-size: 10px;
+  font-weight: 600;
+}
+
+.rescue-verification-label {
+  padding: 4px 7px;
+  border-radius: 5px;
+  background: #fff4df;
+  color: #80560e;
   font-size: 10px;
   font-weight: 600;
 }
@@ -319,9 +340,18 @@
 }
 
 .safety-box-heading {
+  display: flex;
+  align-items: flex-start;
+  gap: 7px;
   font-size: 13px;
   color: #8c6218;
   font-weight: 700;
+}
+
+.safety-box-heading svg {
+  width: 16px;
+  height: 16px;
+  flex: 0 0 16px;
 }
 
 .safety-box-toggle::after {

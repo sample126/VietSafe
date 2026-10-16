@@ -6,6 +6,15 @@ import { $, inPilotArea, toast } from "../utils.js";
 import { refresh } from "../dashboard.js";
 
 let selectedReportImage = null;
+let reportSubmitting = false;
+
+function resetReportLocationConfirmation() {
+  const confirmation = $("#report-location-confirm");
+  confirmation.checked = false;
+  confirmation.disabled = !state.reportPosition;
+  $("#report-location-confirm-hint").hidden = true;
+  $("#report-location-confirm-hint").textContent = "";
+}
 
 function updateReportImage(file, source) {
   if (!file) return;
@@ -35,15 +44,20 @@ export function openReport() {
     return;
   }
   $("#report-error").hidden = true;
+  $("#report-error").textContent = "";
+  $("#report-submit-status").hidden = true;
+  $("#report-submit-status").textContent = "";
+  resetReportLocationConfirmation();
   $("#report-dialog").showModal();
 }
 
-export function setReportPosition(lat, lng, address) {
+export function setReportPosition(lat, lng, address, acquiredAt = Date.now()) {
   state.reportPosition = { lat, lng };
   if (address) $("#report-address").value = address;
   $("#report-coordinates").textContent =
-    `Đã đặt vị trí: ${lat.toFixed(5)}, ${lng.toFixed(5)}`;
+    `Vị trí GPS: ${lat.toFixed(5)}, ${lng.toFixed(5)} · Lấy lúc ${new Date(acquiredAt).toLocaleString("vi-VN", { dateStyle: "short", timeStyle: "short" })}.`;
   $("#report-coordinates").classList.add("valid");
+  resetReportLocationConfirmation();
 }
 
 export function geolocate(forReport = false) {
@@ -65,7 +79,7 @@ export function geolocate(forReport = false) {
         toast("Vị trí GPS của bạn nằm ngoài vùng thử nghiệm Hà Nội.");
         return;
       }
-      if (forReport) setReportPosition(lat, lng);
+      if (forReport) setReportPosition(lat, lng, undefined, p.timestamp);
       else {
         map.setView([lat, lng], 15);
         selectionLayer.clearLayers();
@@ -86,15 +100,32 @@ export function geolocate(forReport = false) {
 
 export async function submitReport(event) {
   event.preventDefault();
+  if (reportSubmitting) return;
   $("#report-error").hidden = true;
+  $("#report-error").textContent = "";
   if (!state.reportPosition) {
     $("#report-error").textContent =
       "Hãy dùng GPS để xác định vị trí trước khi gửi.";
     $("#report-error").hidden = false;
     return;
   }
+  if (!$("#report-location-confirm").checked) {
+    $("#report-error").textContent =
+      "Hãy kiểm tra vị trí GPS và địa chỉ bổ sung, rồi xác nhận trước khi gửi.";
+    $("#report-error").hidden = false;
+    $("#report-location-confirm").focus();
+    return;
+  }
   const button = $("#submit-report");
+  const status = $("#report-submit-status");
+  const originalButtonContent = button.innerHTML;
+  reportSubmitting = true;
   button.disabled = true;
+  button.setAttribute("aria-busy", "true");
+  button.textContent = "Đang gửi…";
+  status.textContent = "Đang gửi phản ánh của bạn…";
+  status.hidden = false;
+  let result;
   try {
     let image = null;
     const file = selectedReportImage;
@@ -111,7 +142,7 @@ export async function submitReport(event) {
         reader.readAsDataURL(file);
       });
     }
-    const result = await post("/api/reports", {
+    result = await post("/api/reports", {
       ...state.reportPosition,
       address: $("#report-address").value,
       type: $("input[name=type]:checked").value,
@@ -119,23 +150,48 @@ export async function submitReport(event) {
       description: $("#report-description").value,
       image,
     });
-    $("#report-dialog").close();
-    $("#report-form").reset();
-    clearReportImage();
-    state.reportPosition = null;
-    $("#report-coordinates").textContent = "Chưa chọn tọa độ.";
-    $("#report-coordinates").classList.remove("valid");
-    toast(
-      result.duplicate
-        ? "Phản ánh trùng đã được lưu trước đó."
-        : `Đã lưu ${result.id}. Phản ánh đang chờ xác minh.`,
-    );
-    await refresh();
   } catch (e) {
-    $("#report-error").textContent = e.message;
+    const isNetworkError =
+      e?.name === "TypeError" ||
+      navigator.onLine === false ||
+      e?.message?.includes("Máy chủ phản hồi chậm");
+    $("#report-error").textContent = isNetworkError
+      ? "Chưa gửi được do mất kết nối hoặc máy chủ phản hồi chậm. Hãy kiểm tra mạng rồi nhấn “Gửi phản ánh” để thử lại; thông tin bạn đã nhập vẫn được giữ."
+      : e.message || "Không thể gửi phản ánh lúc này. Vui lòng thử lại.";
     $("#report-error").hidden = false;
+    return;
   } finally {
+    reportSubmitting = false;
     button.disabled = false;
+    button.removeAttribute("aria-busy");
+    button.innerHTML = originalButtonContent;
+    status.hidden = true;
+    status.textContent = "";
+  }
+
+  $("#report-dialog").close();
+  $("#report-form").reset();
+  clearReportImage();
+  state.reportPosition = null;
+  $("#report-coordinates").textContent = "Chưa chọn tọa độ.";
+  $("#report-coordinates").classList.remove("valid");
+  resetReportLocationConfirmation();
+  toast(
+    result.duplicate
+      ? "Phản ánh trùng đã được lưu trước đó."
+      : `Đã lưu ${result.id}. Phản ánh đang chờ xác minh.`,
+  );
+  try {
+    const refreshed = await refresh();
+    if (!refreshed) {
+      toast(
+        "Phản ánh đã được gửi và lưu thành công. Bản đồ chưa cập nhật được vì mất kết nối; dữ liệu sẽ được làm mới khi kết nối trở lại.",
+      );
+    }
+  } catch (error) {
+    toast(
+      `Phản ánh đã được gửi và lưu thành công. Bản đồ chưa cập nhật được: ${error.message || "lỗi kết nối"}. Dữ liệu sẽ được làm mới khi kết nối trở lại.`,
+    );
   }
 }
 
@@ -155,5 +211,21 @@ export function initReportForm() {
   );
   $("#report-remove-image").addEventListener("click", clearReportImage);
   $("#report-gps").addEventListener("click", () => geolocate(true));
+  $("#report-address").addEventListener("input", () => {
+    const confirmation = $("#report-location-confirm");
+    if (confirmation.checked) {
+      confirmation.checked = false;
+      const hint = $("#report-location-confirm-hint");
+      hint.textContent =
+        "Địa chỉ đã thay đổi. Vui lòng kiểm tra vị trí và xác nhận lại.";
+      hint.hidden = false;
+    }
+  });
+  $("#report-location-confirm").addEventListener("change", () => {
+    $("#report-location-confirm-hint").hidden = true;
+    $("#report-location-confirm-hint").textContent = "";
+    $("#report-error").hidden = true;
+    $("#report-error").textContent = "";
+  });
   $("#report-form").addEventListener("submit", submitReport);
 }

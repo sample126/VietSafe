@@ -1,4 +1,4 @@
-/** Bảng "Tìm tuyến thay thế": chọn điểm đi/đến, phương tiện, thời điểm và hiển thị tuyến. */
+/** Bảng "Tuyến minh họa": tính tuyến thử nghiệm theo phương tiện và kịch bản. */
 import { api } from "../api.js";
 import { map, routeLayer } from "../map.js";
 import { state } from "../state.js";
@@ -8,7 +8,7 @@ export function clearRoutes() {
   routeLayer.clearLayers();
   state.routes = null;
   $("#route-results").innerHTML =
-    '<div class="empty-state">Chọn điểm đi và đến, sau đó tìm tuyến theo dữ liệu mới nhất.</div>';
+    '<div class="empty-state">Chọn điểm đi và đến để thử tính tuyến trên dữ liệu mô phỏng hiện tại.</div>';
 }
 
 export function openRoute() {
@@ -42,7 +42,8 @@ export async function findRoutes(e) {
     renderRoutes();
   } catch (err) {
     clearRoutes();
-    $("#route-results").innerHTML = `<div class="empty-state">${esc(err.message)}</div>`;
+    $("#route-results").innerHTML =
+      `<div class="empty-state">${esc(err.message)}</div>`;
   } finally {
     button.disabled = false;
     button.innerHTML = icon("route") + "Tìm tuyến gợi ý";
@@ -61,10 +62,10 @@ export function renderRoutes() {
     result.routes
       .map(
         (r, i) =>
-          `<button class="route-choice ${i === state.routeIndex ? "selected" : ""}" data-route-index="${i}"><h3>${esc(r.title)}</h3><strong>${Math.ceil(r.eta_minutes)}<small>phút</small></strong><span class="data-label">${r.distance_km} km</span><p>${esc(r.steps.join(" → "))}</p><p>${r.warnings.length ? "Còn cảnh báo trên " + r.warnings.length + " đoạn" : "Không đi qua sự kiện đang hiển thị"} · Mô phỏng</p></button>`,
+          `<button class="route-choice ${i === state.routeIndex ? "selected" : ""}" data-route-index="${i}"><h3>${esc(r.title)} · Minh họa</h3><strong>${Math.ceil(r.eta_minutes)}<small>phút ước tính</small></strong><span class="data-label">${r.distance_km} km · mô phỏng</span><p>${esc(r.steps.join(" → "))}</p><p>${r.warnings.length ? "Còn điểm cảnh báo mô phỏng trên " + r.warnings.length + " đoạn" : "Không qua điểm cảnh báo đang hiển thị"} · Không phải chỉ dẫn đi đường</p></button>`,
       )
       .join("") +
-    `<p class="route-timestamp" id="route-calculation-note">Tính lúc ${timeText(result.calculated_at)} · Loại ${result.excluded} đoạn đóng / thiếu dữ liệu.</p>`;
+    `<p class="route-timestamp" id="route-calculation-note">Tuyến mô phỏng, tính lúc ${timeText(result.calculated_at)} · Loại ${result.excluded} đoạn đóng / thiếu dữ liệu trong kịch bản.</p>`;
   const chosen = result.routes[state.routeIndex];
   for (const [i, r] of result.routes.entries())
     if (i !== state.routeIndex)
@@ -74,10 +75,16 @@ export function renderRoutes() {
         opacity: 0.8,
         dashArray: "7 6",
       }).addTo(routeLayer);
-  L.polyline(chosen.coordinates, { color: "white", weight: 10, opacity: 0.95 }).addTo(routeLayer);
-  const line = L.polyline(chosen.coordinates, { color: "#0c7665", weight: 6, opacity: 1 }).addTo(
-    routeLayer,
-  );
+  L.polyline(chosen.coordinates, {
+    color: "white",
+    weight: 10,
+    opacity: 0.95,
+  }).addTo(routeLayer);
+  const line = L.polyline(chosen.coordinates, {
+    color: "#0c7665",
+    weight: 6,
+    opacity: 1,
+  }).addTo(routeLayer);
   for (const [coord, label] of [
     [chosen.coordinates[0], "A"],
     [chosen.coordinates.at(-1), "B"],

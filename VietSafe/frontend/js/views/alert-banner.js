@@ -8,7 +8,7 @@ export function updateAlertBanner() {
   const blocked = state.data.roads.filter((r) => r.blocked);
   if (blocked.length > 0) {
     $("#alert-text").textContent =
-      `⚠ ${blocked.length} đoạn đường bị chặn: ${blocked.map((r) => r.name).join(", ")}. Hãy kiểm tra tuyến trước khi di chuyển.`;
+      `Trong kịch bản mô phỏng, ${blocked.length} đoạn được đánh dấu đóng: ${blocked.map((r) => r.name).join(", ")}. Đây không phải thông tin hiện trường; không dùng để quyết định lộ trình.`;
     $("#alert-banner").hidden = false;
   } else {
     $("#alert-banner").hidden = true;
@@ -16,5 +16,8 @@ export function updateAlertBanner() {
 }
 
 export function initAlertBanner() {
-  $("#dismiss-alert").addEventListener("click", () => ($("#alert-banner").hidden = true));
+  $("#dismiss-alert").addEventListener(
+    "click",
+    () => ($("#alert-banner").hidden = true),
+  );
 }
