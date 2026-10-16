@@ -861,11 +861,12 @@
           >
         </div>
         <label for="report-address"
-          >Địa chỉ bổ sung <span class="optional">(không bắt buộc)</span></label
+          >Địa chỉ/địa điểm
+          <span class="optional">(bắt buộc nếu không dùng GPS)</span></label
         ><input
           id="report-address"
           list="address-options"
-          placeholder="Gần giao lộ, số nhà hoặc địa điểm dễ nhận biết"
+          placeholder="Ví dụ: Cầu Giấy, Đường Láng, Láng Hạ"
           maxlength="200"
         /><datalist id="address-options"></datalist>
         <div class="location-actions">
@@ -874,20 +875,10 @@
           </button>
         </div>
         <p id="report-coordinates" class="field-hint">
-          Dùng GPS để xác định tọa độ; địa chỉ bổ sung giúp mô tả vị trí rõ hơn.
+          Dùng GPS hoặc nhập tên đường/nút giao trong danh sách thử nghiệm. Địa
+          chỉ nhập tay được ghép với vị trí gần đúng trong mạng mô phỏng, không
+          định vị chính xác.
         </p>
-        <div class="report-location-confirmation">
-          <input
-            id="report-location-confirm"
-            type="checkbox"
-            required
-            disabled
-          />
-          <label for="report-location-confirm">
-            Tôi xác nhận vị trí GPS và địa chỉ bổ sung (nếu có) là chính xác.
-          </label>
-        </div>
-        <p id="report-location-confirm-hint" class="field-hint" hidden></p>
         <label for="report-severity">Mức độ ảnh hưởng</label
         ><select id="report-severity">
           <option value="1">Nhẹ — vẫn lưu thông</option>

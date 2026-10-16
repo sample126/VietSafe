@@ -27,7 +27,7 @@ export function renderReports() {
             `<article class="review-card"><div class="review-top"><h3>${esc(r.address)} <span class="data-label">· ${typeNames[r.type]}</span></h3><span class="tag tag-${r.status === "verified" ? "teal" : r.status === "pending" ? "orange" : "gray"}">${statuses[r.status]}</span></div><p>${esc(r.description)}</p><div class="review-meta">${esc(r.id)} · ${esc(r.road_id)} · Mức ${r.severity}/3 · ${new Date(r.created_at * 1000).toLocaleString("vi-VN")} · ${r.lat.toFixed(5)}, ${r.lng.toFixed(5)}</div>${r.media_url ? `<a href="${esc(r.media_url)}" target="_blank" rel="noopener"><img class="review-image" src="${esc(r.media_url)}" alt="Ảnh hiện trường do người dùng cung cấp"></a>` : ""}<div class="review-actions">${r.status === "pending" ? `<button class="approve" data-review-id="${esc(r.id)}" data-status="verified">Xác minh phản ánh</button><button data-review-id="${esc(r.id)}" data-status="rejected">Từ chối</button>` : r.status === "verified" ? `<button class="approve" data-review-id="${esc(r.id)}" data-status="resolved">Đánh dấu đã xử lý</button>` : ""}<button data-report-map="${esc(r.id)}">Xem vị trí</button></div></article>`,
         )
         .join("")
-    : `<div class="empty-state">${icon("report")}${state.reports.length ? "Chưa có phản ánh thuộc trạng thái này." : "Chưa có phản ánh tại máy. Nhấn “Gửi phản ánh” để đóng góp thông tin đầu tiên."}</div>`;
+    : `<div class="empty-state">${icon("report")}${state.reports.length ? "Chưa có phản ánh thuộc trạng thái này." : "Chưa có phản ánh tại máy."}</div>`;
 }
 
 export function initReports() {

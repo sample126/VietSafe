@@ -33,7 +33,7 @@
      từ 82/100 (xe máy) hoặc 88/100 (ô tô).
    - Gợi ý tối đa 2 phương án: **Ưu tiên ít rủi ro mô phỏng** và **Ưu tiên thời gian ước tính**. Không dùng để dẫn đường.
 4. **Phản ánh từ cộng đồng (Crowdsourcing)**:
-   - Người dân (cần đăng nhập) gửi phản ánh ngập / ùn tắc / sự cố kèm định vị GPS hoặc ghim trên bản đồ, và ảnh hiện trường (JPG/PNG/WebP, ≤ 1,5 MB).
+   - Người dân (cần đăng nhập) gửi phản ánh ngập / ùn tắc / sự cố bằng GPS hoặc địa chỉ thuộc mạng đường thử nghiệm; địa chỉ được ghép vào vị trí mô phỏng gần đúng. Có thể đính kèm ảnh hiện trường (JPG/PNG/WebP, ≤ 1,5 MB).
    - Chống lạm dụng: giới hạn 10 phản ánh/phút/IP, chặn gửi trùng trong 5 phút, kiểm tra chữ ký file ảnh, phản ánh tự hết hạn sau 2 giờ.
    - Phản ánh mới ở trạng thái **chờ xác minh** và chưa ảnh hưởng bản đồ hay định tuyến; chỉ phản ánh đã được admin xác minh mới có tác dụng.
 5. **Ứng cứu khẩn cấp (Rescue)**:

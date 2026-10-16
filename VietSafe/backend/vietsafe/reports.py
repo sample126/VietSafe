@@ -18,7 +18,8 @@ import secrets
 import time
 
 from . import config
-from .core.network import nearest_road
+from .core.network import NODES, ROADS, nearest_road
+from .core.search import normalize
 from .db import connect
 
 REPORT_TYPES = ("flood", "traffic", "incident")
@@ -74,6 +75,48 @@ def _decode_image(data_url):
     return media, media_type
 
 
+def _resolve_address(address):
+    """Map a typed address to the most specific matching place in the demo road graph."""
+    query = normalize(address.strip())
+    if not query:
+        raise ValueError("Hãy nhập địa chỉ hoặc dùng GPS để xác định vị trí.")
+
+    places = [dict(node, kind="node") for node in NODES.values()]
+    places.extend(
+        dict(
+            id=road["id"],
+            name=road["name"],
+            lat=sum(point[0] for point in road["coordinates"]) / 2,
+            lng=sum(point[1] for point in road["coordinates"]) / 2,
+            kind="road",
+        )
+        for road in ROADS
+    )
+    matches = [place for place in places if normalize(place["name"]) in query]
+    if not matches:
+        raise ValueError(
+            "Chưa tìm thấy địa chỉ trong mạng đường thử nghiệm. Hãy nhập tên đường hoặc nút giao gợi ý, hoặc dùng GPS."
+        )
+
+    longest_name = max(len(normalize(place["name"])) for place in matches)
+    matches = [
+        place for place in matches if len(normalize(place["name"])) == longest_name
+    ]
+    matching_nodes = [
+        place
+        for place in matches
+        if place["kind"] == "node"
+    ]
+    if matching_nodes:
+        matches = matching_nodes
+    locations = {(place["lat"], place["lng"]): place for place in matches}
+    if len(locations) > 1:
+        raise ValueError(
+            "Địa chỉ khớp nhiều vị trí trong mạng thử nghiệm. Hãy nhập tên đường hoặc nút giao cụ thể hơn."
+        )
+    return next(iter(locations.values()))
+
+
 def create_report(body):
     """Validate và lưu phản ánh mới (trạng thái `pending`).
 
@@ -86,10 +129,21 @@ def create_report(body):
         raise ValueError("Loại phản ánh không hợp lệ.")
     if type(body.get("severity")) is not int or body["severity"] not in (1, 2, 3):
         raise ValueError("Hãy chọn mức độ 1–3.")
-    try:
-        lat, lng = float(body["lat"]), float(body["lng"])
-    except (KeyError, TypeError, ValueError):
-        raise ValueError("Hãy chọn vị trí trên bản đồ.") from None
+    address = body.get("address", "")
+    if not isinstance(address, str) or len(address) > 200:
+        raise ValueError("Địa chỉ tối đa 200 ký tự.")
+    location_source = "gps"
+    resolved_place = None
+    if "lat" in body or "lng" in body:
+        try:
+            lat, lng = float(body["lat"]), float(body["lng"])
+        except (KeyError, TypeError, ValueError):
+            raise ValueError("Tọa độ GPS không hợp lệ.") from None
+    else:
+        place = _resolve_address(address)
+        lat, lng = place["lat"], place["lng"]
+        location_source = "address"
+        resolved_place = place["name"]
     lat_lo, lat_hi = config.PILOT_LAT_RANGE
     lng_lo, lng_hi = config.PILOT_LNG_RANGE
     if not (math.isfinite(lat) and math.isfinite(lng)) or not (
@@ -104,9 +158,6 @@ def create_report(body):
     description = body.get("description", "")
     if not isinstance(description, str) or not 10 <= len(description.strip()) <= 1200:
         raise ValueError("Mô tả cần từ 10 đến 1.200 ký tự.")
-    address = body.get("address", "")
-    if not isinstance(address, str) or len(address) > 200:
-        raise ValueError("Địa chỉ tối đa 200 ký tự.")
     media = media_type = None
     if body.get("image"):
         media, media_type = _decode_image(body["image"])
@@ -126,7 +177,13 @@ def create_report(body):
             ),
         ).fetchone()
         if existing:
-            return {"id": existing[0], "duplicate": True, "status": "pending"}
+            return {
+                "id": existing[0],
+                "duplicate": True,
+                "status": "pending",
+                "location_source": location_source,
+                "resolved_place": resolved_place,
+            }
         report_id = "R-" + secrets.token_hex(4).upper()
         db.execute(
             "INSERT INTO reports VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
@@ -151,7 +208,14 @@ def create_report(body):
             "INSERT INTO audit(report_id,action,timestamp) VALUES(?,?,?)",
             (report_id, "created", now),
         )
-    return {"id": report_id, "status": "pending", "road_id": road["id"], "duplicate": False}
+    return {
+        "id": report_id,
+        "status": "pending",
+        "road_id": road["id"],
+        "duplicate": False,
+        "location_source": location_source,
+        "resolved_place": resolved_place,
+    }
 
 
 def review_report(report_id, status):

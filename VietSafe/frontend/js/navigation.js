@@ -15,7 +15,7 @@ export function setView(view) {
   state.view = view;
   $$(".view").forEach((el) => (el.hidden = el.id !== view + "-view"));
   const reportButton = document.querySelector("#open-report");
-  if (reportButton) reportButton.hidden = view === "rescue";
+  if (reportButton) reportButton.hidden = ["rescue", "reports"].includes(view);
   window.scrollTo({ top: 0, behavior: "instant" });
   $$(".nav-item[data-view]").forEach((el) =>
     el.classList.toggle("active", el.dataset.view === view),

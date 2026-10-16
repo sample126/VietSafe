@@ -8,14 +8,6 @@ import { refresh } from "../dashboard.js";
 let selectedReportImage = null;
 let reportSubmitting = false;
 
-function resetReportLocationConfirmation() {
-  const confirmation = $("#report-location-confirm");
-  confirmation.checked = false;
-  confirmation.disabled = !state.reportPosition;
-  $("#report-location-confirm-hint").hidden = true;
-  $("#report-location-confirm-hint").textContent = "";
-}
-
 function updateReportImage(file, source) {
   if (!file) return;
   selectedReportImage = file;
@@ -47,7 +39,6 @@ export function openReport() {
   $("#report-error").textContent = "";
   $("#report-submit-status").hidden = true;
   $("#report-submit-status").textContent = "";
-  resetReportLocationConfirmation();
   $("#report-dialog").showModal();
 }
 
@@ -57,14 +48,13 @@ export function setReportPosition(lat, lng, address, acquiredAt = Date.now()) {
   $("#report-coordinates").textContent =
     `Vị trí GPS: ${lat.toFixed(5)}, ${lng.toFixed(5)} · Lấy lúc ${new Date(acquiredAt).toLocaleString("vi-VN", { dateStyle: "short", timeStyle: "short" })}.`;
   $("#report-coordinates").classList.add("valid");
-  resetReportLocationConfirmation();
 }
 
 export function geolocate(forReport = false) {
   if (!navigator.geolocation) {
     toast(
       forReport
-        ? "Trình duyệt không hỗ trợ GPS nên chưa thể gửi phản ánh."
+        ? "Trình duyệt không hỗ trợ GPS. Bạn có thể nhập tên đường hoặc nút giao trong vùng thử nghiệm."
         : "Trình duyệt không hỗ trợ định vị.",
     );
     return;
@@ -103,17 +93,11 @@ export async function submitReport(event) {
   if (reportSubmitting) return;
   $("#report-error").hidden = true;
   $("#report-error").textContent = "";
-  if (!state.reportPosition) {
+  const address = $("#report-address").value.trim();
+  if (!state.reportPosition && !address) {
     $("#report-error").textContent =
-      "Hãy dùng GPS để xác định vị trí trước khi gửi.";
+      "Hãy dùng GPS hoặc nhập địa chỉ/địa điểm trong vùng thử nghiệm trước khi gửi.";
     $("#report-error").hidden = false;
-    return;
-  }
-  if (!$("#report-location-confirm").checked) {
-    $("#report-error").textContent =
-      "Hãy kiểm tra vị trí GPS và địa chỉ bổ sung, rồi xác nhận trước khi gửi.";
-    $("#report-error").hidden = false;
-    $("#report-location-confirm").focus();
     return;
   }
   const button = $("#submit-report");
@@ -143,8 +127,8 @@ export async function submitReport(event) {
       });
     }
     result = await post("/api/reports", {
-      ...state.reportPosition,
-      address: $("#report-address").value,
+      ...(state.reportPosition || {}),
+      address,
       type: $("input[name=type]:checked").value,
       severity: Number($("#report-severity").value),
       description: $("#report-description").value,
@@ -175,11 +159,16 @@ export async function submitReport(event) {
   state.reportPosition = null;
   $("#report-coordinates").textContent = "Chưa chọn tọa độ.";
   $("#report-coordinates").classList.remove("valid");
-  resetReportLocationConfirmation();
   toast(
-    result.duplicate
-      ? "Phản ánh trùng đã được lưu trước đó."
-      : `Đã lưu ${result.id}. Phản ánh đang chờ xác minh.`,
+    `${
+      result.duplicate
+        ? "Phản ánh trùng đã được lưu trước đó."
+        : `Đã lưu ${result.id}. Phản ánh đang chờ xác minh.`
+    }${
+      result.location_source === "address" && result.resolved_place
+        ? ` Địa chỉ được ghép với ${result.resolved_place} trong mạng thử nghiệm (vị trí ước tính).`
+        : ""
+    }`,
   );
   try {
     const refreshed = await refresh();
@@ -211,21 +200,5 @@ export function initReportForm() {
   );
   $("#report-remove-image").addEventListener("click", clearReportImage);
   $("#report-gps").addEventListener("click", () => geolocate(true));
-  $("#report-address").addEventListener("input", () => {
-    const confirmation = $("#report-location-confirm");
-    if (confirmation.checked) {
-      confirmation.checked = false;
-      const hint = $("#report-location-confirm-hint");
-      hint.textContent =
-        "Địa chỉ đã thay đổi. Vui lòng kiểm tra vị trí và xác nhận lại.";
-      hint.hidden = false;
-    }
-  });
-  $("#report-location-confirm").addEventListener("change", () => {
-    $("#report-location-confirm-hint").hidden = true;
-    $("#report-location-confirm-hint").textContent = "";
-    $("#report-error").hidden = true;
-    $("#report-error").textContent = "";
-  });
   $("#report-form").addEventListener("submit", submitReport);
 }

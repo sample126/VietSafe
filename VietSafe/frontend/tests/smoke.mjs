@@ -301,6 +301,7 @@ check(
 console.log("\n[5] Trang quản trị");
 click($('[data-view="reports"]'));
 check("mở trang Phản ánh (admin)", visible($("#reports-view")));
+check("ẩn nút gửi phản ánh trên trang admin", $("#open-report").hidden);
 check(
   "danh sách phản ánh được vẽ",
   await waitFor(() => $("#reports-list").innerHTML.trim().length > 0, {
@@ -323,6 +324,12 @@ console.log(
 const node0 = state.data.nodes.find((n) => n.name);
 click($("#open-report"));
 check("mở hộp thoại gửi phản ánh", $("#report-dialog").hasAttribute("open"));
+check(
+  "không cần GPS nếu nhập địa chỉ, bước xác nhận đã được bỏ",
+  !$("#report-location-confirm") &&
+    !$("#report-location-confirm-hint") &&
+    !state.reportPosition,
+);
 check(
   "chỉ còn lựa chọn vị trí của tôi bằng GPS",
   $("#report-gps").textContent.includes("Vị trí của tôi") &&
@@ -370,16 +377,13 @@ check(
   "xác định tọa độ phản ánh bằng GPS",
   state.reportPosition?.lat === node0.lat &&
     state.reportPosition?.lng === node0.lng &&
-    /Lấy lúc \d{1,2}:\d{2}/.test($("#report-coordinates").textContent) &&
-    !$("#report-location-confirm").disabled,
+    /Lấy lúc \d{1,2}:\d{2}/.test($("#report-coordinates").textContent),
 );
-$("#report-location-confirm").checked = true;
 $("#report-dialog").close();
 click($("#open-report"));
 check(
-  "mở lại biểu mẫu yêu cầu xác nhận vị trí lần nữa",
-  !$("#report-location-confirm").checked &&
-    !$("#report-location-confirm").disabled &&
+  "mở lại biểu mẫu vẫn cho dùng địa chỉ thay GPS",
+  !$("#report-location-confirm") &&
     $("#report-coordinates").textContent.includes("Lấy lúc"),
 );
 $("#report-address").value = node0.name;
@@ -387,31 +391,31 @@ $("#report-severity").value = "3";
 $("#report-description").value = "Nước ngập sâu, xe máy không thể đi qua được.";
 let rejectPendingReport;
 let reportRequestCount = 0;
+const savedReportPosition = state.reportPosition;
+state.reportPosition = null;
+$("#report-address").value = "";
 submit($("#report-form"));
 check(
-  "bắt buộc xác nhận vị trí trước khi gửi",
+  "chặn gửi nếu chưa có GPS và cũng chưa nhập địa chỉ",
   !$("#report-error").hidden &&
-    $("#report-error").textContent.includes("xác nhận") &&
+    $("#report-error").textContent.includes("nhập địa chỉ") &&
     reportRequestCount === 0,
 );
-$("#report-location-confirm").checked = true;
-change($("#report-location-confirm"));
+state.reportPosition = savedReportPosition;
+$("#report-address").value = node0.name;
 $("#report-address").value = `${node0.name} (gần cổng)`;
 $("#report-address").dispatchEvent(
   new window.Event("input", { bubbles: true }),
 );
 check(
-  "thay đổi địa chỉ yêu cầu xác nhận lại",
-  !$("#report-location-confirm").checked &&
-    !$("#report-location-confirm-hint").hidden &&
-    $("#report-location-confirm-hint").textContent.includes("xác nhận lại"),
+  "có thể chỉnh địa chỉ mà không cần bước xác nhận bổ sung",
+  !$("#report-location-confirm") &&
+    $("#report-address").value === `${node0.name} (gần cổng)`,
 );
 $("#report-address").value = node0.name;
 $("#report-address").dispatchEvent(
   new window.Event("input", { bubbles: true }),
 );
-$("#report-location-confirm").checked = true;
-change($("#report-location-confirm"));
 reportFetchOverride = () => {
   reportRequestCount += 1;
   return new Promise((resolve, reject) => {
@@ -551,6 +555,37 @@ check(
   state.reports.find((r) => r.id === reportId)?.status === "verified",
 );
 click($('[data-view="map"]'));
+click($("#open-report"));
+$("#report-address").value = "Cầu Giấy";
+$("#report-description").value =
+  "Địa chỉ thủ công trong thử nghiệm, không dùng GPS.";
+state.reportPosition = null;
+reportFetchOverride = () =>
+  Promise.resolve(
+    new Response(
+      JSON.stringify({
+        id: "R-MANUAL-ADDRESS",
+        status: "pending",
+        location_source: "address",
+        resolved_place: "Cầu Giấy",
+      }),
+      { status: 201, headers: { "Content-Type": "application/json" } },
+    ),
+  );
+submit($("#report-form"));
+check(
+  "gửi phản ánh chỉ với địa chỉ mà không gửi tọa độ GPS",
+  await waitFor(
+    () =>
+      reportRequestBodies.length === 4 &&
+      !("lat" in reportRequestBodies[3]) &&
+      !("lng" in reportRequestBodies[3]) &&
+      reportRequestBodies[3].address === "Cầu Giấy" &&
+      $("#toast").textContent.includes("vị trí ước tính"),
+    { label: "gửi phản ánh bằng địa chỉ" },
+  ),
+);
+reportFetchOverride = null;
 
 console.log("\n[6] Ứng cứu");
 click($('[data-view="rescue"]'));

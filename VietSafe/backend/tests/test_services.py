@@ -38,6 +38,31 @@ class ReportTests(DatabaseTestCase):
         with self.assertRaises(ValueError):
             reports.review_report(created["id"], "verified")
 
+    def test_report_can_use_address_without_gps(self):
+        payload = dict(
+            type="flood",
+            severity=2,
+            address="Số 12, gần Cầu Giấy, Hà Nội",
+            description="Nước ngập tại khu vực, thử gửi bằng địa chỉ.",
+        )
+        created = reports.create_report(payload)
+        self.assertEqual(created["location_source"], "address")
+        self.assertEqual(created["resolved_place"], "Cầu Giấy")
+        stored = reports.get_reports()[0]
+        self.assertEqual(stored["lat"], 21.0313)
+        self.assertEqual(stored["lng"], 105.8006)
+        self.assertEqual(stored["address"], "Số 12, gần Cầu Giấy, Hà Nội")
+
+    def test_address_without_gps_must_match_demo_road_graph(self):
+        payload = dict(
+            type="flood",
+            severity=2,
+            address="Số nhà không có trong dữ liệu thử nghiệm",
+            description="Nước ngập tại khu vực, thử gửi bằng địa chỉ.",
+        )
+        with self.assertRaisesRegex(ValueError, "Chưa tìm thấy địa chỉ"):
+            reports.create_report(payload)
+
     def test_pending_report_does_not_affect_routing(self):
         self.report()
         pending = reports.get_reports()
