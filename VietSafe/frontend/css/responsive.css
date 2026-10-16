@@ -226,6 +226,32 @@
   main {
     padding: 22px 14px 0;
   }
+  .report-filter {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 12px;
+  }
+  .report-filter .report-search {
+    grid-column: auto;
+  }
+  .report-filter input,
+  .report-filter select {
+    max-width: none;
+  }
+  .report-filter > .button {
+    width: 100%;
+    min-height: 44px;
+    font-size: 12px;
+  }
+  .report-status-counts {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .report-status-count {
+    min-height: 66px;
+    padding: 10px;
+  }
+  .review-actions button {
+    min-height: 44px;
+  }
   .page-heading {
     align-items: flex-start;
     gap: 10px;
@@ -588,11 +614,16 @@
     height: 270px;
   }
   .report-filter {
+    grid-template-columns: 1fr 1fr;
     gap: 10px;
   }
+  .report-filter .report-search {
+    grid-column: 1 / -1;
+  }
+  .report-filter input,
   .report-filter select {
     min-width: 0;
-    max-width: 180px;
+    max-width: none;
   }
   .review-card {
     padding: 15px;

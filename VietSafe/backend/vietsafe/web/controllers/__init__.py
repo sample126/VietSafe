@@ -4,7 +4,7 @@
 |--------------------------|-------------------------------------------------------------------|
 | `system_controller.py`   | /api/health, /api/snapshot, /api/search, /api/routes              |
 | `auth_controller.py`     | /api/auth/login, register, logout, me                             |
-| `report_controller.py`   | /api/reports, /api/reports/{id}, /api/report-media/{id}           |
+| `report_controller.py`   | /api/reports, /api/reports/{id}, /api/reports/{id}/history, /api/report-media/{id} |
 | `admin_controller.py`    | /api/scenario, /api/export/predictions, /api/export/reports       |
 
 Controller chỉ làm việc của tầng HTTP: đọc `req`, gọi nghiệp vụ (service.py / reports.py / auth.py /

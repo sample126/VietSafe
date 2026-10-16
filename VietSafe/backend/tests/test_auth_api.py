@@ -49,10 +49,35 @@ class AuthApiTests(ServerTestCase):
 
         status, _ = self.api(f"/api/reports/{report_id}", {"status": "verified"}, citizen)
         self.assertEqual(status, 403)  # người dân không được duyệt
+        status, _ = self.api(f"/api/reports/{report_id}/history", token=citizen)
+        self.assertEqual(status, 403)
 
         admin = self.login("admin", "vietsafe2026")
         status, data = self.api(f"/api/reports/{report_id}", {"status": "verified"}, admin)
         self.assertEqual((status, data["status"]), (200, "verified"))
+        status, history = self.api(f"/api/reports/{report_id}/history", token=admin)
+        self.assertEqual(status, 200)
+        self.assertEqual(
+            [event["action"] for event in history["history"]], ["created", "verified"]
+        )
+
+    def test_rejection_requires_reason_and_is_audited(self):
+        citizen = self.login("nguoidan", "matkhau123")
+        _, created = self.api("/api/reports", REPORT, citizen)
+        admin = self.login("admin", "vietsafe2026")
+        status, error = self.api(
+            f"/api/reports/{created['id']}", {"status": "rejected"}, admin
+        )
+        self.assertEqual(status, 400)
+        self.assertIn("Cần nhập lý do", error["error"])
+        status, result = self.api(
+            f"/api/reports/{created['id']}",
+            {"status": "rejected", "reason": "Không đủ thông tin hiện trường."},
+            admin,
+        )
+        self.assertEqual((status, result["status"]), (200, "rejected"))
+        _, history = self.api(f"/api/reports/{created['id']}/history", token=admin)
+        self.assertEqual(history["history"][-1]["detail"], "Không đủ thông tin hiện trường.")
 
     def test_admin_changes_scenario(self):
         admin = self.login("admin", "vietsafe2026")

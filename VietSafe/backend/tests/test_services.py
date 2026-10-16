@@ -4,7 +4,7 @@ import json
 import time
 import unittest
 
-from vietsafe import auth, reports, service
+from vietsafe import auth, demo_reports, reports, service
 from vietsafe.core.routing import calculate_routes
 from vietsafe.core.simulation import build_snapshot
 from vietsafe.db import connect
@@ -37,6 +37,39 @@ class ReportTests(DatabaseTestCase):
         self.assertEqual(reports.get_reports()[0]["status"], "resolved")
         with self.assertRaises(ValueError):
             reports.review_report(created["id"], "verified")
+        history = reports.get_report_history(created["id"])
+        self.assertEqual(
+            [event["action"] for event in history], ["created", "verified", "resolved"]
+        )
+
+    def test_rejection_requires_and_records_a_short_reason(self):
+        created = self.report()
+        with self.assertRaisesRegex(ValueError, "Cần nhập lý do"):
+            reports.review_report(created["id"], "rejected")
+        with self.assertRaisesRegex(ValueError, "tối đa 240"):
+            reports.review_report(created["id"], "rejected", "x" * 241)
+        reports.review_report(created["id"], "rejected", "Không đủ thông tin hiện trường.")
+        history = reports.get_report_history(created["id"])
+        self.assertEqual(history[-1]["action"], "rejected")
+        self.assertEqual(history[-1]["detail"], "Không đủ thông tin hiện trường.")
+
+    def test_demo_report_restore_only_replaces_named_fixtures(self):
+        user_report = self.report(description="Phản ánh thật cần được giữ lại.")
+        demo_reports.restore_demo_reports()
+        first = {row["id"]: row for row in reports.get_reports()}
+        self.assertIn(user_report["id"], first)
+        self.assertEqual(first["R-DEMO-PENDING"]["status"], "pending")
+        self.assertEqual(first["R-DEMO-VERIFIED"]["status"], "verified")
+        self.assertEqual(first["R-DEMO-PHOTO"]["status"], "pending")
+        self.assertIsNone(first["R-DEMO-PENDING"]["media_url"])
+        self.assertIsNotNone(first["R-DEMO-PHOTO"]["media_url"])
+        demo_reports.restore_demo_reports()
+        second = {row["id"]: row for row in reports.get_reports()}
+        self.assertIn(user_report["id"], second)
+        self.assertEqual(
+            {key for key in second if key.startswith("R-DEMO-")},
+            set(demo_reports.DEMO_IDS),
+        )
 
     def test_report_can_use_address_without_gps(self):
         payload = dict(

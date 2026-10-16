@@ -56,7 +56,7 @@ Hằng số khác trong `config.py` (không có biến môi trường):
 | `db.py`                                | Kết nối SQLite, schema        | `connect()` (context manager, tự commit), `init_schema()`                                         |
 | `app.py`                               | Khởi tạo ứng dụng             | `init_app()`                                                                                      |
 | `auth.py`                              | Tài khoản và phiên            | `login`, `register`, `create_session`, `get_user_by_session`, `delete_session`, `seed_demo_users` |
-| `reports.py`                           | Phản ánh cộng đồng            | `create_report`, `review_report`, `get_reports`, `get_report_media`, `export_csv`                 |
+| `reports.py`                           | Phản ánh cộng đồng            | `create_report`, `review_report`, `get_reports`, `get_report_history`, `get_report_media`, `export_csv` |
 | `service.py`                           | Ghép DB + core                | `current_snapshot`, `get_scenario`, `set_scenario`, `prediction_logs`                             |
 | `core/network.py`                      | Mạng đường                    | `NODES`, `ROADS`, `ROAD_INDEX`, `nearest_road(lat, lng)`                                          |
 | `core/simulation.py`                   | Dữ liệu giả lập               | `SCENARIOS`, `build_snapshot(scenario, reports, now)`                                             |
@@ -67,7 +67,7 @@ Hằng số khác trong `config.py` (không có biến môi trường):
 | `web/controllers/__init__.py`          | Nạp controller, xuất `router` | `router`                                                                                          |
 | `web/controllers/system_controller.py` | Endpoint hệ thống và bản đồ   | `health`, `snapshot`, `search`, `routes`                                                          |
 | `web/controllers/auth_controller.py`   | Endpoint tài khoản            | `login`, `register`, `logout`, `me`                                                               |
-| `web/controllers/report_controller.py` | Endpoint phản ánh             | `list_reports`, `create_report`, `review_report`, `report_media`, `report_limiter`                |
+| `web/controllers/report_controller.py` | Endpoint phản ánh             | `list_reports`, `report_history`, `create_report`, `review_report`, `report_media`, `report_limiter` |
 | `web/controllers/admin_controller.py`  | Endpoint quản trị             | `set_scenario`, `export_predictions`, `export_reports`                                            |
 | `web/server.py`                        | HTTP handler                  | `Handler`, `create_server(host, port)`                                                            |
 | `web/ratelimit.py`                     | Giới hạn tốc độ               | `SlidingWindowLimiter`                                                                            |
@@ -91,7 +91,8 @@ Mọi phản hồi là JSON (trừ ảnh, CSV). Lỗi luôn có dạng `{"error"
 | `GET /api/auth/me`                                       | công khai   | `{user: {username,display_name,role} \| null}`                                                               |
 | `GET /api/reports`                                       | công khai ⚠ | `{reports:[...]}` — tối đa 500 phản ánh mới nhất (xem [giới hạn đã biết](ARCHITECTURE.md#5-mô-hình-an-ninh)) |
 | `POST /api/reports`                                      | đăng nhập   | Gửi phản ánh → **201** `{id,status,road_id,duplicate}`; 429 nếu quá 10/phút                                  |
-| `POST /api/reports/{id}`                                 | admin       | `{status: verified\|rejected\|resolved}` → `{id,status}`; 400 nếu chuyển trạng thái không hợp lệ             |
+| `POST /api/reports/{id}`                                 | admin       | `{status: verified\|rejected\|resolved, reason?}` → `{id,status}`; từ chối bắt buộc có lý do (≤240 ký tự)    |
+| `GET /api/reports/{id}/history`                          | admin       | `{history:[{action,timestamp,detail}]}` — nhật ký trạng thái của phản ánh                                    |
 | `GET /api/report-media/{id}`                             | công khai ⚠ | Ảnh đính kèm (binary); 404 nếu không có                                                                      |
 | `POST /api/scenario`                                     | admin       | `{scenario: normal\|rain\|storm}` → `{scenario}`                                                             |
 | `GET /api/export/predictions`                            | admin       | Nhật ký dự báo (JSON, tải về `vietsafe-predictions.json`)                                                    |
@@ -103,6 +104,15 @@ Nếu cùng đoạn đường + loại + mô tả đã được gửi trong 5 ph
 
 Mã lỗi thường gặp: `400` dữ liệu sai · `401` cần đăng nhập · `403` thiếu quyền / sai Host / thiếu header POST ·
 `404` không tồn tại · `413` body trống hoặc quá lớn · `429` gửi quá nhanh · `500` lỗi máy chủ (chi tiết ở console).
+
+### Chuẩn bị và khôi phục dữ liệu trình diễn
+
+Từ thư mục `backend`, chạy `python -m vietsafe.demo_reports --restore`. Lệnh này tạo lại đúng ba fixture
+được đánh dấu `[DEMO]`: một phản ánh chờ xác minh không có ảnh, một đã xác minh không có ảnh, và một chờ
+xác minh có ảnh minh họa. Có thể chạy lại lệnh trước mỗi buổi trình diễn để khôi phục trạng thái ban đầu.
+Lệnh chỉ thay thế các ID cố định `R-DEMO-PENDING`, `R-DEMO-VERIFIED`, `R-DEMO-PHOTO` cùng audit của
+chính các ID đó; phản ánh người dùng khác không bị xóa hoặc cập nhật. Kiểm tra `VIETSAFE_DB` trước khi
+chạy để chắc chắn đang dùng đúng cơ sở dữ liệu demo.
 
 ### Hình dạng của `/api/snapshot`
 
@@ -178,12 +188,13 @@ Schema ở [`db.py`](../backend/vietsafe/db.py), tạo tự động (`CREATE TAB
 | `users`           | `username` (khóa), `password_hash`, `display_name`, `role` (`citizen`\|`admin`)              |
 | `sessions`        | `token` (khóa), `username`, `created_at`, `expires_at`                                       |
 | `reports`         | Phản ánh: loại, mức độ 1–3, tọa độ, mô tả, `status`, `expires_at`, ảnh (BLOB)                |
-| `audit`           | Nhật ký thao tác trên phản ánh (`created`, `verified`, `rejected`, `resolved`)               |
+| `audit`           | Nhật ký thao tác phản ánh (`created`, `verified`, `rejected`, `resolved`, `expired`); `detail` lưu lý do từ chối hoặc ghi chú fixture |
 | `prediction_logs` | Mỗi 10 giây một bản ghi dự báo (`tick`), giữ 24 giờ — để sau này đối chiếu với quan sát thật |
 
 Xem dữ liệu: `sqlite3 data/vietsafe.sqlite3 "SELECT id,status,address FROM reports"` (cần cài công cụ dòng lệnh `sqlite3`), hoặc dùng
 module `sqlite3` của Python.
-Không có hệ thống migration; khi đổi schema cần thêm bước nâng cấp thủ công hoặc xóa DB demo.
+Chưa có framework migration tổng quát; `init_schema()` bổ sung cột audit `detail` cho DB hiện hữu một cách tương thích.
+Các thay đổi schema lớn hơn cần migration có phiên bản riêng, không yêu cầu xóa DB đang dùng.
 
 ## Cách thêm một endpoint
 

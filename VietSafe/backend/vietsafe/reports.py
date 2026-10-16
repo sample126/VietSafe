@@ -38,17 +38,37 @@ _LIST_COLUMNS = (
 def get_reports():
     """Danh sách tối đa 500 phản ánh mới nhất; đồng thời đánh dấu `expired` các phản ánh quá hạn."""
     with connect() as db:
-        db.execute(
-            "UPDATE reports SET status='expired' "
-            "WHERE expires_at<? AND status IN ('pending','verified')",
-            (time.time(),),
-        )
+        now = time.time()
+        expired = db.execute(
+            "SELECT id FROM reports WHERE expires_at<? AND status IN ('pending','verified')",
+            (now,),
+        ).fetchall()
+        if expired:
+            db.executemany(
+                "UPDATE reports SET status='expired' WHERE id=?",
+                [(row["id"],) for row in expired],
+            )
+            db.executemany(
+                "INSERT INTO audit(report_id,action,timestamp) VALUES(?,?,?)",
+                [(row["id"], "expired", now) for row in expired],
+            )
         rows = db.execute(
             f"SELECT {_LIST_COLUMNS} FROM reports ORDER BY created_at DESC LIMIT 500"
         ).fetchall()
     return [
         dict(r, media_url="/api/report-media/" + r["id"] if r["media_type"] else None) for r in rows
     ]
+
+def get_report_history(report_id):
+    """Lịch sử trạng thái cho một phản ánh; quyền truy cập được kiểm tra ở controller."""
+    with connect() as db:
+        if not db.execute("SELECT 1 FROM reports WHERE id=?", (report_id,)).fetchone():
+            raise ValueError("Không tìm thấy phản ánh.")
+        rows = db.execute(
+            "SELECT action,timestamp,detail FROM audit WHERE report_id=? ORDER BY timestamp,id",
+            (report_id,),
+        ).fetchall()
+    return [dict(row) for row in rows]
 
 
 def get_report_media(report_id):
@@ -218,10 +238,18 @@ def create_report(body):
     }
 
 
-def review_report(report_id, status):
+def review_report(report_id, status, reason=None):
     """Admin chuyển trạng thái phản ánh theo REVIEW_TRANSITIONS; ghi vào bảng `audit`."""
     if status not in ("verified", "rejected", "resolved"):
         raise ValueError("Trạng thái không hợp lệ.")
+    if status == "rejected":
+        if not isinstance(reason, str) or not reason.strip():
+            raise ValueError("Cần nhập lý do từ chối phản ánh.")
+        reason = reason.strip()
+        if len(reason) > 240:
+            raise ValueError("Lý do từ chối tối đa 240 ký tự.")
+    else:
+        reason = None
     with connect() as db:
         db.execute("BEGIN IMMEDIATE")
         row = db.execute(
@@ -236,8 +264,8 @@ def review_report(report_id, status):
         now = time.time()
         db.execute("UPDATE reports SET status=?,reviewed_at=? WHERE id=?", (status, now, report_id))
         db.execute(
-            "INSERT INTO audit(report_id,action,timestamp) VALUES(?,?,?)",
-            (report_id, status, now),
+            "INSERT INTO audit(report_id,action,timestamp,detail) VALUES(?,?,?,?)",
+            (report_id, status, now, reason),
         )
     return {"id": report_id, "status": status}
 

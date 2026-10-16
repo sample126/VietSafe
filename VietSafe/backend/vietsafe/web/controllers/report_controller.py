@@ -12,6 +12,14 @@ report_limiter = SlidingWindowLimiter(config.REPORT_RATE_LIMIT_PER_MINUTE, 60)
 def list_reports(req):
     return {"reports": reports.get_reports()}
 
+@router.get(
+    "/api/reports/{report_id}/history",
+    auth="admin",
+    deny="Chỉ quản trị viên mới có thể xem lịch sử phản ánh.",
+)
+def report_history(req):
+    return {"history": reports.get_report_history(req.params["report_id"])}
+
 
 @router.post("/api/reports", auth="user", deny="Vui lòng đăng nhập để gửi phản ánh.")
 def create_report(req):
@@ -24,7 +32,9 @@ def create_report(req):
     "/api/reports/{report_id}", auth="admin", deny="Chỉ quản trị viên mới có thể duyệt phản ánh."
 )
 def review_report(req):
-    return reports.review_report(req.params["report_id"], req.body.get("status"))
+    return reports.review_report(
+        req.params["report_id"], req.body.get("status"), req.body.get("reason")
+    )
 
 
 @router.get("/api/report-media/{report_id}")

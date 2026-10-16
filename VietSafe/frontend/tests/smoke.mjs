@@ -112,6 +112,18 @@ for (const key of ["window", "document", "localStorage", "navigator"]) {
 window.SVGElement.prototype.createSVGRect = () => ({});
 window.Element.prototype.scrollIntoView = () => {};
 window.scrollTo = () => {};
+const confirmationMessages = [];
+let confirmationDecision = true;
+window.confirm = (message) => {
+  confirmationMessages.push(message);
+  return confirmationDecision;
+};
+const promptMessages = [];
+let promptResult = "Thông tin chưa đủ để xác minh.";
+window.prompt = (message) => {
+  promptMessages.push(message);
+  return promptResult;
+};
 window.matchMedia ??= () => ({
   matches: false,
   addEventListener() {},
@@ -308,6 +320,89 @@ check(
     label: "danh sách phản ánh",
   }),
 );
+const { renderReports } = await import(url("views/reports.js"));
+const originalReports = state.reports;
+const sampleReport = (id, status, created_at) => ({
+  id,
+  status,
+  created_at,
+  address: id,
+  type: "flood",
+  description: id,
+  road_id: "HN-001",
+  severity: 1,
+  lat: 21,
+  lng: 105,
+});
+state.reports = [
+  sampleReport("R-PENDING-OLD", "pending", 100),
+  sampleReport("R-VERIFIED", "verified", 300),
+  sampleReport("R-PENDING-NEW", "pending", 200),
+];
+state.reports[0].address = "Cầu Giấy";
+state.reports[0].description = "Nước ngập";
+state.reports[0].media_url = "/api/report-media/R-PENDING-OLD";
+state.reports[2].address = "Đường Láng";
+state.reports[2].description = "Ùn tắc";
+renderReports();
+const sortedReportIds = $$("#reports-list .review-meta").map(
+  (el) => el.textContent.split(" · ")[0],
+);
+check(
+  "xếp phản ánh chờ xác minh trước và mới nhất lên đầu",
+  sortedReportIds.join(",") === "R-PENDING-NEW,R-PENDING-OLD,R-VERIFIED",
+);
+const oldPendingCard = $$("#reports-list .review-card").find((card) =>
+  card.textContent.includes("R-PENDING-OLD"),
+);
+check(
+  "mỗi thẻ làm rõ nguồn người gửi và bằng chứng đính kèm",
+  oldPendingCard?.textContent.includes(
+    "Nguồn: Phản ánh cộng đồng do người dùng gửi",
+  ) &&
+    oldPendingCard.textContent.includes(
+      "Bằng chứng: Mô tả người gửi · Có ảnh đính kèm",
+    ) &&
+    Boolean(
+      oldPendingCard.querySelector(
+        'img[alt="Ảnh hiện trường do người dùng cung cấp"]',
+      ),
+    ),
+);
+const statusCounts = Object.fromEntries(
+  $$("#report-status-counts [data-status]").map((el) => [
+    el.dataset.status,
+    Number(el.querySelector("strong").textContent),
+  ]),
+);
+check(
+  "hiển thị tổng số và số lượng từng trạng thái",
+  statusCounts.total === 3 &&
+    statusCounts.pending === 2 &&
+    statusCounts.verified === 1 &&
+    statusCounts.resolved === 0,
+);
+$("#report-search").value = "cau giay";
+$("#report-search").dispatchEvent(new window.Event("input", { bubbles: true }));
+check(
+  "tìm phản ánh theo địa chỉ không phân biệt dấu",
+  $$("#reports-list .review-meta").length === 1 &&
+    $("#reports-list .review-meta").textContent.startsWith("R-PENDING-OLD"),
+);
+$("#report-status-filter").value = "verified";
+change($("#report-status-filter"));
+check(
+  "tìm kiếm kết hợp với bộ lọc trạng thái",
+  $("#reports-list").textContent.includes(
+    "Không tìm thấy phản ánh khớp với nội dung tìm kiếm.",
+  ),
+);
+$("#report-search").value = "";
+$("#report-search").dispatchEvent(new window.Event("input", { bubbles: true }));
+$("#report-status-filter").value = "all";
+change($("#report-status-filter"));
+state.reports = originalReports;
+renderReports();
 click($('[data-view="sources"]'));
 check("mở trang Nguồn dữ liệu", visible($("#sources-view")));
 check("thẻ nguồn dữ liệu được vẽ", $$("#source-grid .source-card").length >= 5);
@@ -539,6 +634,15 @@ check(
   await waitFor(reviewBtn, { label: "nút xác minh" }),
 );
 const reportId = reviewBtn().dataset.reviewId;
+confirmationDecision = false;
+click(reviewBtn());
+check(
+  "hủy xác minh thì không thay đổi phản ánh",
+  state.reports.find((r) => r.id === reportId)?.status === "pending" &&
+    !reviewBtn().disabled &&
+    confirmationMessages.at(-1).includes("kiểm tra mô tả, vị trí và ảnh"),
+);
+confirmationDecision = true;
 click(reviewBtn());
 check(
   "xác minh -> đường bị chặn trên snapshot (nguồn local_report)",
@@ -553,6 +657,94 @@ check(
 check(
   "trạng thái phản ánh là 'verified'",
   state.reports.find((r) => r.id === reportId)?.status === "verified",
+);
+check(
+  "xác minh có thông báo thành công rõ ràng",
+  $("#toast").textContent.includes("Đã xác minh phản ánh."),
+);
+click($(`[data-review-id="${reportId}"][data-status="resolved"]`));
+check(
+  "đánh dấu đã xử lý có xác nhận và cập nhật thành công",
+  await waitFor(
+    () =>
+      state.reports.find((r) => r.id === reportId)?.status === "resolved" &&
+      $("#toast").textContent.includes("Đã đánh dấu phản ánh là đã xử lý.") &&
+      confirmationMessages.at(-1).includes("đánh dấu phản ánh này là đã xử lý"),
+    { label: "xác nhận và cập nhật đã xử lý" },
+  ),
+);
+const citizenLoginResponse = await nodeFetch(`${BASE}/api/auth/login`, {
+  method: "POST",
+  headers: {
+    "Content-Type": "application/json",
+    "X-VietSafe": "local",
+    Origin: BASE,
+  },
+  body: JSON.stringify({ username: "nguoidan", password: "matkhau123" }),
+});
+const citizenToken = (await citizenLoginResponse.json()).token;
+const newReportResponse = await nodeFetch(`${BASE}/api/reports`, {
+  method: "POST",
+  headers: {
+    "Content-Type": "application/json",
+    "X-VietSafe": "local",
+    "X-VietSafe-Session": citizenToken,
+    Origin: BASE,
+  },
+  body: JSON.stringify({
+    type: "flood",
+    severity: 2,
+    lat: node0.lat,
+    lng: node0.lng,
+    address: node0.name,
+    description: "Phản ánh thứ hai để kiểm thử lý do từ chối.",
+  }),
+});
+const rejectionTarget = await newReportResponse.json();
+await import(url("views/reports.js")).then(({ loadReports }) => loadReports());
+const rejectButton = () =>
+  $(`[data-review-id="${rejectionTarget.id}"][data-status="rejected"]`);
+check(
+  "từ chối yêu cầu nhập lý do và xác nhận thao tác",
+  await waitFor(rejectButton, { label: "nút từ chối mới" }),
+);
+confirmationDecision = false;
+click(rejectButton());
+check(
+  "hủy xác nhận từ chối giữ nguyên trạng thái",
+  state.reports.find((r) => r.id === rejectionTarget.id)?.status ===
+    "pending" && promptMessages.at(-1).includes("lý do từ chối"),
+);
+confirmationDecision = true;
+click(rejectButton());
+check(
+  "lý do từ chối được lưu và hiển thị trong lịch sử",
+  await waitFor(
+    () =>
+      state.reports.find((r) => r.id === rejectionTarget.id)?.status ===
+        "rejected" && $("#toast").textContent.includes("Đã từ chối phản ánh."),
+    { label: "từ chối có lý do" },
+  ),
+);
+const historyButton = () => $(`[data-report-history="${rejectionTarget.id}"]`);
+click(historyButton());
+check(
+  "lịch sử hiển thị thời điểm và lý do từ chối",
+  await waitFor(
+    () =>
+      $(`[data-history-for="${rejectionTarget.id}"]`).textContent.includes(
+        "Thông tin chưa đủ để xác minh.",
+      ) &&
+      $(`[data-history-for="${rejectionTarget.id}"]`).textContent.includes(
+        "Đã từ chối",
+      ) &&
+      $(`[data-history-for="${rejectionTarget.id}"]`).textContent.includes(
+        "Tiếp nhận phản ánh",
+      ) &&
+      Boolean($(`[data-history-for="${rejectionTarget.id}"] time`)),
+    { label: "lịch sử báo cáo có từ chối" },
+  ),
+  $(`[data-history-for="${rejectionTarget.id}"]`).textContent,
 );
 click($('[data-view="map"]'));
 click($("#open-report"));

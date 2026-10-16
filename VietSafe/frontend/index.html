@@ -799,7 +799,20 @@
                 hạn sau 2 giờ.</span
               >
             </div>
+            <div
+              id="report-status-counts"
+              class="report-status-counts"
+              aria-label="Số lượng phản ánh theo trạng thái"
+              aria-live="polite"
+            ></div>
             <div class="report-filter">
+              <label class="report-search"
+                >Tìm phản ánh<input
+                  id="report-search"
+                  type="search"
+                  placeholder="Địa chỉ hoặc nội dung phản ánh"
+                  autocomplete="off"
+              /></label>
               <label
                 >Trạng thái<select id="report-status-filter">
                   <option value="all">Tất cả phản ánh</option>

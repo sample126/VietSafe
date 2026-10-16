@@ -22,7 +22,7 @@ CREATE TABLE IF NOT EXISTS prediction_logs(
   tick INTEGER PRIMARY KEY, created_at REAL, model_version TEXT, scenario TEXT, payload TEXT);
 
 CREATE TABLE IF NOT EXISTS audit(
-  id INTEGER PRIMARY KEY, report_id TEXT, action TEXT, timestamp REAL);
+  id INTEGER PRIMARY KEY, report_id TEXT, action TEXT, timestamp REAL, detail TEXT);
 
 CREATE TABLE IF NOT EXISTS users(
   username TEXT PRIMARY KEY,
@@ -59,3 +59,6 @@ def init_schema():
     with connect() as db:
         db.execute("PRAGMA journal_mode=WAL")
         db.executescript(SCHEMA)
+        audit_columns = {row["name"] for row in db.execute("PRAGMA table_info(audit)")}
+        if "detail" not in audit_columns:
+            db.execute("ALTER TABLE audit ADD COLUMN detail TEXT")
