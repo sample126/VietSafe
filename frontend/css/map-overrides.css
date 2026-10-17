@@ -25,3 +25,29 @@
 .water-label:before {
   display: none;
 }
+
+/* Chọn mốc thời gian nổi ở góc trên phải bản đồ, bên trái cột nút */
+.map-horizon {
+  position: absolute;
+  top: 16px;
+  right: 56px; /* cùng mép với các panel; panel nằm ngay dưới (top: 60px) */
+  z-index: 640; /* dưới #layer-menu (650) để menu lớp vẫn đè lên khi mở */
+  background: white;
+  border: 1px solid #e2e8e4;
+  box-shadow: 0 2px 7px #193d3810;
+}
+
+/* Bỏ thanh tiêu đề cao 59px -> bản đồ cao thêm đúng 59px ở mọi breakpoint */
+#map-view .map-surface {
+  height: 100%;
+  position: relative;
+}
+
+/* Màn hình hẹp: ô tìm kiếm chiếm hết hàng trên, hạ nút mốc thời gian xuống dưới nó */
+@media (max-width: 760px) {
+  .map-horizon {
+    top: 60px;
+    right: auto;
+    left: 16px;
+  }
+}

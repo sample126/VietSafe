@@ -10,15 +10,21 @@ import {
 } from "./config.js";
 import { state } from "./state.js";
 import { $, esc, icon, toast } from "./utils.js";
-import { selectRoad } from "./views/road-details.js";
 import { showEvent } from "./views/events-panel.js";
 import { finishPick } from "./views/report-form.js";
+import { selectRoad } from "./views/road-details.js";
 
 /*
  * Các biến dưới đây được gán trong initializeMap(). Module khác chỉ ĐỌC chúng
  * (import <class 'map'> ...) - ES module cho phép đọc giá trị mới nhất ("live binding").
  */
-export let map, baseTiles, roadLayer, eventLayer, routeLayer, selectionLayer, placeLayer;
+export let map,
+  baseTiles,
+  roadLayer,
+  eventLayer,
+  routeLayer,
+  selectionLayer,
+  placeLayer;
 let geographyLayer;
 let majorRoadLines = {};
 let tileErrorCount = 0;
@@ -28,7 +34,11 @@ let lastRenderKey = "";
 
 function nextTileProvider(after) {
   for (let i = after + 1; i < TILE_ORDER.length; i++) {
-    if (TILE_ORDER[i] === "openfreemap" && (!window.VietSafeVectorMaps || !window.WebGL2RenderingContext)) continue;
+    if (
+      TILE_ORDER[i] === "openfreemap" &&
+      (!window.VietSafeVectorMaps || !window.WebGL2RenderingContext)
+    )
+      continue;
     if (TILE_ORDER[i] === "openmaptiles" && !maptilerKey) continue;
     return i;
   }
@@ -44,8 +54,14 @@ function buildTileLayer(key) {
       attributionControl: { customAttribution: cfg.attr },
     });
   }
-  const url = key === "openmaptiles" ? cfg.url.replace("{key}", encodeURIComponent(maptilerKey)) : cfg.url;
-  const layer = L.tileLayer(url, { maxZoom: cfg.maxZoom, attribution: cfg.attr });
+  const url =
+    key === "openmaptiles"
+      ? cfg.url.replace("{key}", encodeURIComponent(maptilerKey))
+      : cfg.url;
+  const layer = L.tileLayer(url, {
+    maxZoom: cfg.maxZoom,
+    attribution: cfg.attr,
+  });
   layer.on("tileerror", () => {
     if (++tileErrorCount >= 6 && map.hasLayer(layer)) switchTileProvider();
   });
@@ -60,7 +76,12 @@ function addBaseLayer() {
     switchTileProvider();
     return;
   }
-  map.getContainer().classList.toggle("map-vector", TILE_ORDER[tileProviderIndex] === "openfreemap");
+  map
+    .getContainer()
+    .classList.toggle(
+      "map-vector",
+      TILE_ORDER[tileProviderIndex] === "openfreemap",
+    );
   if (TILE_ORDER[tileProviderIndex] !== "openfreemap") return;
   const layer = baseTiles;
   const gl = layer.getMaplibreMap();
@@ -71,8 +92,20 @@ function addBaseLayer() {
   gl.once("load", () => {
     loaded = true;
     clearTimeout(timeout);
-    for (const id of ["label_city", "label_city_capital", "label_town", "water_name_point_label", "water_name_line_label"]) {
-      if (gl.getLayer(id)) gl.setLayoutProperty(id, "text-field", ["coalesce", ["get", "name:vi"], ["get", "name"], ["get", "name_en"]]);
+    for (const id of [
+      "label_city",
+      "label_city_capital",
+      "label_town",
+      "water_name_point_label",
+      "water_name_line_label",
+    ]) {
+      if (gl.getLayer(id))
+        gl.setLayoutProperty(id, "text-field", [
+          "coalesce",
+          ["get", "name:vi"],
+          ["get", "name"],
+          ["get", "name_en"],
+        ]);
     }
   });
   gl.on("error", () => {
@@ -188,7 +221,11 @@ export function initializeMap(key = "") {
       interactive: false,
     })
       .addTo(geographyLayer)
-      .bindTooltip(name, { permanent: true, direction: "center", className: "water-label" });
+      .bindTooltip(name, {
+        permanent: true,
+        direction: "center",
+        className: "water-label",
+      });
   placeLayer = L.layerGroup().addTo(map);
   map.createPane("majorRoadPane");
   map.getPane("majorRoadPane").style.zIndex = 390;
@@ -198,33 +235,60 @@ export function initializeMap(key = "") {
   selectionLayer = L.layerGroup().addTo(map);
   map.on("click", (e) => {
     if (state.picking) finishPick(e.latlng.lat, e.latlng.lng);
-    else if (state.routePicking) window.dispatchEvent(new CustomEvent("route-point-picked", { detail: { lat: e.latlng.lat, lng: e.latlng.lng } }));
+    else if (state.routePicking)
+      window.dispatchEvent(
+        new CustomEvent("route-point-picked", {
+          detail: { lat: e.latlng.lat, lng: e.latlng.lng },
+        }),
+      );
   });
   map.on("movestart", () => ($("#search-results").hidden = true));
   map.on("zoomend", syncMajorRoads);
-  map.on("moveend", () => { if (state.data) renderMap(); });
+  map.on("moveend", () => {
+    if (state.data) renderMap();
+  });
   fetch("/api/major-roads")
-    .then((response) => response.ok ? response.json() : Promise.reject(new Error("major roads unavailable")))
+    .then((response) =>
+      response.ok
+        ? response.json()
+        : Promise.reject(new Error("major roads unavailable")),
+    )
     .then((data) => {
       for (const [kind, shapes] of Object.entries(data.classes))
         majorRoadLines[kind] = L.polyline(shapes, {
           pane: "majorRoadPane",
           color: "#667783",
-          weight: kind === "motorway" || kind === "trunk" ? 2.5 : kind === "tertiary" ? 1.4 : 1.8,
+          weight:
+            kind === "motorway" || kind === "trunk"
+              ? 2.5
+              : kind === "tertiary"
+                ? 1.4
+                : 1.8,
           opacity: 0.4,
           interactive: false,
           smoothFactor: 1.5,
         });
       syncMajorRoads();
     })
-    .catch(() => { $("#major-roads").disabled = true; });
+    .catch(() => {
+      $("#major-roads").disabled = true;
+    });
 }
 
 export function syncMajorRoads() {
-  const minimumZoom = { motorway: 9, trunk: 9, primary: 9, secondary: 11, tertiary: 13 };
+  const minimumZoom = {
+    motorway: 9,
+    trunk: 9,
+    primary: 9,
+    secondary: 11,
+    tertiary: 13,
+  };
   for (const [kind, line] of Object.entries(majorRoadLines)) {
-    const visible = state.layers.majorRoads && map.getZoom() >= minimumZoom[kind];
-    line.setStyle({ opacity: kind === "tertiary" ? 0.34 : map.getZoom() >= 11 ? 0.56 : 0.4 });
+    const visible =
+      state.layers.majorRoads && map.getZoom() >= minimumZoom[kind];
+    line.setStyle({
+      opacity: kind === "tertiary" ? 0.34 : map.getZoom() >= 11 ? 0.56 : 0.4,
+    });
     if (visible && !map.hasLayer(line)) line.addTo(map);
     if (!visible && map.hasLayer(line)) map.removeLayer(line);
   }
@@ -238,26 +302,51 @@ export function roadColor(r) {
   }
   if (r.blocked) return "#cf5149";
   if (r.event_type && state.layers[r.event_type])
-    return { flood: "#347ec5", traffic: "#cc8a2b", incident: "#cf5149" }[r.event_type];
+    return { flood: "#347ec5", traffic: "#cc8a2b", incident: "#cf5149" }[
+      r.event_type
+    ];
   return "#288d6d";
 }
 
 export function renderMap() {
   if (!state.data) return;
-  const bounds = (map.getSize().x && map.getSize().y ? map.getBounds() : L.latLngBounds(HANOI_BOUNDS)).pad(0.12);
-  const key = [state.data.scenario, state.data.roads[0]?.simulated_timestamp,
-    state.data.events.map((event) => `${event.id}:${event.updated_at}`).join("|"),
-    state.horizon, state.selected, map.getZoom(),
-    Math.round(bounds.getCenter().lat * 200), Math.round(bounds.getCenter().lng * 200),
-    JSON.stringify(state.layers), map.getContainer().classList.contains("route-active")].join(":");
+  const bounds = (
+    map.getSize().x && map.getSize().y
+      ? map.getBounds()
+      : L.latLngBounds(HANOI_BOUNDS)
+  ).pad(0.12);
+  const key = [
+    state.data.scenario,
+    state.data.roads[0]?.simulated_timestamp,
+    state.data.events
+      .map((event) => `${event.id}:${event.updated_at}`)
+      .join("|"),
+    state.horizon,
+    state.selected,
+    map.getZoom(),
+    Math.round(bounds.getCenter().lat * 200),
+    Math.round(bounds.getCenter().lng * 200),
+    JSON.stringify(state.layers),
+    map.getContainer().classList.contains("route-active"),
+  ].join(":");
   if (key === lastRenderKey) return;
   lastRenderKey = key;
   roadLayer.clearLayers();
   eventLayer.clearLayers();
   for (const r of state.data.roads) {
-    if (!state.layers.demoRoads || !bounds.intersects(L.latLngBounds(r.coordinates))) continue;
-    if (map.getContainer().classList.contains("route-active") && !r.event_type && r.id !== state.selected) continue;
-    if (map.getZoom() < 12 && r.id !== state.selected && !r.event_type) continue;
+    if (
+      !state.layers.demoRoads ||
+      !bounds.intersects(L.latLngBounds(r.coordinates))
+    )
+      continue;
+    if (
+      map.getContainer().classList.contains("route-active") &&
+      !r.event_type &&
+      r.id !== state.selected
+    )
+      continue;
+    if (map.getZoom() < 12 && r.id !== state.selected && !r.event_type)
+      continue;
     const f = r.forecast[state.horizon / 15];
     const color = roadColor(r),
       weight = r.id === state.selected ? 6 : 4;
@@ -279,30 +368,63 @@ export function renderMap() {
     line.on("click", (e) => {
       L.DomEvent.stopPropagation(e);
       if (state.picking) finishPick(e.latlng.lat, e.latlng.lng);
-      else if (state.routePicking) window.dispatchEvent(new CustomEvent("route-point-picked", { detail: { lat: e.latlng.lat, lng: e.latlng.lng } }));
+      else if (state.routePicking)
+        window.dispatchEvent(
+          new CustomEvent("route-point-picked", {
+            detail: { lat: e.latlng.lat, lng: e.latlng.lng },
+          }),
+        );
       else selectRoad(r.id, true);
     });
   }
   const markers = [];
   if (!state.horizon)
     for (const e of state.data.events) {
-      if (!state.layers[e.type] || (e.status === "pending" && !state.layers.pending)) continue;
+      if (
+        !state.layers[e.type] ||
+        (e.status === "pending" && !state.layers.pending)
+      )
+        continue;
       if (!bounds.contains([e.lat, e.lng])) continue;
-      markers.push({ lat: e.lat, lng: e.lng, type: e.type, title: `${typeNames[e.type]}: ${e.name}`, tooltip: `${esc(e.name)} · ${e.status === "pending" ? "Chờ xác minh" : typeNames[e.type]}`, pending: e.status === "pending", click: () => (state.picking ? finishPick(e.lat, e.lng) : showEvent(e.id)) });
+      markers.push({
+        lat: e.lat,
+        lng: e.lng,
+        type: e.type,
+        title: `${typeNames[e.type]}: ${e.name}`,
+        tooltip: `${esc(e.name)} · ${e.status === "pending" ? "Chờ xác minh" : typeNames[e.type]}`,
+        pending: e.status === "pending",
+        click: () =>
+          state.picking ? finishPick(e.lat, e.lng) : showEvent(e.id),
+      });
     }
   else
     for (const r of state.data.roads) {
       if (!r.known || !bounds.contains(r.center)) continue;
       const predicted = r.forecast[state.horizon / 15];
-      const [type, score] = [["flood", predicted.flood_risk], ["traffic", predicted.traffic_risk], ["incident", predicted.incident_risk]].reduce((best, item) => (item[1] > best[1] ? item : best));
+      const [type, score] = [
+        ["flood", predicted.flood_risk],
+        ["traffic", predicted.traffic_risk],
+        ["incident", predicted.incident_risk],
+      ].reduce((best, item) => (item[1] > best[1] ? item : best));
       if (score < 65 || !state.layers[type]) continue;
       const [lat, lng] = r.center;
-      markers.push({ lat, lng, type, title: `${typeNames[type]} · dự báo +${state.horizon} phút`, tooltip: `${esc(r.name)} · ${typeNames[type]} ${score}/100 (mô phỏng)`, click: () => (state.picking ? finishPick(lat, lng) : selectRoad(r.id, true)) });
+      markers.push({
+        lat,
+        lng,
+        type,
+        title: `${typeNames[type]} · dự báo +${state.horizon} phút`,
+        tooltip: `${esc(r.name)} · ${typeNames[type]} ${score}/100 (mô phỏng)`,
+        click: () =>
+          state.picking ? finishPick(lat, lng) : selectRoad(r.id, true),
+      });
     }
   const groups = new Map();
   for (const item of markers) {
     const p = map.latLngToContainerPoint([item.lat, item.lng]);
-    const key = map.getZoom() < 13 ? `${Math.floor(p.x / 54)}:${Math.floor(p.y / 54)}` : `${item.lat}:${item.lng}:${item.title}`;
+    const key =
+      map.getZoom() < 13
+        ? `${Math.floor(p.x / 54)}:${Math.floor(p.y / 54)}`
+        : `${item.lat}:${item.lng}:${item.title}`;
     if (!groups.has(key)) groups.set(key, []);
     groups.get(key).push(item);
   }
@@ -310,24 +432,38 @@ export function renderMap() {
     if (group.length > 1 && map.getZoom() < 13) {
       const lat = group.reduce((sum, item) => sum + item.lat, 0) / group.length;
       const lng = group.reduce((sum, item) => sum + item.lng, 0) / group.length;
-      const cluster = L.marker([lat, lng], { icon: L.divIcon({ className: "", html: `<span class="event-cluster">${group.length}</span>`, iconSize: [35, 35] }), title: `${group.length} cảnh báo mô phỏng` }).addTo(eventLayer);
-      cluster.on("click", () => map.setView([lat, lng], Math.min(15, map.getZoom() + 2)));
+      const cluster = L.marker([lat, lng], {
+        icon: L.divIcon({
+          className: "",
+          html: `<span class="event-cluster">${group.length}</span>`,
+          iconSize: [35, 35],
+        }),
+        title: `${group.length} cảnh báo mô phỏng`,
+      }).addTo(eventLayer);
+      cluster.on("click", () =>
+        map.setView([lat, lng], Math.min(15, map.getZoom() + 2)),
+      );
       continue;
     }
     const e = group[0];
-      const marker = L.marker([e.lat, e.lng], {
-        icon: L.divIcon({
-          className: `event-marker ${e.type} ${e.pending ? "pending" : ""}`,
-          html: icon(typeIcons[e.type]),
-          iconSize: [32, 32],
-        }),
-        title: e.title,
-      }).addTo(eventLayer);
-      marker.bindTooltip(e.tooltip);
-      marker.on("click", () => {
-        if (state.routePicking) window.dispatchEvent(new CustomEvent("route-point-picked", { detail: { lat: e.lat, lng: e.lng } }));
-        else e.click();
-      });
+    const marker = L.marker([e.lat, e.lng], {
+      icon: L.divIcon({
+        className: `event-marker ${e.type} ${e.pending ? "pending" : ""}`,
+        html: icon(typeIcons[e.type]),
+        iconSize: [32, 32],
+      }),
+      title: e.title,
+    }).addTo(eventLayer);
+    marker.bindTooltip(e.tooltip);
+    marker.on("click", () => {
+      if (state.routePicking)
+        window.dispatchEvent(
+          new CustomEvent("route-point-picked", {
+            detail: { lat: e.lat, lng: e.lng },
+          }),
+        );
+      else e.click();
+    });
   }
   $("#map-mode-label").hidden = !state.horizon;
   $("#map-mode-label").textContent =

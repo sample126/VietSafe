@@ -134,3 +134,93 @@
   color: #97aaa0;
   margin-top: 4px;
 }
+
+/* Panel cảnh báo nổi trên bản đồ, bên phải, rộng nhỏ */
+.map-surface .event-panel {
+  position: absolute;
+  top: 57px;
+  right: 56px;
+  bottom: 20px;
+  width: min(300px, calc(100% - 72px));
+  min-height: 0;
+  max-height: none;
+  z-index: 640;
+  box-shadow: var(--shadow);
+}
+.map-surface .event-list {
+  display: block;
+  max-height: none;
+}
+
+.event-panel.is-closed {
+  display: none;
+}
+
+/* Hiệu ứng trượt từ bên phải bản đồ */
+@keyframes panel-in {
+  from {
+    transform: translateX(calc(100% + 70px));
+    opacity: 0;
+  }
+  to {
+    transform: none;
+    opacity: 1;
+  }
+}
+@keyframes panel-out {
+  from {
+    transform: none;
+    opacity: 1;
+  }
+  to {
+    transform: translateX(calc(100% + 70px));
+    opacity: 0;
+  }
+}
+.event-panel {
+  animation: panel-in 0.3s ease;
+}
+.event-panel.is-closing {
+  animation: panel-out 0.3s ease forwards;
+}
+
+#map-view {
+  flex-grow: 1;
+}
+
+/* Lưới chỉ còn một cột: cả hai panel đều nổi trên bản đồ */
+#map-view .workspace {
+  grid-template-columns: minmax(0, 1fr);
+  column-gap: 0;
+}
+
+/* Hai nút xếp dọc ở góc trên phải */
+.map-top-right .map-control + .map-control {
+  margin-top: 5px;
+}
+
+/* Panel tìm tuyến nổi trên bản đồ, rộng hơn panel cảnh báo vì có form + kết quả */
+.map-surface .route-panel {
+  position: absolute;
+  top: 60px;
+  right: 56px;
+  bottom: 16px;
+  width: min(300px, calc(100% - 72px));
+  min-height: 0;
+  max-height: none;
+  z-index: 640;
+  overflow-y: auto;
+  box-shadow: var(--shadow);
+  animation: panel-in 0.3s ease; /* trượt vào mỗi khi bỏ thuộc tính hidden */
+}
+
+/* Ghi đè bố cục "2 cột" của màn hình ≤900px (responsive.css) vì panel chỉ rộng 300px */
+.map-surface .route-panel #route-form {
+  display: block;
+}
+.map-surface .route-panel #route-results {
+  display: block;
+}
+.map-surface .route-panel .route-choice {
+  width: calc(100% - 32px);
+}

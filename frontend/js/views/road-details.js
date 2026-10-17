@@ -1,15 +1,13 @@
 /** Chọn một đoạn đường và hiện hộp thoại chi tiết (số liệu hiện tại + dự báo). */
-import { state } from "../state.js";
-import { $, esc, icon, timeText } from "../utils.js";
 import { map, renderMap } from "../map.js";
 import { setView } from "../navigation.js";
+import { state } from "../state.js";
+import { $, esc, icon, timeText } from "../utils.js";
 import { renderForecast } from "./forecast.js";
-import { renderInsight } from "./insight.js";
 
 export function selectRoad(id, details = false) {
   state.selected = id;
   $("#forecast-road").value = id;
-  renderInsight();
   renderMap();
   if (state.view === "forecast") renderForecast();
   if (details) showRoadDetails(id);

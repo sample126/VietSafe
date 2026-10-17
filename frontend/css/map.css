@@ -36,10 +36,14 @@
   border-radius: 7px;
   padding: 3px;
   gap: 2px;
+  position: absolute;
+  top: 10px;
+  right: 70px;
+  z-index: 450;
 }
 
 .segmented button {
-  font-size: 10px;
+  font-size: 12px;
   padding: 7px 10px;
   border-radius: 5px;
   color: #8a9793;
@@ -262,7 +266,7 @@
 
 .map-left-bottom {
   position: absolute;
-  bottom: 24px;
+  bottom: 4px;
   left: 14px;
   z-index: 600;
   max-width: calc(100% - 70px);
@@ -428,4 +432,13 @@
   color: var(--teal);
   border-color: var(--teal);
   font-weight: 650;
+}
+
+#stat-flood,
+#stat-traffic,
+#stat-incident {
+  background: #eff5f1;
+  color: black;
+  padding: 2px 4px;
+  border-radius: 5px;
 }

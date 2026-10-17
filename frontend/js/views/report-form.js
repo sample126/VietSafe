@@ -1,10 +1,10 @@
 /** Hộp thoại "Gửi phản ánh" của người dân: chọn vị trí (GPS / địa chỉ / chấm trên bản đồ), ảnh, gửi. */
-import { post, api } from "../api.js";
-import { authState, state } from "../state.js";
-import { map, selectionLayer } from "../map.js";
-import { $, inPilotArea, toast } from "../utils.js";
+import { api, post } from "../api.js";
 import { refresh } from "../dashboard.js";
+import { map, selectionLayer } from "../map.js";
 import { setView } from "../navigation.js";
+import { authState, state } from "../state.js";
+import { $, inPilotArea, toast } from "../utils.js";
 
 export function openReport() {
   if (!state.data) {
@@ -22,7 +22,8 @@ export function openReport() {
 export function setReportPosition(lat, lng, address) {
   state.reportPosition = { lat, lng };
   if (address) $("#report-address").value = address;
-  $("#report-coordinates").textContent = `Đã đặt vị trí: ${lat.toFixed(5)}, ${lng.toFixed(5)}`;
+  $("#report-coordinates").textContent =
+    `Đã đặt vị trí: ${lat.toFixed(5)}, ${lng.toFixed(5)}`;
   $("#report-coordinates").classList.add("valid");
 }
 
@@ -46,17 +47,16 @@ export function finishPick(lat, lng) {
   const nearest = state.data.roads
     .map((r) => ({
       r,
-      d: Math.hypot(
-        lat - r.center[0],
-        lng - r.center[1],
-      ),
+      d: Math.hypot(lat - r.center[0], lng - r.center[1]),
     }))
     .sort((a, b) => a.d - b.d)[0].r;
   setReportPosition(lat, lng, nearest.name);
   selectionLayer.clearLayers();
-  L.circleMarker([lat, lng], { radius: 9, color: "#087f72", fillOpacity: 0.3 }).addTo(
-    selectionLayer,
-  );
+  L.circleMarker([lat, lng], {
+    radius: 9,
+    color: "#087f72",
+    fillOpacity: 0.3,
+  }).addTo(selectionLayer);
   $("#report-dialog").showModal();
 }
 
@@ -65,22 +65,31 @@ export function geolocate(forReport = false) {
     toast("Trình duyệt không hỗ trợ định vị. Bạn có thể chọn trên bản đồ.");
     return;
   }
-  toast("Đang xác định vị trí. Cho phép trình duyệt truy cập vị trí nếu được hỏi.");
+  toast(
+    "Đang xác định vị trí. Cho phép trình duyệt truy cập vị trí nếu được hỏi.",
+  );
   navigator.geolocation.getCurrentPosition(
     (p) => {
       const { latitude: lat, longitude: lng } = p.coords;
       if (!inPilotArea(lat, lng)) {
-        toast("Bạn đang ngoài vùng thử nghiệm Hà Nội. Hãy chọn địa chỉ hoặc ghim trong vùng.");
+        toast(
+          "Bạn đang ngoài vùng thử nghiệm Hà Nội. Hãy chọn địa chỉ hoặc ghim trong vùng.",
+        );
         return;
       }
       if (forReport) setReportPosition(lat, lng, "Vị trí GPS của tôi");
       else {
         map.setView([lat, lng], 15);
         selectionLayer.clearLayers();
-        L.circleMarker([lat, lng], { radius: 9, color: "#087f72" }).addTo(selectionLayer);
+        L.circleMarker([lat, lng], { radius: 9, color: "#087f72" }).addTo(
+          selectionLayer,
+        );
       }
     },
-    () => toast("Chưa lấy được GPS. Hãy nhập địa điểm hoặc chọn vị trí trên bản đồ."),
+    () =>
+      toast(
+        "Chưa lấy được GPS. Hãy nhập địa điểm hoặc chọn vị trí trên bản đồ.",
+      ),
     { timeout: 10000, maximumAge: 60000 },
   );
 }
@@ -133,7 +142,10 @@ export async function submitReport(event) {
     let image = null;
     const file = $("#report-image").files[0];
     if (file) {
-      if (file.size > 1500000 || !["image/jpeg", "image/png", "image/webp"].includes(file.type))
+      if (
+        file.size > 1500000 ||
+        !["image/jpeg", "image/png", "image/webp"].includes(file.type)
+      )
         throw new Error("Ảnh JPG, PNG hoặc WebP tối đa 1,5 MB.");
       image = await new Promise((resolve, reject) => {
         const reader = new FileReader();
@@ -185,7 +197,9 @@ export function initReportForm() {
     $("#report-coordinates").textContent =
       "Địa chỉ đã thay đổi. Hãy định vị lại hoặc chọn trên bản đồ.";
     $("#report-coordinates").classList.remove("valid");
-    const n = state.data.nodes.find((n) => n.name === $("#report-address").value);
+    const n = state.data.nodes.find(
+      (n) => n.name === $("#report-address").value,
+    );
     if (n) setReportPosition(n.lat, n.lng);
   });
   $("#report-form").addEventListener("submit", submitReport);

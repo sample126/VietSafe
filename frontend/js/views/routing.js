@@ -1,6 +1,6 @@
 /** Bảng "Tìm tuyến thay thế": chọn điểm đi/đến, phương tiện, thời điểm và hiển thị tuyến. */
 import { api } from "../api.js";
-import { map, routeLayer, renderMap } from "../map.js";
+import { map, renderMap, routeLayer } from "../map.js";
 import { state } from "../state.js";
 import { $, esc, icon, timeText, toast } from "../utils.js";
 
@@ -17,12 +17,17 @@ export function clearRoutes() {
 function setPickedPoint(field, lat, lng) {
   const select = $(`#route-${field}`);
   select.querySelector('[data-picked="true"]')?.remove();
-  const option = new Option(`Điểm trên bản đồ · ${lat.toFixed(4)}, ${lng.toFixed(4)}`, `${lat.toFixed(6)},${lng.toFixed(6)}`);
+  const option = new Option(
+    `Điểm trên bản đồ · ${lat.toFixed(4)}, ${lng.toFixed(4)}`,
+    `${lat.toFixed(6)},${lng.toFixed(6)}`,
+  );
   option.dataset.picked = "true";
   select.add(option);
   select.value = option.value;
   state.routePicking = null;
-  document.querySelectorAll(".route-pick").forEach((button) => button.classList.remove("active"));
+  document
+    .querySelectorAll(".route-pick")
+    .forEach((button) => button.classList.remove("active"));
   $("#route-pick-hint")?.remove();
 }
 
@@ -32,8 +37,16 @@ export function openRoute() {
     return;
   }
   $("#event-panel").hidden = true;
+  $("#event-panel").classList.add("is-closed");
   $("#route-panel").hidden = false;
-  requestAnimationFrame(() => map.invalidateSize());
+  $("#open-route").classList.add("active");
+  $("#toggle-event-panel").classList.remove("active");
+}
+
+export function closeRoute() {
+  $("#route-panel").hidden = true;
+  $("#open-route").classList.remove("active");
+  routeLayer.clearLayers();
 }
 
 export async function findRoutes(e) {
@@ -55,12 +68,20 @@ export async function findRoutes(e) {
     state.routes = await api("/api/routes?" + query, { timeoutMs: 30000 });
     state.routeIndex = 0;
     state.horizon = Number($("#route-time").value);
-    document.querySelectorAll("#map-horizon button").forEach((item) => item.classList.toggle("active", Number(item.dataset.horizon) === state.horizon));
+    document
+      .querySelectorAll("#map-horizon button")
+      .forEach((item) =>
+        item.classList.toggle(
+          "active",
+          Number(item.dataset.horizon) === state.horizon,
+        ),
+      );
     renderMap();
     renderRoutes();
   } catch (err) {
     clearRoutes();
-    $("#route-results").innerHTML = `<div class="empty-state">${esc(err.message)}</div>`;
+    $("#route-results").innerHTML =
+      `<div class="empty-state">${esc(err.message)}</div>`;
   } finally {
     button.disabled = false;
     button.innerHTML = icon("route") + "Tìm tuyến gợi ý";
@@ -82,7 +103,7 @@ export function renderRoutes() {
     result.routes
       .map(
         (r, i) =>
-          `<button class="route-choice ${i === state.routeIndex ? "selected" : ""}" data-route-index="${i}" type="button"><div class="route-summary"><h3>${esc(r.title)}</h3><strong>${Math.ceil(r.eta_minutes)}<small>phút</small></strong></div><p class="route-meta">${r.distance_km} km · ${esc({motorbike:"Xe máy",car:"Ô tô",walk:"Đi bộ"}[r.vehicle])} · Nguy cơ ${r.max_risk}/100</p><p class="route-warnings">${r.warnings.length ? `${r.warnings.length} cảnh báo trên tuyến` : "Không có cảnh báo trên tuyến"}</p></button>`,
+          `<button class="route-choice ${i === state.routeIndex ? "selected" : ""}" data-route-index="${i}" type="button"><div class="route-summary"><h3>${esc(r.title)}</h3><strong>${Math.ceil(r.eta_minutes)}<small>phút</small></strong></div><p class="route-meta">${r.distance_km} km · ${esc({ motorbike: "Xe máy", car: "Ô tô", walk: "Đi bộ" }[r.vehicle])} · Nguy cơ ${r.max_risk}/100</p><p class="route-warnings">${r.warnings.length ? `${r.warnings.length} cảnh báo trên tuyến` : "Không có cảnh báo trên tuyến"}</p></button>`,
       )
       .join("") +
     `<div class="route-forecast" aria-label="So sánh cùng tuyến theo thời điểm">${result.routes[state.routeIndex].forecast_timeline.map((point) => `<button type="button" data-route-horizon="${point.horizon}" class="${Number($("#route-time").value) === point.horizon ? "active" : ""}"><span>${point.horizon ? `+${point.horizon} phút` : "Hiện tại"}</span><strong>${Math.ceil(point.eta_minutes)} phút</strong><small>${point.congested_segments} ùn tắc · ${point.flooded_segments} ngập</small></button>`).join("")}</div>` +
@@ -101,10 +122,17 @@ export function renderRoutes() {
         opacity: 0.85,
         dashArray: "8 7",
       }).addTo(routeLayer);
-  L.polyline(chosen.coordinates, { color: "white", weight: 12, opacity: 0.98, interactive: false }).addTo(routeLayer);
-  const line = L.polyline(chosen.coordinates, { color: "#6940cf", weight: 7, opacity: 1 }).addTo(
-    routeLayer,
-  );
+  L.polyline(chosen.coordinates, {
+    color: "white",
+    weight: 12,
+    opacity: 0.98,
+    interactive: false,
+  }).addTo(routeLayer);
+  const line = L.polyline(chosen.coordinates, {
+    color: "#6940cf",
+    weight: 7,
+    opacity: 1,
+  }).addTo(routeLayer);
   for (const [coord, label] of [
     [chosen.coordinates[0], "A"],
     [chosen.coordinates.at(-1), "B"],
@@ -128,20 +156,33 @@ export function initRouting() {
     const serial = ++searchSerial;
     const query = $("#route-place-search").value.trim();
     const container = $("#route-place-results");
-    if (query.length < 2) { container.hidden = true; return; }
+    if (query.length < 2) {
+      container.hidden = true;
+      return;
+    }
     searchTimer = setTimeout(async () => {
       try {
-        const { results } = await api("/api/search?q=" + encodeURIComponent(query));
+        const { results } = await api(
+          "/api/search?q=" + encodeURIComponent(query),
+        );
         if (serial !== searchSerial) return;
         container.replaceChildren();
-        if (!results.length) { container.textContent = "Không tìm thấy địa điểm trong dữ liệu OSM cục bộ."; container.hidden = false; return; }
+        if (!results.length) {
+          container.textContent =
+            "Không tìm thấy địa điểm trong dữ liệu OSM cục bộ.";
+          container.hidden = false;
+          return;
+        }
         for (const place of results) {
           const row = document.createElement("div");
           row.className = "route-place-item";
           const label = document.createElement("span");
           label.textContent = place.name;
           row.append(label);
-          for (const [field, letter] of [["origin", "A"], ["destination", "B"]]) {
+          for (const [field, letter] of [
+            ["origin", "A"],
+            ["destination", "B"],
+          ]) {
             const button = document.createElement("button");
             button.type = "button";
             button.textContent = letter;
@@ -157,7 +198,9 @@ export function initRouting() {
           container.append(row);
         }
         container.hidden = false;
-      } catch (error) { toast(error.message); }
+      } catch (error) {
+        toast(error.message);
+      }
     }, 300);
   });
   document.addEventListener("click", (e) => {
@@ -172,33 +215,47 @@ export function initRouting() {
       renderRoutes();
     }
   });
-  $("#open-route").addEventListener("click", openRoute);
+  $("#open-route").addEventListener("click", () => {
+    if ($("#route-panel").hidden) openRoute();
+    else closeRoute();
+  });
   $("#route-swap").addEventListener("click", () => {
-    const a = $("#route-origin"), b = $("#route-destination");
+    const a = $("#route-origin"),
+      b = $("#route-destination");
     const old = a.value;
-    for (const [source, target] of [[a, b], [b, a]]) {
+    for (const [source, target] of [
+      [a, b],
+      [b, a],
+    ]) {
       const picked = source.querySelector('[data-picked="true"]');
-      if (picked && ![...target.options].some((option) => option.value === picked.value)) target.add(picked.cloneNode(true));
+      if (
+        picked &&
+        ![...target.options].some((option) => option.value === picked.value)
+      )
+        target.add(picked.cloneNode(true));
     }
     a.value = b.value;
     b.value = old;
   });
-  document.querySelectorAll(".route-pick").forEach((button) => button.addEventListener("click", () => {
-    state.routePicking = button.dataset.routePick;
-    document.querySelectorAll(".route-pick").forEach((item) => item.classList.toggle("active", item === button));
-    $("#route-pick-hint")?.remove();
-    button.closest(".route-panel").querySelector("#route-form").insertAdjacentHTML("beforeend", '<p id="route-pick-hint" class="route-pick-hint">Chạm vào bản đồ để chọn vị trí.</p>');
-    toast("Chạm vào bản đồ để chọn điểm.");
-  }));
-  window.addEventListener("route-point-picked", (event) => setPickedPoint(state.routePicking, event.detail.lat, event.detail.lng));
-  $("#close-route").addEventListener("click", () => {
-    state.routePicking = null;
-    $("#route-panel").hidden = true;
-    $("#event-panel").hidden = false;
-    routeLayer.clearLayers();
-    map.getContainer().classList.remove("route-active");
-    renderMap();
-    $("#route-map-key").hidden = true;
-  });
+  document.querySelectorAll(".route-pick").forEach((button) =>
+    button.addEventListener("click", () => {
+      state.routePicking = button.dataset.routePick;
+      document
+        .querySelectorAll(".route-pick")
+        .forEach((item) => item.classList.toggle("active", item === button));
+      $("#route-pick-hint")?.remove();
+      button
+        .closest(".route-panel")
+        .querySelector("#route-form")
+        .insertAdjacentHTML(
+          "beforeend",
+          '<p id="route-pick-hint" class="route-pick-hint">Chạm vào bản đồ để chọn vị trí.</p>',
+        );
+      toast("Chạm vào bản đồ để chọn điểm.");
+    }),
+  );
+  window.addEventListener("route-point-picked", (event) =>
+    setPickedPoint(state.routePicking, event.detail.lat, event.detail.lng),
+  );
   $("#route-form").addEventListener("submit", findRoutes);
 }

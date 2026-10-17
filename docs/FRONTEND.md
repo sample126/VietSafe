@@ -58,7 +58,6 @@ setInterval(refresh, 10s) ──► api("/api/snapshot") ──► state.data = 
                                                        ├► updateDashboard()
                                                        │    ├─ renderMap()
                                                        │    ├─ renderEvents()
-                                                       │    ├─ renderInsight()
                                                        │    └─ renderForecast()  (nếu đang ở trang đó)
                                                        ├► updateAlertBanner()
                                                        └► loadReports()          (nếu đang ở trang Phản ánh)

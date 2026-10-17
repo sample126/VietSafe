@@ -116,10 +116,12 @@
 }
 
 .workspace {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) 320px;
-  gap: 21px;
   align-items: stretch;
+  height: 100%;
+}
+
+.map-card {
+  height: 100%;
 }
 
 .map-card,
@@ -131,4 +133,40 @@
   border: 1px solid var(--line);
   border-radius: 12px;
   overflow: hidden;
+
+  &.is-closed {
+    display: none;
+  }
+}
+
+#toggle-event-panel {
+  margin-top: 5px;
+}
+
+/* Hiệu ứng event-panel trượt từ/ra bên phải */
+@keyframes panel-in {
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  to {
+    transform: none;
+    opacity: 1;
+  }
+}
+@keyframes panel-out {
+  from {
+    transform: none;
+    opacity: 1;
+  }
+  to {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+}
+.event-panel {
+  animation: panel-in 0.3s ease; /* chạy mỗi khi panel từ ẩn sang hiện */
+}
+.event-panel.is-closing {
+  animation: panel-out 0.3s ease forwards;
 }

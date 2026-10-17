@@ -109,8 +109,25 @@
   margin-left: 84px;
 }
 
+.main {
+  margin: 0;
+  flex-grow: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.main:has(#map-view:not([hidden])) {
+  padding: 0;
+
+  footer {
+    padding-left: 20px;
+    padding-right: 20px;
+  }
+}
+
 .topbar {
-  height: 78px;
+  min-height: 60px;
+  max-height: 60px;
   background: white;
   border-bottom: 1px solid var(--line);
   padding: 0 34px;
@@ -232,13 +249,12 @@ h1 {
   justify-content: center;
   align-items: center;
   gap: 8px;
-  padding: 11px 17px;
+  padding: 8px 14px;
   border-radius: 8px;
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 600;
   text-decoration: none;
   white-space: nowrap;
-  min-height: 41px;
 }
 
 .button svg {
@@ -302,4 +318,9 @@ h1 {
 
 .demo-notice button span {
   margin-left: 4px;
+}
+
+footer {
+  padding-top: 15px !important;
+  padding-bottom: 15px !important;
 }

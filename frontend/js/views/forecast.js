@@ -1,8 +1,7 @@
 /** Trang "Dự báo": chọn đoạn đường, biểu đồ nguy cơ 0-60 phút và bảng chi tiết. */
+import { changeScenario } from "../scenario.js";
 import { state } from "../state.js";
 import { $, esc } from "../utils.js";
-import { changeScenario } from "../scenario.js";
-import { renderInsight } from "./insight.js";
 import { initForecastWorkspace } from "./forecast-workspace.js";
 
 export function renderForecast() {
@@ -35,7 +34,6 @@ export function initForecast() {
   $("#forecast-road").addEventListener("change", () => {
     state.selected = $("#forecast-road").value;
     renderForecast();
-    renderInsight();
   });
   $("#forecast-scenario").addEventListener("change", (e) =>
     changeScenario(e.target.value),
