@@ -43,12 +43,14 @@ export function updateAuthUI() {
   $$(".admin-only").forEach((el) => {
     el.hidden = !(user && user.role === "admin");
   });
-  // Show/hide user-only nav items (chỉ người dùng đăng nhập mới thấy)
+  // Show/hide user-only nav items (chỉ người dùng thường — admin có trang quản lý riêng)
   $$(".user-only").forEach((el) => {
-    el.hidden = !user;
+    el.hidden = !user || user.role === "admin";
   });
   // If currently on an admin-only view and not admin, switch to map
   if (ADMIN_VIEWS.includes(state.view) && (!user || user.role !== "admin")) setView("map");
+  // Admin không dùng màn "Phản ánh của tôi" → rời trang nếu đang ở đó
+  if (state.view === "my-reports" && user && user.role === "admin") setView("map");
   // Close user menu
   $("#user-menu").hidden = true;
   // Update user menu info

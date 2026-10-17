@@ -29,6 +29,8 @@ function normalizeSearch(value) {
     .trim();
 }
 
+const REPORTS_PAGE_SIZE = 10;
+
 export function renderReports() {
   const filter = $("#report-status-filter")?.value || "all";
   const severityFilter = $("#report-severity-filter")?.value;
@@ -80,10 +82,58 @@ export function renderReports() {
     return b.created_at - a.created_at;
   });
 
-  $("#reports-list").innerHTML = reports.length
-    ? reports.map((r) => renderReportCard(r)).join("")
+  // Phân trang: cắt theo trang hiện tại
+  const totalPages = Math.max(1, Math.ceil(reports.length / REPORTS_PAGE_SIZE));
+  if (state.reportsPage > totalPages) state.reportsPage = totalPages;
+  if (state.reportsPage < 1) state.reportsPage = 1;
+  const pageReports = reports.slice(
+    (state.reportsPage - 1) * REPORTS_PAGE_SIZE,
+    state.reportsPage * REPORTS_PAGE_SIZE,
+  );
+
+  $("#reports-list").innerHTML = pageReports.length
+    ? pageReports.map((r) => renderReportCard(r)).join("")
     : `<div class="empty-state">${icon("report")}${query ? "Không tìm thấy phản ánh khớp với nội dung tìm kiếm." : state.reports.length ? "Chưa có phản ánh thuộc trạng thái này." : "Chưa có phản ánh tại máy."}</div>`;
+  renderReportsPagination(totalPages, reports.length);
   updateBulkActions();
+}
+
+/** Tạo dãy số trang, rút gọn bằng "…" khi quá nhiều trang. */
+function pageNumbersHtml(page, totalPages) {
+  const pages = [...new Set([1, totalPages, page - 1, page, page + 1])]
+    .filter((p) => p >= 1 && p <= totalPages)
+    .sort((a, b) => a - b);
+  let html = "";
+  let prev = 0;
+  for (const p of pages) {
+    if (p - prev > 1) html += `<span class="page-ellipsis">…</span>`;
+    html += `<button data-page="${p}" class="${p === page ? "active" : ""}" ${p === page ? 'aria-current="page"' : ""}>${p}</button>`;
+    prev = p;
+  }
+  return html;
+}
+
+function renderReportsPagination(totalPages, totalItems) {
+  const box = $("#reports-pagination");
+  if (!box) return;
+  if (totalPages <= 1) {
+    box.innerHTML = "";
+    return;
+  }
+  const page = state.reportsPage;
+  box.innerHTML = `
+    <div class="pagination-info">Trang ${page}/${totalPages} · ${totalItems} phản ánh</div>
+    <div class="pagination">
+      <button data-page="${page - 1}" ${page === 1 ? "disabled" : ""} aria-label="Trang trước">‹</button>
+      ${pageNumbersHtml(page, totalPages)}
+      <button data-page="${page + 1}" ${page === totalPages ? "disabled" : ""} aria-label="Trang sau">›</button>
+    </div>`;
+}
+
+/** Đổi bộ lọc → về trang 1 rồi render. */
+function resetPageAndRender() {
+  state.reportsPage = 1;
+  renderReports();
 }
 
 function updateBulkActions() {
@@ -168,6 +218,16 @@ export function initReports() {
   document.addEventListener("click", async (e) => {
     const button = e.target.closest("button");
     if (!button) return;
+    // Phân trang
+    if (button.dataset.page) {
+      const page = Number(button.dataset.page);
+      if (page >= 1 && page !== state.reportsPage) {
+        state.reportsPage = page;
+        renderReports();
+        $("#reports-list")?.scrollIntoView({ behavior: "smooth", block: "start" });
+      }
+      return;
+    }
     // Bulk actions
     if (button.dataset.bulkAction) {
       await bulkReview(button.dataset.bulkAction);
@@ -318,13 +378,13 @@ export function initReports() {
   });
   // Nút "Làm mới" đã bỏ — auto-refresh 5s đủ để cập nhật
   // Tất cả filter đều render client-side tức thì (không fetch lại)
-  $("#report-status-filter")?.addEventListener("change", renderReports);
-  $("#report-search")?.addEventListener("input", renderReports);
-  $("#report-severity-filter")?.addEventListener("change", renderReports);
-  $("#report-date-from")?.addEventListener("change", renderReports);
-  $("#report-date-to")?.addEventListener("change", renderReports);
-  $("#only-pending-toggle")?.addEventListener("change", renderReports);
-  $("#report-sort")?.addEventListener("change", renderReports);
+  $("#report-status-filter")?.addEventListener("change", resetPageAndRender);
+  $("#report-search")?.addEventListener("input", resetPageAndRender);
+  $("#report-severity-filter")?.addEventListener("change", resetPageAndRender);
+  $("#report-date-from")?.addEventListener("change", resetPageAndRender);
+  $("#report-date-to")?.addEventListener("change", resetPageAndRender);
+  $("#only-pending-toggle")?.addEventListener("change", resetPageAndRender);
+  $("#report-sort")?.addEventListener("change", resetPageAndRender);
 
   // Keyboard shortcuts: V=verify, R=reject, S=resolve, M=map
   document.addEventListener("keydown", (e) => {
@@ -355,6 +415,11 @@ export function initReports() {
       const mapBtn = card.querySelector("[data-report-map]");
       if (mapBtn) mapBtn.click();
     }
+  });
+  // Bulk select từng thẻ: cập nhật thanh thao tác khi tick/bỏ tick
+  document.addEventListener("change", (e) => {
+    const box = e.target.closest("input[data-bulk-select]");
+    if (box) updateBulkActions();
   });
   // Bulk select all
   $("#bulk-select-all")?.addEventListener("change", (e) => {

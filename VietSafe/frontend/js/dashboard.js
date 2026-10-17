@@ -16,6 +16,20 @@ import { renderSources } from "./views/sources.js";
 
 let refreshing = false;
 
+/**
+ * Tự làm mới danh sách phản ánh theo nhịp 5s, nhưng KHÔNG re-render khi admin
+ * đang thao tác (đang tick chọn hàng loạt hoặc đang mở panel "Lịch sử").
+ * Tránh làm mất tick chọn + đóng panel đang xem.
+ */
+function loadReportsUnlessInteracting() {
+  const hasChecked =
+    document.querySelector("#reports-list input[data-bulk-select]:checked") !== null;
+  const hasOpenHistory =
+    document.querySelector("#reports-list .review-history:not([hidden])") !== null;
+  if (hasChecked || hasOpenHistory) return Promise.resolve();
+  return loadReports();
+}
+
 export async function refresh() {
   if (refreshing) {
     await refreshing;
@@ -34,7 +48,7 @@ export async function refresh() {
     if (first) populateControls();
     updateDashboard();
     updateAlertBanner();
-    if (state.view === "reports") await loadReports();
+    if (state.view === "reports") await loadReportsUnlessInteracting();
     return true;
   } catch (e) {
     // Lỗi trong lúc VẼ cũng rơi vào đây và hiện như "mất kết nối" - nên luôn ghi ra console.

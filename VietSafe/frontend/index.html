@@ -569,6 +569,15 @@
               </div>
               <div class="rescue-online-tag">Bản demo · Chưa điều phối</div>
             </div>
+            <div class="rescue-emergency" role="group" aria-label="Số cấp cứu khẩn cấp">
+              <span class="rescue-emergency-label">Khẩn cấp?</span>
+              <a class="rescue-emergency-btn rescue-emergency-115" href="tel:115">
+                <svg><use href="#i-phone" /></svg>Gọi 115 — Cấp cứu y tế
+              </a>
+              <a class="rescue-emergency-btn rescue-emergency-113" href="tel:113">
+                <svg><use href="#i-phone" /></svg>Gọi 113 — Công an
+              </a>
+            </div>
             <details class="safety-box">
               <summary class="safety-box-toggle">
                 <span class="safety-box-heading"
@@ -868,6 +877,7 @@
               <button class="button small" id="bulk-resolve" data-bulk-action="resolved">Đã xử lý</button>
             </div>
             <div id="reports-list"></div>
+            <div id="reports-pagination" class="reports-pagination"></div>
           </div>
         </section>
         <section id="my-reports-view" class="view" hidden>
@@ -923,8 +933,8 @@
           </button>
         </div>
         <p class="dialog-intro">
-          Một phản ánh của bạn giúp bản đồ có thêm thông tin. Dữ liệu chỉ được
-          lưu trên máy này.
+          Một phản ánh của bạn giúp bản đồ có thêm thông tin. Phản ánh sẽ được
+          gửi tới bộ phận quản lý để xác minh và xử lý.
         </p>
         <label>Loại phản ánh</label>
         <div class="report-types">

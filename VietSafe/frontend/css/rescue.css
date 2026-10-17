@@ -1,5 +1,57 @@
 /* rescue.css - Trang Ứng cứu: hotline, form điều phối, cẩm nang an toàn */
 
+/* === Thanh số khẩn cấp quốc gia (115 / 113) === */
+.rescue-emergency {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin: 16px 0;
+  padding: 12px 14px;
+  background: #fff5f4;
+  border: 1px solid #f9cac5;
+  border-radius: 10px;
+}
+
+.rescue-emergency-label {
+  font-size: 12px;
+  font-weight: 700;
+  color: #c94436;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+.rescue-emergency-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 38px;
+  padding: 8px 16px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 700;
+  color: #fff;
+  text-decoration: none;
+  transition: filter 0.15s;
+}
+
+.rescue-emergency-btn svg {
+  width: 16px;
+  height: 16px;
+}
+
+.rescue-emergency-btn:hover {
+  filter: brightness(0.92);
+}
+
+.rescue-emergency-115 { background: #c94436; }
+.rescue-emergency-113 { background: #1f5fbf; }
+
+/* === Thanh số khẩn cấp: mobile === */
+@media (max-width: 600px) {
+  .rescue-emergency-btn { flex: 1; justify-content: center; }
+}
+
 .rescue-online-tag {
   display: flex;
   align-items: center;

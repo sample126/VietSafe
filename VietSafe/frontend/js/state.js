@@ -13,6 +13,7 @@ export const state = {
   layers: { flood: true, traffic: true, incident: true, pending: true },
   reportPosition: null,
   reports: [],
+  reportsPage: 1,
   myReports: [],
   myReportsFilter: "all",
   notifications: [],

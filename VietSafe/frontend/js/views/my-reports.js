@@ -94,6 +94,17 @@ function renderEmptyState(total) {
 const SEVERITY_LABELS = { 1: "Nhẹ", 2: "Trung bình", 3: "Nghiêm trọng" };
 const SEVERITY_COLORS = { 1: "green", 2: "orange", 3: "red" };
 
+const DESC_CLAMP_THRESHOLD = 180;
+
+function renderDescription(desc) {
+  if (!desc) return "";
+  if (desc.length <= DESC_CLAMP_THRESHOLD) {
+    return `<p class="my-desc">${esc(desc)}</p>`;
+  }
+  return `<p class="my-desc clampable">${esc(desc)}</p>
+    <button class="desc-toggle" data-desc-toggle>Xem thêm</button>`;
+}
+
 function renderMyReportCard(report) {
   const id = esc(report.id);
   const statusClass =
@@ -110,7 +121,7 @@ function renderMyReportCard(report) {
       <span class="tag tag-${statusClass}">${statuses[report.status]}</span>
     </div>
     ${renderStepper(report.status)}
-    <p>${esc(report.description)}</p>
+    ${renderDescription(report.description)}
     <div class="review-evidence">
       <span><strong>Mức độ:</strong> <span class="severity-${sevColor}">${report.severity}/3 — ${SEVERITY_LABELS[report.severity]}</span></span>
       <span><strong>Gửi lúc:</strong> ${timeAgo(report.created_at)}</span>
@@ -138,6 +149,14 @@ export function initMyReports() {
     // CTA trong empty state
     if (e.target.id === "empty-report-cta") {
       import("./report-form.js").then((m) => m.openReport());
+      return;
+    }
+    // Bấm "Xem thêm" / "Thu gọn" mô tả dài
+    if (e.target.closest("[data-desc-toggle]")) {
+      const btn = e.target.closest("[data-desc-toggle]");
+      const desc = btn.previousElementSibling;
+      const clamped = desc.classList.toggle("clampable");
+      btn.textContent = clamped ? "Xem thêm" : "Thu gọn";
       return;
     }
     const button = e.target.closest("button");
