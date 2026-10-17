@@ -4,12 +4,14 @@ import { ADMIN_VIEWS, TOKEN_STORAGE_KEY } from "./config.js";
 import { setView } from "./navigation.js";
 import { authState, state } from "./state.js";
 import { $, $$, toast } from "./utils.js";
+import { onAuthChange } from "./views/notifications.js";
 
 // === Auth functions ===
 export async function checkAuth() {
   if (!authState.token) {
     authState.user = null;
     updateAuthUI();
+    onAuthChange();
     return;
   }
   try {
@@ -21,6 +23,7 @@ export async function checkAuth() {
     localStorage.removeItem(TOKEN_STORAGE_KEY);
   }
   updateAuthUI();
+  onAuthChange();
 }
 
 export function updateAuthUI() {
@@ -40,8 +43,15 @@ export function updateAuthUI() {
   $$(".admin-only").forEach((el) => {
     el.hidden = !(user && user.role === "admin");
   });
+  // Show/hide user-only nav items (chỉ người dùng thường — admin có trang quản lý riêng)
+  $$(".user-only").forEach((el) => {
+    el.hidden = !user || user.role === "admin";
+  });
   // If currently on an admin-only view and not admin, switch to map
   if (ADMIN_VIEWS.includes(state.view) && (!user || user.role !== "admin")) setView("map");
+  // Màn "Phản ánh của tôi" chỉ dành cho người dùng thường đã đăng nhập
+  // (admin có trang quản lý riêng; khách thì không có dữ liệu để xem)
+  if (state.view === "my-reports" && (!user || user.role === "admin")) setView("map");
   // Close user menu
   $("#user-menu").hidden = true;
   // Update user menu info

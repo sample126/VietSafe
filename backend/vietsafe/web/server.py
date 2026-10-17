@@ -36,9 +36,12 @@ class Handler(BaseHTTPRequestHandler):
 
     # --- Ghi phản hồi -----------------------------------------------------------------
     def respond(self, data, code=200, content_type="application/json; charset=utf-8", headers=None):
-        if content_type.startswith("application/json"):
+        if content_type.startswith("application/json") and not isinstance(
+            data, (bytes, bytearray)
+        ):
             payload = json.dumps(data, ensure_ascii=False, allow_nan=False).encode("utf-8")
         else:
+            # File .json tĩnh đã là bytes -> gửi nguyên vẹn, không serialize lần nữa.
             payload = data
         self.send_response(code)
         self.send_header("Content-Type", content_type)

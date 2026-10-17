@@ -15,11 +15,13 @@ import { initEventsPanel } from "./views/events-panel.js";
 import { initForecast } from "./views/forecast.js";
 import { initReportForm } from "./views/report-form.js";
 import { initReports } from "./views/reports.js";
+import { initMyReports } from "./views/my-reports.js";
 import { initRescue } from "./views/rescue.js";
 import { initRoadDetails } from "./views/road-details.js";
 import { initRouting } from "./views/routing.js";
 import { initSearch } from "./views/search.js";
 import { initSources } from "./views/sources.js";
+import { initNotifications } from "./views/notifications.js";
 
 function initListeners() {
   initNavigation();
@@ -33,9 +35,11 @@ function initListeners() {
   initSources();
   initReportForm();
   initReports();
+  initMyReports();
   initRescue();
   initAlertBanner();
   initAuth();
+  initNotifications();
 }
 
 initListeners();

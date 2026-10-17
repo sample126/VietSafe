@@ -417,7 +417,11 @@
     padding: 13px;
   }
   .report-filter {
+    grid-template-columns: minmax(0, 1fr);
     gap: 10px;
+  }
+  .report-filter .report-search {
+    grid-column: auto;
   }
   .report-filter select {
     min-width: 0;
