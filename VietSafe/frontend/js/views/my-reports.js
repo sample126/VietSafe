@@ -61,6 +61,7 @@ export function renderMyReports() {
   $("#my-reports-list").innerHTML = filtered.length
     ? filtered.map((r) => renderMyReportCard(r)).join("")
     : renderEmptyState(reports.length);
+  if (filtered.length) refineDescriptionClamps();
 }
 
 function renderMyStats(reports) {
@@ -102,7 +103,24 @@ function renderDescription(desc) {
     return `<p class="my-desc">${esc(desc)}</p>`;
   }
   return `<p class="my-desc clampable">${esc(desc)}</p>
-    <button class="desc-toggle" data-desc-toggle>Xem thêm</button>`;
+    <button class="desc-toggle" data-desc-toggle hidden>Xem thêm</button>`;
+}
+
+/**
+ * Chỉ giữ clamp + nút "Xem thêm" khi mô tả THỰC SỰ bị cắt (tràn 4 dòng).
+ * Nếu mô tả dài nhưng vẫn vừa khít 4 dòng → bỏ clamp, khỏi hiện nút thừa.
+ */
+function refineDescriptionClamps() {
+  document.querySelectorAll("#my-reports-list .my-desc.clampable").forEach((p) => {
+    const hasOverflow = p.scrollHeight > p.clientHeight + 2;
+    const btn = p.nextElementSibling;
+    if (hasOverflow) {
+      if (btn?.matches("[data-desc-toggle]")) btn.hidden = false;
+    } else {
+      p.classList.remove("clampable");
+      btn?.matches("[data-desc-toggle]") && btn.remove();
+    }
+  });
 }
 
 function renderMyReportCard(report) {
