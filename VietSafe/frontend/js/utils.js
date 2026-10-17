@@ -39,6 +39,15 @@ export function toast(message) {
   toastTimer = setTimeout(() => ($("#toast").hidden = true), 5200);
 }
 
+/** Chuyển timestamp Unix thành chuỗi "x phút trước" dễ đọc. */
+export function timeAgo(unix) {
+  const seconds = Math.floor(Date.now() / 1000 - unix);
+  if (seconds < 60) return `${seconds} giây trước`;
+  if (seconds < 3600) return `${Math.floor(seconds / 60)} phút trước`;
+  if (seconds < 86400) return `${Math.floor(seconds / 3600)} giờ trước`;
+  return `${Math.floor(seconds / 86400)} ngày trước`;
+}
+
 /** Tọa độ có nằm trong vùng thử nghiệm nội thành Hà Nội không (khớp kiểm tra của backend). */
 export const inPilotArea = (lat, lng) =>
   lat >= PILOT_BOUNDS.lat[0] &&

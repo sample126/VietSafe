@@ -43,6 +43,10 @@ export function updateAuthUI() {
   $$(".admin-only").forEach((el) => {
     el.hidden = !(user && user.role === "admin");
   });
+  // Show/hide user-only nav items (chỉ người dùng đăng nhập mới thấy)
+  $$(".user-only").forEach((el) => {
+    el.hidden = !user;
+  });
   // If currently on an admin-only view and not admin, switch to map
   if (ADMIN_VIEWS.includes(state.view) && (!user || user.role !== "admin")) setView("map");
   // Close user menu

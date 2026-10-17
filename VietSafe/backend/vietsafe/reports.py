@@ -88,8 +88,20 @@ def get_reports(status=None, severity=None, date_from=None, date_to=None, userna
 
 
 def get_my_reports(username):
-    """Lấy phản ánh của một người dùng cụ thể."""
-    return get_reports(username=username)
+    """Lấy phản ánh của một người dùng cụ thể, kèm lý do từ chối (nếu có)."""
+    reports_list = get_reports(username=username)
+    # Gắn lý do từ chối từ bảng audit
+    with connect() as db:
+        for r in reports_list:
+            r["reason"] = None
+            if r["status"] == "rejected":
+                row = db.execute(
+                    "SELECT detail FROM audit WHERE report_id=? AND action='rejected' ORDER BY timestamp DESC LIMIT 1",
+                    (r["id"],),
+                ).fetchone()
+                if row and row["detail"]:
+                    r["reason"] = row["detail"]
+    return reports_list
 
 
 def bulk_review(report_ids, status, reason=None):

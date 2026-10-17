@@ -1,10 +1,42 @@
 /** Trang "Phản ánh của tôi": người dân xem lịch sử phản ánh đã gửi và trạng thái hiện tại. */
 import { api } from "../api.js";
 import { statuses, typeNames } from "../config.js";
-import { refresh } from "../dashboard.js";
 import { state } from "../state.js";
-import { $, esc, toast } from "../utils.js";
-import { clearRoutes } from "./routing.js";
+import { $, esc, timeAgo } from "../utils.js";
+
+const STEPS = [
+  { key: "created", label: "Tiếp nhận" },
+  { key: "verified", label: "Xác minh" },
+  { key: "resolved", label: "Xử lý" },
+];
+
+function currentStep(status) {
+  switch (status) {
+    case "pending": return 0;
+    case "verified": return 1;
+    case "resolved": return 2;
+    case "rejected": return -1;
+    case "expired": return -1;
+    default: return 0;
+  }
+}
+
+function renderStepper(status) {
+  const step = currentStep(status);
+  if (step === -1) {
+    const cls = status === "rejected" ? "rejected" : "expired";
+    const label = status === "rejected" ? "Bị từ chối" : "Hết hạn";
+    return `<div class="stepper stepper-${cls}"><span class="stepper-end">${label}</span></div>`;
+  }
+  return `<div class="stepper">` + STEPS.map((s, i) => {
+    const done = i < step;
+    const active = i === step;
+    return `<div class="stepper-step ${done ? "done" : ""} ${active ? "active" : ""}">
+      <div class="stepper-dot"></div>
+      <span class="stepper-label">${s.label}</span>
+    </div>`;
+  }).join(`<div class="stepper-line"></div>`) + `</div>`;
+}
 
 export async function loadMyReports() {
   try {
@@ -18,16 +50,49 @@ export async function loadMyReports() {
 
 export function renderMyReports() {
   const reports = state.myReports || [];
-  $("#my-reports-count").textContent = reports.length;
+  renderMyStats(reports);
 
   const filtered = reports
     .filter((r) => state.myReportsFilter === "all" || r.status === state.myReportsFilter)
     .sort((a, b) => b.created_at - a.created_at);
 
+  $("#my-reports-count").textContent = filtered.length;
+
   $("#my-reports-list").innerHTML = filtered.length
     ? filtered.map((r) => renderMyReportCard(r)).join("")
-    : `<div class="empty-state">Chưa có phản ánh nào.</div>`;
+    : renderEmptyState(reports.length);
 }
+
+function renderMyStats(reports) {
+  const counts = reports.reduce((acc, r) => {
+    acc[r.status] = (acc[r.status] || 0) + 1;
+    return acc;
+  }, {});
+  $("#my-reports-stats").innerHTML = `
+    <div class="my-stat"><strong>${reports.length}</strong><span>Tổng số</span></div>
+    <div class="my-stat my-stat-pending"><strong>${counts.pending || 0}</strong><span>Chờ xác minh</span></div>
+    <div class="my-stat my-stat-verified"><strong>${counts.verified || 0}</strong><span>Đã xác minh</span></div>
+    <div class="my-stat my-stat-resolved"><strong>${counts.resolved || 0}</strong><span>Đã xử lý</span></div>
+    <div class="my-stat my-stat-rejected"><strong>${counts.rejected || 0}</strong><span>Đã từ chối</span></div>
+  `;
+}
+
+function renderEmptyState(total) {
+  if (total === 0) {
+    return `<div class="empty-state">
+      <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+      <p>Bạn chưa gửi phản ánh nào.</p>
+      <p>Hãy chia sẻ tình trạng đường phố để cộng đồng cùng biết!</p>
+      <button class="button primary" id="empty-report-cta">Gửi phản ánh đầu tiên</button>
+    </div>`;
+  }
+  return `<div class="empty-state">
+    <p>Không có phản ánh nào khớp bộ lọc.</p>
+  </div>`;
+}
+
+const SEVERITY_LABELS = { 1: "Nhẹ", 2: "Trung bình", 3: "Nghiêm trọng" };
+const SEVERITY_COLORS = { 1: "green", 2: "orange", 3: "red" };
 
 function renderMyReportCard(report) {
   const id = esc(report.id);
@@ -35,19 +100,25 @@ function renderMyReportCard(report) {
     report.status === "verified" ? "teal" :
     report.status === "pending" ? "orange" :
     report.status === "rejected" ? "red" : "gray";
+  const sevColor = SEVERITY_COLORS[report.severity] || "green";
+  const reasonHtml = report.status === "rejected" && report.reason
+    ? `<div class="reject-reason"><strong>Lý do từ chối:</strong> ${esc(report.reason)}</div>`
+    : "";
   return `<article class="review-card">
     <div class="review-top">
       <h3>${esc(report.address)} <span class="data-label">· ${typeNames[report.type]}</span></h3>
       <span class="tag tag-${statusClass}">${statuses[report.status]}</span>
     </div>
+    ${renderStepper(report.status)}
     <p>${esc(report.description)}</p>
     <div class="review-evidence">
-      <span><strong>Thời gian:</strong> ${timeAgo(report.created_at)}</span>
-      <span><strong>Mức độ:</strong> ${report.severity}/3</span>
+      <span><strong>Mức độ:</strong> <span class="severity-${sevColor}">${report.severity}/3 — ${SEVERITY_LABELS[report.severity]}</span></span>
+      <span><strong>Gửi lúc:</strong> ${timeAgo(report.created_at)}</span>
     </div>
+    ${reasonHtml}
     <div class="review-meta">
       ${id} · ${new Date(report.created_at * 1000).toLocaleString("vi-VN")}
-      ${report.expires_at ? ` · Hết hạn: ${new Date(report.expires_at * 1000).toLocaleString("vi-VN")}` : ""}
+      ${report.expires_at && (report.status === "pending" || report.status === "verified") ? ` · Hết hạn: ${new Date(report.expires_at * 1000).toLocaleString("vi-VN")}` : ""}
     </div>
     ${report.media_url ? `<a href="${esc(report.media_url)}" target="_blank" rel="noopener"><img class="review-image" src="${esc(report.media_url)}" alt="Ảnh hiện trường"></a>` : ""}
     <div class="review-actions">
@@ -64,6 +135,11 @@ export function initMyReports() {
   $("#refresh-my-reports")?.addEventListener("click", loadMyReports);
 
   document.addEventListener("click", (e) => {
+    // CTA trong empty state
+    if (e.target.id === "empty-report-cta") {
+      import("./report-form.js").then((m) => m.openReport());
+      return;
+    }
     const button = e.target.closest("button");
     if (!button) return;
     if (button.dataset.myReportMap) {

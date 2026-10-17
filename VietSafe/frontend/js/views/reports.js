@@ -5,7 +5,7 @@ import { refresh } from "../dashboard.js";
 import { map, selectionLayer } from "../map.js";
 import { setView } from "../navigation.js";
 import { state } from "../state.js";
-import { $, $$, esc, icon, toast } from "../utils.js";
+import { $, $$, esc, icon, toast, timeAgo } from "../utils.js";
 import { clearRoutes } from "./routing.js";
 
 export async function loadReports() {
@@ -27,14 +27,6 @@ function normalizeSearch(value) {
     .replace(/[đĐ]/g, "d")
     .toLocaleLowerCase("vi-VN")
     .trim();
-}
-
-function timeAgo(unix) {
-  const seconds = Math.floor(Date.now() / 1000 - unix);
-  if (seconds < 60) return `${seconds} giây trước`;
-  if (seconds < 3600) return `${Math.floor(seconds / 60)} phút trước`;
-  if (seconds < 86400) return `${Math.floor(seconds / 3600)} giờ trước`;
-  return `${Math.floor(seconds / 86400)} ngày trước`;
 }
 
 export function renderReports() {
