@@ -18,7 +18,7 @@ from .static import read_static
 CSP = (
     "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; "
     "img-src 'self' data: blob: https://tiles.stadiamaps.com https://*.tile.openstreetmap.org; "
-    "connect-src 'self'; object-src 'none'; base-uri 'self'; frame-ancestors 'none'"
+    "connect-src 'self'; object-src 'none'; base-uri 'self'; frame-ancestors 'self'"
 )
 # Lỗi nghiệp vụ -> HTTP 400 (thông báo của lỗi được trả cho người dùng).
 CLIENT_ERRORS_GET = (ValueError, TypeError)
@@ -50,7 +50,7 @@ class Handler(BaseHTTPRequestHandler):
         )
         self.send_header("X-Content-Type-Options", "nosniff")
         self.send_header("Referrer-Policy", "strict-origin-when-cross-origin")
-        self.send_header("X-Frame-Options", "DENY")
+        self.send_header("X-Frame-Options", "SAMEORIGIN")
         self.send_header("Content-Security-Policy", CSP)
         for key, value in (headers or {}).items():
             self.send_header(key, value)

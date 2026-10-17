@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>VietSafe - Mobile Preview</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+  font-family: "Segoe UI", Arial, sans-serif;
+  background: #1a1a2e;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-height: 100vh;
+  padding: 20px;
+}
+h1 { color: #fff; margin-bottom: 16px; font-size: 18px; }
+.controls {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 10px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+.controls .group-label {
+  width: 100%;
+  color: #64748b;
+  font-size: 12px;
+  text-align: center;
+  margin-bottom: -2px;
+}
+.controls button {
+  padding: 8px 16px;
+  border: none;
+  border-radius: 8px;
+  background: #087f72;
+  color: #fff;
+  font-size: 13px;
+  cursor: pointer;
+}
+.controls button.active { background: #059669; }
+.controls button:hover { opacity: 0.9; }
+.controls .view-btn { background: #334155; }
+.controls .view-btn.active { background: #0e7490; }
+.phone-frame {
+  border: 8px solid #333;
+  border-radius: 36px;
+  overflow: hidden;
+  background: #fff;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+  position: relative;
+}
+.phone-frame::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 120px;
+  height: 24px;
+  background: #333;
+  border-radius: 0 0 14px 14px;
+  z-index: 10;
+}
+.phone-frame iframe {
+  display: block;
+  border: none;
+  width: 375px;
+  height: 667px;
+}
+.phone-label {
+  color: #94a3b8;
+  font-size: 12px;
+  margin-top: 10px;
+}
+</style>
+</head>
+<body>
+<h1>VietSafe — Xem trước giao diện điện thoại</h1>
+
+<div class="controls" id="size-controls">
+  <span class="group-label">Kích thước thiết bị</span>
+  <button data-w="375" data-h="667" class="active">iPhone SE (375×667)</button>
+  <button data-w="390" data-h="844">iPhone 14 (390×844)</button>
+  <button data-w="414" data-h="896">iPhone Plus (414×896)</button>
+  <button data-w="360" data-h="740">Android (360×740)</button>
+</div>
+
+<div class="controls" id="view-controls">
+  <span class="group-label">Màn hình</span>
+  <button class="view-btn active" data-view="map">Bản đồ</button>
+  <button class="view-btn" data-view="forecast">Dự báo</button>
+  <button class="view-btn" data-view="rescue">Ứng cứu</button>
+  <button class="view-btn" data-view="my-reports" data-role="user">Phản ánh của tôi</button>
+  <button class="view-btn" data-view="reports" data-role="admin">Quản lý phản ánh</button>
+  <button class="view-btn" data-view="sources" data-role="admin">Nguồn dữ liệu</button>
+</div>
+
+<div class="phone-frame">
+  <iframe id="preview" src="/"></iframe>
+</div>
+<div class="phone-label" id="size-label">375 × 667 px</div>
+
+<script src="mobile-preview.js"></script>
+</body>
+</html>
