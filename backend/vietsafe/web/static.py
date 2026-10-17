@@ -15,6 +15,6 @@ def read_static(url_path):
     if not target.is_relative_to(root) or not target.is_file():
         return None
     mime = mimetypes.guess_type(str(target))[0] or "application/octet-stream"
-    if target.suffix == ".js":
+    if target.suffix in (".js", ".mjs"):
         mime = "application/javascript"  # Windows đôi khi trả text/plain làm hỏng ES module
     return target.read_bytes(), mime

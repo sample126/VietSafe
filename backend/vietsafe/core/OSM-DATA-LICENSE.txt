@@ -1,0 +1,9 @@
+The road coordinates in hanoi_roads_osrm.json and hanoi_major_roads.json
+are derived from OpenStreetMap data via the OSRM routing service and
+Geofabrik Vietnam extract, respectively.
+
+Copyright OpenStreetMap contributors. Licensed under the Open Database
+License (ODbL): https://www.openstreetmap.org/copyright
+
+This data file is separate from the project's software license. Its
+routes are a static demonstration sample, not live traffic data.

@@ -13,26 +13,26 @@
 ## 📌 Bối cảnh vấn đề và định hướng giải pháp
 
 - **Thực trạng**: Các ứng dụng bản đồ hiện nay (Google Maps, Apple Maps...) thường chỉ thông báo khi tuyến đường đã bị ngập hoặc tắc nghẽn (phản ứng sau sự việc). Người dân chuẩn bị ra đường lúc trời bắt đầu mưa không thể biết trước đoạn nào sẽ ngập sâu trong 30–60 phút tới để chủ động chọn lộ trình phù hợp.
-- **Giải pháp VietSafe AI**: Nền tảng tổng hợp dữ liệu thời tiết (lượng mưa), độ trũng địa hình, lịch sử giao thông và phản ánh cộng đồng; ứng dụng mô hình dự báo không-thời gian để đưa ra cảnh báo sớm đón đầu trước 30–60 phút và điều hướng tìm tuyến tránh an toàn theo từng loại phương tiện (xe máy vs ô tô).
+- **Giải pháp VietSafe AI**: Bản thử nghiệm mô phỏng mưa, giao thông và ngập để minh họa cảnh báo trước 30–60 phút, kết hợp phản ánh cộng đồng đã xác minh và gợi ý tuyến theo xe máy, ô tô hoặc đi bộ. Chưa có luồng quan trắc thời gian thực hoặc mô hình dự báo đã kiểm định.
 
 ---
 
 ## ✨ Các tính năng chính (Modules)
 
 1. **Bản đồ trực quan tương tác (Interactive Map)**:
-   - Giám sát 36 đoạn đường và 25 nút giao trọng điểm nội thành Hà Nội (mạng đường giản lược, dựng tay trong `core/network.py`).
+   - Giám sát 111 hành lang đường và 79 điểm mẫu trải rộng Hà Nội. Đường vẽ bám theo hình học OpenStreetMap lưu cục bộ; điểm đầu/cuối và mạng liên kết vẫn là mẫu chọn thủ công, không dùng để dẫn đường thực tế.
+   - Lớp tham chiếu bổ sung 17.711 đoạn đường chính OpenStreetMap (`motorway` đến `tertiary`) trong khung bản đồ Hà Nội mở rộng. Những đoạn này không có quan trắc hay dự báo riêng; phóng gần để xem các cấp đường nhỏ hơn.
    - Phân cấp trực quan: Xanh (Thông thoáng), Cam (Ùn tắc), Xanh dương (Ngập nước), Đỏ (Sự cố nghiêm trọng / Chặn đường).
    - Chuyển nhanh thời điểm hiển thị: **Hiện tại**, **+30 phút**, **+60 phút**; dữ liệu tự làm mới mỗi 10 giây.
    - Tìm địa điểm (không phân biệt dấu tiếng Việt), danh sách sự kiện có bộ lọc, banner cảnh báo khi có đoạn đường bị chặn.
 2. **Dự báo rủi ro (Forecast Engine)**:
-   - Biểu đồ đường kép: chỉ số nguy cơ ngập (/100) và rủi ro tổng hợp (/100) tại các mốc Hiện tại, +15, +30, +45, +60 phút.
+   - Biểu đồ nguy cơ ngập, ùn tắc và sự cố (/100) tại các mốc Hiện tại, +15, +30, +45, +60 phút. Đây là điểm quy tắc demo, không phải xác suất đã hiệu chuẩn.
    - Bảng chi tiết theo từng đoạn đường (nguy cơ ngập, tốc độ ước tính, rủi ro tổng hợp). Đoạn chưa đủ dữ liệu hiển thị
      "Chưa đủ dữ liệu" thay vì số bịa.
 3. **Định tuyến thông minh né điểm ngập (Smart Routing)**:
-   - Thuật toán Dijkstra có phạt theo rủi ro dự báo, tính riêng cho **xe máy** và **ô tô**, tại thời điểm hiện tại / +30 / +60 phút.
-   - Loại khỏi tuyến: đoạn bị chặn (ngập ≥ 30 cm hoặc phản ánh mức 3 đã xác minh), đoạn chưa đủ dữ liệu, và đoạn có nguy cơ ngập dự báo
-     từ 82/100 (xe máy) hoặc 88/100 (ô tô).
-   - Gợi ý tối đa 2 phương án: **Ưu tiên ít rủi ro** và **Ưu tiên thời gian** (chỉ hiện một nếu hai tuyến trùng nhau).
+   - Thuật toán A* trên đồ thị đường OSM cục bộ, xét chiều đường và quyền đi cơ bản cho **xe máy**, **ô tô**, **đi bộ**, tại hiện tại / +30 / +60 phút.
+   - Ngưỡng loại ngập thử nghiệm: xe máy 15 cm, ô tô 25 cm, đi bộ 10 cm; **không phải khuyến nghị an toàn**. Cảnh báo, tốc độ và độ sâu là dữ liệu mô phỏng.
+   - Gợi ý tối đa 3 phương án: **Nhanh nhất**, **Ngắn nhất**, **Ít rủi ro nhất** (gộp tuyến trùng). Chưa xét cấm rẽ hoặc hạn chế theo giờ; không dùng để dẫn đường ngoài đời.
 4. **Phản ánh từ cộng đồng (Crowdsourcing)**:
    - Người dân (cần đăng nhập) gửi phản ánh ngập / ùn tắc / sự cố kèm định vị GPS hoặc ghim trên bản đồ, và ảnh hiện trường (JPG/PNG/WebP, ≤ 1,5 MB).
    - Chống lạm dụng: giới hạn 10 phản ánh/phút/IP, chặn gửi trùng trong 5 phút, kiểm tra chữ ký file ảnh, phản ánh tự hết hạn sau 2 giờ.
@@ -165,6 +165,7 @@ vietsafe/
 | Muốn biết...                                                       | Đọc                                                                          |
 | ------------------------------------------------------------------ | ---------------------------------------------------------------------------- |
 | Kiến trúc tổng thể, luồng dữ liệu, các quyết định thiết kế         | [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)                                 |
+| Phạm vi và nguồn tham khảo của dữ liệu demo Hà Nội                  | [docs/DEMO_HANOI.md](docs/DEMO_HANOI.md)                                     |
 | Backend: module, API, cơ sở dữ liệu, cách thêm endpoint            | [docs/BACKEND.md](docs/BACKEND.md)                                           |
 | Frontend: module, state, cách thêm trang / thành phần              | [docs/FRONTEND.md](docs/FRONTEND.md)                                         |
 | Cài môi trường, chạy test, quy trình làm việc nhóm, vấn đề đã biết | [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md)                                   |

@@ -26,8 +26,8 @@ export function initRescue() {
             let minDist = Infinity;
             for (const r of state.data.roads) {
               const d = Math.hypot(
-                (r.coordinates[0][0] + r.coordinates[1][0]) / 2 - lat,
-                (r.coordinates[0][1] + r.coordinates[1][1]) / 2 - lng,
+                r.center[0] - lat,
+                r.center[1] - lng,
               );
               if (d < minDist) {
                 minDist = d;

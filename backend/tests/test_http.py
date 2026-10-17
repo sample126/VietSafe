@@ -9,13 +9,15 @@ from .helpers import ServerTestCase
 
 class HTTPTests(ServerTestCase):
     def test_page_and_local_assets(self):
-        paths = ("/", "/js/main.js", "/css/base.css", "/vendor/leaflet.js", "/favicon.svg")
+        paths = ("/", "/js/main.js", "/css/base.css", "/vendor/leaflet.js", "/vendor/vector-map.js", "/vendor/maplibre-gl-worker.mjs", "/favicon.svg")
         for path in paths:
             with self.subTest(path=path):
                 code, _, body = self.request(path)
                 self.assertEqual(code, 200)
                 self.assertTrue(body)
         _, headers, _ = self.request("/js/main.js")
+        self.assertIn("javascript", headers["Content-Type"])
+        _, headers, _ = self.request("/vendor/maplibre-gl-worker.mjs")
         self.assertIn("javascript", headers["Content-Type"])
 
     def test_security_headers_present(self):
@@ -40,6 +42,19 @@ class HTTPTests(ServerTestCase):
         code, _, body = self.request("/api/health")
         self.assertEqual(code, 200)
         self.assertTrue(json.loads(body)["ok"])
+
+    def test_map_config(self):
+        code, headers, body = self.request("/api/map-config")
+        self.assertEqual(code, 200)
+        self.assertIn("api.maptiler.com", headers["Content-Security-Policy"])
+        self.assertIn("maptiler_key", json.loads(body))
+
+    def test_major_roads_are_available_separately_from_demo_snapshot(self):
+        code, _, body = self.request("/api/major-roads")
+        self.assertEqual(code, 200)
+        classes = json.loads(body)["classes"]
+        self.assertEqual(set(classes), {"motorway", "trunk", "primary", "secondary", "tertiary"})
+        self.assertGreater(sum(map(len, classes.values())), 10000)
 
     def test_reject_cross_origin_and_missing_custom_header(self):
         for headers in ({}, {"X-VietSafe": "local", "Origin": "https://example.org"}):

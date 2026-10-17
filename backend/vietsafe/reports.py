@@ -95,7 +95,7 @@ def create_report(body):
     if not (math.isfinite(lat) and math.isfinite(lng)) or not (
         lat_lo <= lat <= lat_hi and lng_lo <= lng <= lng_hi
     ):
-        raise ValueError("Vị trí nằm ngoài vùng thử nghiệm nội thành Hà Nội.")
+        raise ValueError("Vị trí nằm ngoài vùng thử nghiệm Hà Nội.")
     km, road, _ = nearest_road(lat, lng)
     if km > config.REPORT_MAX_DISTANCE_KM:
         raise ValueError(

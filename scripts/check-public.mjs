@@ -1,0 +1,65 @@
+import { chromium } from "playwright-core";
+
+const browser = await chromium.launch({
+  executablePath: "C:/Program Files/Google/Chrome/Application/chrome.exe",
+  headless: true,
+  args: ["--enable-unsafe-swiftshader"],
+});
+const mobile = process.argv.includes("--mobile");
+const page = await browser.newPage({
+  viewport: mobile ? { width: 390, height: 844 } : { width: 1440, height: 900 },
+});
+const errors = [];
+page.on("pageerror", (error) => errors.push(error.message));
+page.on("console", (message) => {
+  if (message.type() === "error") errors.push(message.text());
+});
+await page.goto(process.argv[2] || "http://127.0.0.1:8768/", {
+  waitUntil: "domcontentloaded",
+});
+await page
+  .locator("#stat-flood")
+  .filter({ hasText: /\d/ })
+  .waitFor({ timeout: 12000 });
+await page.locator("#open-route").click();
+await page.locator('[data-route-pick="origin"]').click();
+await page
+  .locator("#map")
+  .click({ position: { x: mobile ? 210 : 450, y: 260 } });
+const picked = await page.locator("#route-origin").inputValue();
+if (!picked.includes(",")) errors.push("Không chọn được điểm A trên bản đồ");
+await page.locator("#route-origin").selectOption("caugiay");
+await page.locator("#route-swap").click();
+await page.locator("#route-swap").click();
+await page.locator("#route-form button[type=submit]").click();
+await page
+  .locator("#route-results .route-choice")
+  .first()
+  .waitFor({ timeout: 30000 });
+await page.locator("#route-results .route-forecast button").last().click();
+await page.waitForFunction(
+  () =>
+    document.querySelector("#route-results .route-forecast button.active")
+      ?.dataset.routeHorizon === "60",
+  { timeout: 30000 },
+);
+await page.waitForTimeout(1200);
+if (mobile) await page.locator("#map").scrollIntoViewIfNeeded();
+await page.screenshot({
+  path: mobile ? "data/map-public-mobile.png" : "data/map-public.png",
+});
+const result = await page.evaluate(() => ({
+  routes: document.querySelectorAll(".route-choice").length,
+  canvas: !!document.querySelector("#map canvas"),
+  activeTime: document.querySelector("#route-time")?.value,
+  search: !!document.querySelector("#route-place-search"),
+}));
+console.log({ ...result, errors });
+await browser.close();
+if (
+  !result.routes ||
+  !result.canvas ||
+  result.activeTime !== "60" ||
+  errors.length
+)
+  process.exitCode = 1;

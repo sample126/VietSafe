@@ -16,10 +16,10 @@ export const ADMIN_VIEWS = ["sources", "reports"];
 export const DEFAULT_SELECTED_ROAD = "HN-019";
 
 /**
- * Vùng thử nghiệm nội thành Hà Nội: [lat thấp, lat cao], [lng thấp, lng cao].
+ * Vùng thử nghiệm diện rộng Hà Nội: [lat thấp, lat cao], [lng thấp, lng cao].
  * Phải khớp backend: backend/vietsafe/config.py (PILOT_LAT_RANGE / PILOT_LNG_RANGE).
  */
-export const PILOT_BOUNDS = { lat: [20.98, 21.065], lng: [105.77, 105.88] };
+export const PILOT_BOUNDS = { lat: [20.68, 21.31], lng: [105.33, 106.0] };
 
 export const typeNames = { flood: "Ngập đường", traffic: "Ùn tắc", incident: "Sự cố giao thông" };
 export const typeIcons = { flood: "water", traffic: "car", incident: "alert" };
@@ -32,17 +32,24 @@ export const statuses = {
   expired: "Hết hạn",
 };
 
-export const FOOTNOTE_ONLINE = "Mạng đường giản lược · Không dùng để dẫn đường thực tế";
+export const FOOTNOTE_ONLINE = "Tuyến đường OSM · Dữ liệu cảnh báo mô phỏng · Không dùng để dẫn đường";
 export const FOOTNOTE_OFFLINE =
-  "Sơ đồ ngoại tuyến · Mạng đường giản lược · Không dùng để dẫn đường";
+  "Nền ngoại tuyến · Tuyến đường OSM · Cảnh báo mô phỏng";
 
 // === Tile providers ===
-// Nền chính: Stadia Maps "Alidade Smooth" (dữ liệu OSM, nền xám nhạt để lớp đoạn đường nổi rõ).
-// Gói free 200.000 tile/tháng, phi thương mại. Chạy trên localhost/127.0.0.1 không cần key.
-// Deploy lên domain thật: đăng ký domain tại https://client.stadiamaps.com hoặc điền API key vào STADIA_API_KEY.
-// Nếu Stadia lỗi, tự chuyển sang tile OSM, rồi mới rơi xuống sơ đồ ngoại tuyến.
+// Nền chính: OpenFreeMap Positron (vector OpenMapTiles, không cần khóa).
+// Khi WebGL/tile lỗi: MapTiler nếu có khóa, Stadia, OSM, rồi sơ đồ ngoại tuyến.
 export const STADIA_API_KEY = "";
 export const TILE_PROVIDERS = {
+  openfreemap: {
+    style: "https://tiles.openfreemap.org/styles/positron",
+    attr: '&copy; <a href="https://openfreemap.org/" target="_blank" rel="noopener">OpenFreeMap</a> &copy; <a href="https://openmaptiles.org/" target="_blank" rel="noopener">OpenMapTiles</a> &copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a>',
+  },
+  openmaptiles: {
+    url: "https://api.maptiler.com/maps/openstreetmap/{z}/{x}/{y}.png?key={key}",
+    attr: '&copy; <a href="https://openmaptiles.org/" target="_blank" rel="noopener">OpenMapTiles</a> &copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap contributors</a>',
+    maxZoom: 19,
+  },
   stadia: {
     url:
       "https://tiles.stadiamaps.com/tiles/alidade_smooth/{z}/{x}/{y}{r}.png" +
@@ -56,9 +63,9 @@ export const TILE_PROVIDERS = {
     maxZoom: 19,
   },
 };
-export const TILE_ORDER = ["stadia", "osm"];
+export const TILE_ORDER = ["openfreemap", "openmaptiles", "stadia", "osm"];
 // Khóa vùng nhìn trong Hà Nội: tránh kéo bản đồ ra vùng biển đảo mà tile toàn cầu ghi nhãn không theo quy ước Việt Nam.
 export const HANOI_BOUNDS = [
-  [20.9, 105.65],
-  [21.15, 106.02],
+  [20.58, 105.27],
+  [21.36, 106.08],
 ];

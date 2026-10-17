@@ -18,6 +18,11 @@ DB_PATH = Path(os.environ.get("VIETSAFE_DB", REPO_ROOT / "data" / "vietsafe.sqli
 # --- Máy chủ ---------------------------------------------------------------------------
 DEFAULT_HOST = os.environ.get("HOST", "localhost")
 DEFAULT_PORT = int(os.environ.get("PORT", 8765))
+MAPTILER_API_KEY = os.environ.get("MAPTILER_API_KEY", "")
+SIMULATION_SPEED = float(os.environ.get("VIETSAFE_SIMULATION_SPEED", "1"))
+SIMULATION_EPOCH = float(os.environ.get("VIETSAFE_SIMULATION_EPOCH", "1767225600"))
+if not 0.1 <= SIMULATION_SPEED <= 60:
+    raise ValueError("VIETSAFE_SIMULATION_SPEED phải nằm trong khoảng 0.1 đến 60.")
 MAX_BODY_BYTES = 2_200_000  # ~1,5 MB ảnh sau khi mã hóa base64 + phần còn lại của JSON
 # Host header được chấp nhận ngoài localhost (tunnel / hosting dùng cho demo).
 ALLOWED_HOST_SUFFIXES = (
@@ -41,9 +46,9 @@ REPORT_DUPLICATE_WINDOW_SECONDS = 300  # chặn gửi lặp cùng nội dung tro
 REPORT_MAX_IMAGE_BYTES = 1_500_000
 REPORT_RATE_LIMIT_PER_MINUTE = 10  # theo địa chỉ IP
 REPORT_MAX_DISTANCE_KM = 1  # vị trí phải nằm gần một đoạn đường trong mạng thử nghiệm
-# Vùng thử nghiệm nội thành Hà Nội. Frontend có bản sao ở frontend/js/config.js (PILOT_BOUNDS).
-PILOT_LAT_RANGE = (20.98, 21.065)
-PILOT_LNG_RANGE = (105.77, 105.88)
+# Vùng mạng mẫu Hà Nội. Vị trí phản ánh còn phải nằm gần một đoạn đường demo.
+PILOT_LAT_RANGE = (20.68, 21.31)
+PILOT_LNG_RANGE = (105.33, 106.0)
 
 # --- Nhật ký dự báo --------------------------------------------------------------------
 PREDICTION_LOG_RETENTION_TICKS = 8640  # 8640 tick x 10 giây = 24 giờ

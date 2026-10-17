@@ -1,9 +1,17 @@
 /**
  * Danh sách nguồn dữ liệu hiển thị ở trang "Nguồn dữ liệu".
  * Mỗi phần tử: [biểu tượng, tên nguồn, nhãn trạng thái, màu tag, mô tả, kế hoạch thu thập ("—" = không có]
- * Đây là dữ liệu MINH HỌA mô tả kiến trúc dự kiến; chưa có nguồn nào kết nối thật (xem docs/ROADMAP.md).
+ * Hình học OSM được lưu cục bộ; các nguồn quan trắc thời gian thực chưa kết nối.
  */
 export const DATA_SOURCES = [
+[
+  "route",
+  "OpenStreetMap / OSRM",
+  "Hình học lưu cục bộ",
+  "teal",
+  "111 hành lang demo và 17.711 đoạn đường chính tham chiếu bám theo OpenStreetMap. Không bao gồm tốc độ hoặc sự cố thực tế.",
+  "Làm mới thủ công bằng scripts/build-hanoi-road-geometry.py và scripts/build-hanoi-major-roads.py.",
+],
 [
   "cloud",
   "Vệ tinh NASA GPM (IMERG)",
@@ -25,7 +33,7 @@ export const DATA_SOURCES = [
   "Bộ mô phỏng giao thông",
   "Đang chạy tại máy",
   "teal",
-  "36 đoạn đường, 25 nút. Cập nhật mỗi 10 giây theo kịch bản.",
+  "Mạng mẫu nhiều khu vực Hà Nội; nguy cơ ngập, ùn tắc và sự cố được tính theo kịch bản mỗi 10 giây.",
   "—",
 ],
 [

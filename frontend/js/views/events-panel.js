@@ -1,13 +1,15 @@
 /** Bảng "Sự kiện" bên phải trang Bản đồ: danh sách cảnh báo, bộ lọc, mở chi tiết. */
 import { typeColors, typeIcons, typeNames } from "../config.js";
+import { map } from "../map.js";
 import { state } from "../state.js";
 import { $, $$, ago, esc, icon } from "../utils.js";
-import { map } from "../map.js";
 import { selectRoad, showRoadDetails } from "./road-details.js";
 
 export function renderEvents() {
-  if (!state.data) return;
-  const events = state.data.events.filter((e) => state.filter === "all" || e.type === state.filter);
+  if (!state.data || !$("#event-list")) return;
+  const events = state.data.events.filter(
+    (e) => state.filter === "all" || e.type === state.filter,
+  );
   $("#event-list").innerHTML = events.length
     ? events
         .map((e) => {

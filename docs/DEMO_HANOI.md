@@ -1,0 +1,28 @@
+# Du lieu demo Ha Noi
+
+Mạng cảnh báo demo có 79 điểm và 111 hành lang, nối các khu vực trung tâm với Hà Đông, Long Biên, Gia Lâm, Đông Anh, Sóc Sơn, Sơn Tây, Ba Vì và các hướng phía nam. Điểm đầu/cuối và quan hệ giữa các hành lang được chọn thủ công. Hình học cảnh báo dùng tuyến OSM/OSRM lưu trong `backend/vietsafe/core/hanoi_roads_osrm.json`. **Định tuyến A-B không dùng mạng 79 nút này**: nó chạy A* trên đồ thị OSM cục bộ có 666.488 nút và 725.079 cạnh sau khi lọc, lưu tại `hanoi_routing_graph.json.gz`.
+
+Lớp đường chính bổ sung 17.711 đoạn OSM (`motorway`, `trunk`, `primary`, `secondary`, `tertiary`) trong khung tọa độ 20.58–21.36°B, 105.27–106.08°Đ, lấy từ [bản trích Việt Nam của Geofabrik](https://download.geofabrik.de/asia/vietnam.html) bằng `scripts/build-hanoi-major-roads.py`. Khung chữ nhật này **không trùng chính xác ranh giới hành chính Hà Nội**, nên có thể thấy cả đường ở vùng giáp ranh. Dữ liệu hiển thị nằm trong `hanoi_major_roads.json`, tải một lần qua `/api/major-roads`. Đồ thị định tuyến giữ toàn bộ đường chính trong khung và chỉ giữ đường nhỏ gần các hành lang cảnh báo demo (~1,5 km); ngoài vùng phủ đó có thể không tìm được tuyến.
+
+Nguồn hình học: [© OpenStreetMap contributors (ODbL)](https://www.openstreetmap.org/copyright). Đồ thị định tuyến giữ node ID chung, chiều `oneway` và thẻ `access`/`motor_vehicle`/`motorcar`/`motorcycle`/`foot` cơ bản; các tuyến A-B là chuỗi cạnh OSM liên tục, không nối thẳng qua công trình hoặc mặt nước. **Chưa xử lý quan hệ cấm rẽ, hạn chế theo giờ, làn đường, đường đang thi công hay mức độ an toàn thực tế.** Việc ghép cảnh báo demo vào cạnh OSM dựa vào khoảng cách <=45 m, có thể gán nhầm đường song song; không dùng để điều hướng thực tế. Tệp dữ liệu tuân theo ODbL riêng với giấy phép phần mềm; xem `backend/vietsafe/core/OSM-DATA-LICENSE.txt`. Chạy `python scripts/build-hanoi-major-roads.py` khi cần làm mới từ Geofabrik; script tự lọc đồ thị và tạo `hanoi_street_search.json`. Ứng dụng đang chạy không gọi OSRM hay Google Maps.
+
+## Nguồn và giới hạn
+
+Các vị trí tham khảo ngập là thông tin **lịch sử**, không phải tình trạng hiện tại:
+
+- [Công ty Thoát nước Hà Nội: các điểm úng ngập trên tuyến phố chính](https://thoatnuochanoi.vn/tin-tuc-chi-tiet/8139/ha-noi-con-12-diem-ung-ngap-tren-cac-tuyen-pho-chinh): Phan Bội Châu - Lý Thường Kiệt, Đường Thành - Bát Đàn, Cao Bá Quát, Nguyễn Khuyến, Trường Chinh, Đại lộ Thăng Long.
+- [Công ty Thoát nước Hà Nội: công trình ảnh hưởng thoát nước mưa](https://thoatnuochanoi.vn/tin-tuc-chi-tiet/21283/du-an-thi-cong-do-dang-can-tro-thoat-nuoc-mua-o-ha-noi): Thụy Khuê, Minh Khai.
+- [Công ty Thoát nước Hà Nội: mưa lớn gây ngập](https://thoatnuochanoi.vn/tin-tuc-chi-tiet/305/ha-noi-mua-lon-lai-gay-ngap-lut): Nguyễn Xiển, Quan Nhân.
+- [Cổng thông tin Hà Nội: nút Nguyễn Trãi - Khuất Duy Tiến - Nguyễn Xiển](https://hanoi.gov.vn/videos/huong-dan-tham-gia-giao-thong-tai-nut-giao-nguyen-trai-khuat-duy-tien-nguyen-xien-4250201220534192.htm) và [các nút cần giảm ùn tắc](https://hanoi.gov.vn/chi-dao-cua-ubnd-thanh-pho-ha-noi/cai-tao-ha-tang-to-chuc-giao-thong-cap-bach-mot-so-nut-giao-tuyen-duong-de-giam-thieu-un-tac-giao-thong-4251106171828435.htm) chỉ giúp chọn địa điểm demo, không cung cấp tốc độ hay mật độ xe.
+
+`https://thoatnuochanoi.vn/ungngap` và Google Maps là các liên kết tham khảo do người dùng cung cấp. Ứng dụng **không** kết nối, sao chép hay cập nhật dữ liệu từ hai trang này. Nền bản đồ dùng dịch vụ bản đồ riêng; dữ liệu điểm và dự báo nằm trong repository.
+
+## Cách tạo kịch bản
+
+`backend/vietsafe/core/network.py` khai báo độ nhạy ngập và các cờ điểm nóng ùn tắc/sự cố. `simulation.py` sinh trạng thái ổn định trong ô 15 phút theo giờ Hà Nội, với cao điểm ngày làm việc 07:00–09:00/17:00–19:00 và mẫu cuối tuần riêng. Cùng kịch bản và thời điểm cho cùng trạng thái; không có dao động ngẫu nhiên mỗi lần tải. `forecast.py` tính điểm nguy cơ ngập, ùn tắc, sự cố tại 0, 15, 30, 45, 60 phút trên trạng thái tương lai của chính mô phỏng. Điểm 0-100 **không phải xác suất xảy ra** và chưa được kiểm định bằng dữ liệu quan trắc. Các sự cố hiển thị trong chế độ demo không phải thông báo sự cố thật.
+
+Nguồn demo được tách theo trách nhiệm: `traffic_provider.py` sinh tốc độ, `flood_provider.py` sinh độ sâu, `simulation.py` kết hợp kịch bản, `forecast.py` tính chỉ số, `network.py`/`osm_graph.py` cung cấp bản đồ, `routing.py` tính tuyến. Có thể thay từng nguồn sau này, nhưng hợp đồng dữ liệu API và kiểm thử phải được giữ. Tốc độ đồng hồ demo cấu hình qua `VIETSAFE_SIMULATION_SPEED` (0,1–60; mặc định 1) và mốc cố định `VIETSAFE_SIMULATION_EPOCH` (Unix seconds; mặc định 01/01/2026 UTC). Phản ánh cộng đồng vẫn hết hạn theo đồng hồ thật. Việc tua giờ chỉ mô phỏng quy tắc, không mang dữ liệu quan trắc tương lai.
+
+Tuyến A-B có ba chính sách: nhanh nhất, ngắn nhất, ít rủi ro nhất. Chính sách trùng hình học được gộp, nên đôi khi ít hơn ba tuyến; khi không tìm được tuyến hợp lệ thì không vẽ tuyến giả. Các ngưỡng loại ngập thử nghiệm là xe máy 15 cm, ô tô 25 cm, đi bộ 10 cm; đây **không phải khuyến nghị an toàn**. ETA dựa trên chiều dài cạnh OSM và tốc độ giả lập, không phản ánh giao thông thực. Tìm kiếm địa điểm không dấu hỗ trợ nút demo, tên hành lang và chỉ mục tên phố OSM; **chưa có geocoding số nhà/địa chỉ đầy đủ**. Chọn A/B trực tiếp trên bản đồ sẽ ghép vào nút đường phù hợp gần nhất (tối đa 1,2 km).
+
+Trên bản đồ, chọn **+30 phút** hoặc **+60 phút** để xem những điểm có điểm dự báo nổi bật; chọn một đoạn đường để xem cả ba chỉ số và liên kết nguồn lịch sử nếu có. Kịch bản mưa có thể thay đổi trong trang quản trị. Phản ánh của người dùng chỉ ảnh hưởng bản đồ sau khi được xác minh.
