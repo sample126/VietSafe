@@ -141,7 +141,7 @@
         <button class="nav-item" data-view="forecast" title="Dự báo">
           <svg><use href="#i-chart" /></svg><span>Dự báo</span>
         </button>
-        <button class="nav-item" data-view="rescue" title="Ứng cứu khẩn cấp">
+        <button class="nav-item user-only" data-view="rescue" title="Ứng cứu khẩn cấp" hidden>
           <svg><use href="#i-rescue" /></svg><span>Ứng cứu</span>
         </button>
         <button class="nav-item user-only" data-view="my-reports" title="Phản ánh của tôi" hidden>
@@ -581,13 +581,11 @@
           <div class="section-card">
             <div class="section-title">
               <div>
-                <h2>Danh bạ cứu hộ tham khảo</h2>
+                <h2>Danh bạ cứu hộ</h2>
                 <p>
-                  Danh sách hiện có dữ liệu mẫu và liên hệ chưa xác minh;
-                  VietSafe chưa cung cấp dịch vụ trực ban hay điều phối cứu hộ.
+                  Các đơn vị cứu hộ xe máy, ô tô và xe tải tại Hà Nội.
                 </p>
               </div>
-              <div class="rescue-online-tag">Bản demo · Chưa điều phối</div>
             </div>
             <div class="rescue-emergency" role="group" aria-label="Số cấp cứu khẩn cấp">
               <span class="rescue-emergency-label">Khẩn cấp?</span>
@@ -648,13 +646,16 @@
                   <label for="rescue-origin-address"
                     >Hoặc nhập địa điểm của bạn</label
                   >
-                  <input
-                    id="rescue-origin-address"
-                    type="search"
-                    maxlength="150"
-                    placeholder="Ví dụ: Cầu Giấy, Đường Láng"
-                    autocomplete="street-address"
-                  />
+                  <div class="rescue-address-search-wrap">
+                    <input
+                      id="rescue-origin-address"
+                      type="search"
+                      maxlength="150"
+                      placeholder="Ví dụ: Cầu Giấy, Đường Láng"
+                      autocomplete="off"
+                    />
+                    <div id="rescue-origin-suggestions" class="rescue-origin-suggestions" hidden></div>
+                  </div>
                   <button
                     type="button"
                     class="button secondary"
@@ -669,7 +670,7 @@
                     aria-live="polite"
                   ></p>
                 </section>
-                <h3>Danh sách cứu hộ tham khảo (chưa xác minh)</h3>
+                <h3>Danh sách cứu hộ</h3>
                 <div
                   id="rescue-service-list"
                   aria-label="Danh sách đơn vị cứu hộ, cuộn để xem thêm"
@@ -682,11 +683,7 @@
               <div class="rescue-side-col">
                 <div class="rescue-form-box">
                   <div class="form-box-head">
-                    <h3>Biểu mẫu ứng cứu (bản demo)</h3>
-                    <p>
-                      Chưa gửi yêu cầu hoặc dữ liệu đi đâu. Không nhập thông tin
-                      cá nhân thật khi trải nghiệm bản demo.
-                    </p>
+                    <h3>Biểu mẫu ứng cứu</h3>
                   </div>
                   <form id="rescue-request-form">
                     <div class="rescue-form-pair">
@@ -746,12 +743,12 @@
                     <div class="rescue-form-pair">
                       <div class="rescue-form-field">
                         <label for="rescue-phone"
-                          >Số điện thoại (chỉ nhập dữ liệu mẫu)</label
+                          >Số điện thoại</label
                         >
                         <input
                           id="rescue-phone"
                           type="tel"
-                          placeholder="Không nhập số điện thoại thật trong bản demo"
+                          placeholder="Số điện thoại của bạn"
                           pattern="[0-9]{10,11}"
                           required
                         />
@@ -770,8 +767,7 @@
                       class="button primary full"
                       id="submit-rescue-btn"
                     >
-                      <svg><use href="#i-rescue" /></svg>Thử biểu mẫu demo
-                      (không gửi)
+                      <svg><use href="#i-rescue" /></svg>Gửi yêu cầu cứu hộ
                     </button>
                   </form>
                   <div

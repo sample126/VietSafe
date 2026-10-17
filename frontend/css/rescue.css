@@ -123,6 +123,53 @@
   line-height: 1.5;
 }
 
+.rescue-list-placeholder {
+  text-align: center;
+  padding: 24px 16px;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.rescue-address-search-wrap {
+  position: relative;
+}
+
+.rescue-origin-suggestions {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  z-index: 10;
+  max-height: 240px;
+  overflow-y: auto;
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+  margin-top: 4px;
+}
+
+.rescue-suggestion-item {
+  display: block;
+  width: 100%;
+  text-align: left;
+  padding: 10px 14px;
+  border: none;
+  background: none;
+  cursor: pointer;
+  font-size: 13px;
+  color: var(--ink);
+  border-bottom: 1px solid var(--line);
+}
+
+.rescue-suggestion-item:last-child {
+  border-bottom: none;
+}
+
+.rescue-suggestion-item:hover {
+  background: var(--bg-soft);
+}
+
 #rescue-service-list {
   display: grid;
   grid-template-columns: minmax(0, 1fr);
@@ -183,11 +230,20 @@
   font-weight: 600;
 }
 
+.rescue-card-address {
+  margin: 0 0 4px;
+  color: #4a6b5a;
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 1.4;
+}
+
 .rescue-distance-label {
   width: 100%;
   color: var(--teal-dark);
   font-size: 11px;
   font-weight: 600;
+  margin: 0 0 8px;
 }
 
 .service-link {

@@ -52,6 +52,8 @@ export function updateAuthUI() {
   // Màn "Phản ánh của tôi" chỉ dành cho người dùng thường đã đăng nhập
   // (admin có trang quản lý riêng; khách thì không có dữ liệu để xem)
   if (state.view === "my-reports" && (!user || user.role === "admin")) setView("map");
+  // Ứng cứu khẩn cấp chỉ dành cho người dùng thường (admin có trang quản lý riêng)
+  if (state.view === "rescue" && user && user.role === "admin") setView("map");
   // Close user menu
   $("#user-menu").hidden = true;
   // Update user menu info

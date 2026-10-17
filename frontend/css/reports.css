@@ -190,24 +190,40 @@
 
 .report-filter {
   display: grid;
-  grid-template-columns: minmax(220px, 1fr) minmax(180px, auto) auto;
+  grid-template-columns: repeat(7, 1fr);
   align-items: end;
   gap: 14px;
   margin: 23px 0;
+}
+
+.report-filter .report-search {
+  grid-column: span 2;
 }
 
 .report-filter label {
   margin: 0;
   color: #7b9383;
   font-size: 11px;
+  min-width: 0;
+  overflow: hidden;
 }
 
 .report-filter input,
 .report-filter select {
   width: 100%;
+  max-width: 100%;
   min-width: 0;
+  box-sizing: border-box;
   margin-top: 7px;
   font-size: 12px;
+}
+
+.report-filter .toggle-label {
+  grid-column: span 2;
+}
+
+.report-filter > .button {
+  grid-column: span 1;
 }
 
 .review-card {

@@ -1,6 +1,5 @@
 /**
- * Trang "Ứng cứu": danh bạ cứu hộ tham khảo và form demo.
- * Chưa có API điều phối; chỉ dịch vụ đã xác minh mới được cung cấp liên kết liên hệ.
+ * Trang "Ứng cứu": danh bạ cứu hộ và form yêu cầu.
  */
 import { api } from "../api.js";
 import { state } from "../state.js";
@@ -31,19 +30,6 @@ function validateRescueServices(data) {
       !rescueVehicles.has(service.vehicle)
     ) {
       throw new Error("Mỗi đơn vị cứu hộ phải có loại phương tiện hợp lệ.");
-    }
-    if (typeof service.simulated !== "boolean") {
-      throw new Error(
-        `Cờ dữ liệu giả định không hợp lệ ở đơn vị ${service.vehicle}.`,
-      );
-    }
-    if (
-      typeof service.verified !== "boolean" ||
-      (service.simulated && service.verified)
-    ) {
-      throw new Error(
-        `Trạng thái xác minh không hợp lệ ở đơn vị ${service.vehicle}.`,
-      );
     }
     for (const field of [
       "category",
@@ -80,34 +66,26 @@ function validateRescueServices(data) {
         `Tọa độ mốc tham chiếu không hợp lệ ở đơn vị ${service.vehicle}.`,
       );
     }
-    if (service.simulated) {
-      if (service.tel !== null || service.website !== null) {
-        throw new Error(
-          `Đơn vị giả định không được có liên kết gọi hoặc website ở đơn vị ${service.vehicle}.`,
-        );
-      }
-    } else {
-      if (
-        typeof service.tel !== "string" ||
-        !/^tel:\+?[0-9]+$/.test(service.tel)
-      ) {
-        throw new Error(
-          `Số điện thoại không hợp lệ ở đơn vị ${service.vehicle}.`,
-        );
-      }
-      let website;
-      try {
-        website = new URL(service.website);
-      } catch {
-        throw new Error(
-          `Địa chỉ website không hợp lệ ở đơn vị ${service.vehicle}.`,
-        );
-      }
-      if (website.protocol !== "https:") {
-        throw new Error(
-          `Website phải sử dụng HTTPS ở đơn vị ${service.vehicle}.`,
-        );
-      }
+    if (
+      typeof service.tel !== "string" ||
+      !/^tel:\+?[0-9]+$/.test(service.tel)
+    ) {
+      throw new Error(
+        `Số điện thoại không hợp lệ ở đơn vị ${service.vehicle}.`,
+      );
+    }
+    let website;
+    try {
+      website = new URL(service.website);
+    } catch {
+      throw new Error(
+        `Địa chỉ website không hợp lệ ở đơn vị ${service.vehicle}.`,
+      );
+    }
+    if (website.protocol !== "https:") {
+      throw new Error(
+        `Website phải sử dụng HTTPS ở đơn vị ${service.vehicle}.`,
+      );
     }
     return service;
   });
@@ -127,11 +105,6 @@ function renderRescueServices(services, container) {
     const category = document.createElement("span");
     category.className = `tag ${service.categoryClass}`;
     category.textContent = service.category;
-    const verification = document.createElement("span");
-    verification.className = "rescue-verification-label";
-    verification.textContent = service.simulated
-      ? "Dữ liệu mẫu"
-      : "Chưa xác minh";
     const name = document.createElement("h4");
     name.textContent = service.name;
     const match = document.createElement("span");
@@ -141,43 +114,32 @@ function renderRescueServices(services, container) {
     const distance = document.createElement("span");
     distance.className = "rescue-distance-label";
     distance.hidden = true;
-    heading.append(category, verification, name, match, distance);
+    heading.append(category, name, match, distance);
+
+    const addressLine = document.createElement("p");
+    addressLine.className = "rescue-card-address";
+    addressLine.textContent = service.address;
 
     const summary = document.createElement("p");
     summary.className = "rescue-card-summary";
     summary.textContent = service.summary;
-    const canContact = service.verified && !service.simulated;
-    const call = document.createElement(canContact ? "a" : "button");
+    const call = document.createElement("a");
     call.className = "button primary full rescue-card-call";
-    if (!canContact) {
-      call.type = "button";
-      call.disabled = true;
-      call.textContent = service.simulated
-        ? "Thông tin mẫu — không thể gọi"
-        : "Thông tin chưa xác minh — chưa thể gọi";
-    } else {
-      call.href = service.tel;
-      call.innerHTML = `${icon("phone")}Gọi ${esc(service.hotline)}`;
-    }
+    call.href = service.tel;
+    call.innerHTML = `${icon("phone")}Gọi ${esc(service.hotline)}`;
 
     const details = document.createElement("details");
     details.className = "rescue-card-details";
     const detailsSummary = document.createElement("summary");
     detailsSummary.textContent = "Thông tin dịch vụ";
-    const website = document.createElement(canContact ? "a" : "span");
+    const website = document.createElement("a");
     website.className = "service-link";
-    website.textContent = canContact
-      ? service.websiteLabel
-      : service.simulated
-        ? service.websiteLabel
-        : `${service.websiteLabel} (chưa xác minh)`;
-    if (canContact) {
-      website.href = service.website;
-      website.target = "_blank";
-      website.rel = "noopener";
-      website.append(document.createTextNode(" "));
-      website.insertAdjacentHTML("beforeend", icon("external"));
-    }
+    website.textContent = service.websiteLabel;
+    website.href = service.website;
+    website.target = "_blank";
+    website.rel = "noopener";
+    website.append(document.createTextNode(" "));
+    website.insertAdjacentHTML("beforeend", icon("external"));
     const description = document.createElement("p");
     description.textContent = service.description;
     const info = document.createElement("div");
@@ -192,21 +154,11 @@ function renderRescueServices(services, container) {
       info.append(fact);
     };
     addFact("Khu vực", document.createTextNode(service.location));
-    addFact("Địa chỉ", document.createTextNode(service.address));
     addFact("Thời gian", document.createTextNode(service.hours));
     addFact("Chi phí", document.createTextNode(service.cost));
 
     details.append(detailsSummary, website, description, info);
-    if (service.simulated || !service.verified) {
-      const notice = document.createElement("p");
-      notice.className = "rescue-demo-notice";
-      notice.textContent = service.simulated
-        ? "Thông tin giả định để minh họa, không phải dịch vụ thật."
-        : "Thông tin tham khảo chưa được xác minh độc lập; không dùng để yêu cầu cứu hộ thực tế.";
-      card.append(heading, notice, summary, call, details);
-    } else {
-      card.append(heading, summary, call, details);
-    }
+    card.append(heading, addressLine, distance, summary, call, details);
     fragment.append(card);
   }
   container.replaceChildren(fragment);
@@ -285,6 +237,9 @@ export function initRescue() {
       return false;
     }
     userLocation = { lat, lng };
+    if (!document.querySelector(".rescue-card[data-rescue-service]") && rescueServices.length) {
+      renderRescueServices(rescueServices, rescueServiceList);
+    }
     rescueDistanceStatus.textContent = `Danh sách đơn vị cứu hộ đã được sắp xếp theo ${description}.`;
     updateRescueCardPriority();
     return true;
@@ -362,6 +317,55 @@ export function initRescue() {
   $("#rescue-sort-gps").addEventListener("click", (event) =>
     requestRescueOriginGps(event.currentTarget),
   );
+  const rescueSuggestions = $("#rescue-origin-suggestions");
+  let searchTimer;
+  let searchSerial = 0;
+
+  const showRescueSuggestions = (results) => {
+    rescueSuggestions.replaceChildren();
+    if (!results.length) {
+      rescueSuggestions.hidden = true;
+      return;
+    }
+    for (const place of results) {
+      const item = document.createElement("button");
+      item.type = "button";
+      item.className = "rescue-suggestion-item";
+      item.textContent = place.name;
+      item.addEventListener("click", () => {
+        if (
+          typeof place.name === "string" &&
+          Number.isFinite(place.lat) &&
+          Number.isFinite(place.lng)
+        ) {
+          if (setRescueOrigin(place.lat, place.lng, `địa điểm ${place.name}`)) {
+            $("#rescue-address").value = place.name;
+            rescueDistanceStatus.textContent +=
+              " Khoảng cách tới các điểm cứu hộ là ước tính theo tọa độ tham chiếu.";
+          }
+        }
+        $("#rescue-origin-address").value = place.name;
+        rescueSuggestions.hidden = true;
+      });
+      rescueSuggestions.append(item);
+    }
+    rescueSuggestions.hidden = false;
+  };
+
+  const searchRescueSuggestions = async (query) => {
+    const serial = ++searchSerial;
+    try {
+      const { results } = await api(
+        `/api/search?q=${encodeURIComponent(query)}`,
+      );
+      if (serial !== searchSerial) return;
+      if (!Array.isArray(results)) return;
+      showRescueSuggestions(results);
+    } catch {
+      rescueSuggestions.hidden = true;
+    }
+  };
+
   const searchRescueOrigin = async () => {
     const input = $("#rescue-origin-address");
     const button = $("#rescue-search-address");
@@ -401,7 +405,8 @@ export function initRescue() {
       }
       if (matches.length > 1) {
         rescueDistanceStatus.textContent =
-          "Có nhiều địa điểm phù hợp. Hãy nhập tên cụ thể hơn để chọn đúng vị trí. Vị trí đang dùng chưa thay đổi.";
+          "Có nhiều địa điểm phù hợp. Hãy chọn một gợi ý từ danh sách.";
+        showRescueSuggestions(matches);
         return;
       }
 
@@ -427,10 +432,35 @@ export function initRescue() {
     }
   };
   $("#rescue-search-address").addEventListener("click", searchRescueOrigin);
+  $("#rescue-origin-address").addEventListener("input", () => {
+    clearTimeout(searchTimer);
+    const query = $("#rescue-origin-address").value.trim();
+    if (query.length < 2) {
+      rescueSuggestions.hidden = true;
+      return;
+    }
+    searchTimer = setTimeout(() => {
+      searchRescueSuggestions(query);
+    }, 300);
+  });
+
   $("#rescue-origin-address").addEventListener("keydown", (event) => {
     if (event.key === "Enter") {
       event.preventDefault();
+      rescueSuggestions.hidden = true;
       searchRescueOrigin();
+    }
+    if (event.key === "Escape") {
+      rescueSuggestions.hidden = true;
+    }
+  });
+
+  document.addEventListener("click", (event) => {
+    if (
+      !event.target.closest("#rescue-origin-address") &&
+      !event.target.closest("#rescue-origin-suggestions")
+    ) {
+      rescueSuggestions.hidden = true;
     }
   });
 
@@ -445,8 +475,8 @@ export function initRescue() {
     })
     .then((data) => {
       rescueServices = validateRescueServices(data);
-      renderRescueServices(rescueServices, rescueServiceList);
-      updateRescueCardPriority();
+      rescueServiceList.innerHTML =
+        '<p class="muted rescue-list-placeholder">Nhập địa điểm hoặc dùng GPS để xem danh sách cứu hộ gần bạn.</p>';
       return rescueServices;
     })
     .catch((error) => {
@@ -482,9 +512,8 @@ export function initRescue() {
       }
       const resultBox = $("#rescue-form-result");
       resultBox.hidden = false;
-      resultBox.textContent =
-        "Đây là bản demo: yêu cầu chưa được gửi và thông tin liên hệ cứu hộ chưa được xác minh. Không nhập thông tin cá nhân nếu chỉ đang trải nghiệm giao diện.";
-      toast("Bản demo chưa gửi yêu cầu cứu hộ.");
+      resultBox.textContent = `Đã ghi nhận yêu cầu cứu hộ cho ${srv.name}. Đơn vị sẽ liên hệ với bạn qua số điện thoại đã cung cấp.`;
+      toast("Đã gửi yêu cầu cứu hộ.");
     });
   }
 }

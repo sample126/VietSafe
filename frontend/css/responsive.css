@@ -420,7 +420,8 @@
     grid-template-columns: minmax(0, 1fr);
     gap: 10px;
   }
-  .report-filter .report-search {
+  .report-filter .report-search,
+  .report-filter .toggle-label {
     grid-column: auto;
   }
   .report-filter select {

@@ -391,8 +391,62 @@ export function initReports() {
       );
     }
   });
-  // Nút "Làm mới" đã bỏ — auto-refresh 5s đủ để cập nhật
-  // Tất cả filter đều render client-side tức thì (không fetch lại)
+  // Nút "Làm mới" thủ công + auto-refresh 10s khi đang ở trang phản ánh
+  $("#refresh-reports")?.addEventListener("click", async () => {
+    const btn = $("#refresh-reports");
+    const originalText = btn.textContent;
+    btn.disabled = true;
+    btn.textContent = "Đang làm mới...";
+    try {
+      // Reset tất cả bộ lọc về trạng thái ban đầu
+      const searchInput = $("#report-search");
+      if (searchInput) searchInput.value = "";
+      const statusFilter = $("#report-status-filter");
+      if (statusFilter) statusFilter.value = "all";
+      const severityFilter = $("#report-severity-filter");
+      if (severityFilter) severityFilter.value = "";
+      const dateFrom = $("#report-date-from");
+      if (dateFrom) dateFrom.value = "";
+      const dateTo = $("#report-date-to");
+      if (dateTo) dateTo.value = "";
+      const sortSelect = $("#report-sort");
+      if (sortSelect) sortSelect.value = "newest";
+      const pendingToggle = $("#only-pending-toggle");
+      if (pendingToggle) pendingToggle.checked = false;
+      // Reset phân trang
+      state.reportsPage = 1;
+      await loadReports({ force: true });
+      toast("Đã làm mới danh sách phản ánh.");
+    } catch (e) {
+      toast(e.message || "Không thể làm mới.");
+    } finally {
+      btn.disabled = false;
+      btn.textContent = originalText;
+    }
+  });
+
+  // Auto-refresh mỗi 10 giây khi đang ở trang phản ánh
+  let autoRefreshTimer = null;
+  const startAutoRefresh = () => {
+    if (autoRefreshTimer) return;
+    autoRefreshTimer = setInterval(async () => {
+      if (state.view !== "reports") return;
+      try {
+        await loadReports({ force: false });
+      } catch {
+        // ignore
+      }
+    }, 10000);
+  };
+  const stopAutoRefresh = () => {
+    if (autoRefreshTimer) {
+      clearInterval(autoRefreshTimer);
+      autoRefreshTimer = null;
+    }
+  };
+  startAutoRefresh();
+  window.addEventListener("beforeunload", stopAutoRefresh);
+
   $("#report-status-filter")?.addEventListener("change", resetPageAndRender);
   $("#report-search")?.addEventListener("input", resetPageAndRender);
   $("#report-severity-filter")?.addEventListener("change", resetPageAndRender);
@@ -444,8 +498,4 @@ export function initReports() {
   });
   // Bulk action buttons: delegated handler phía trên đã bắt [data-bulk-action],
   // KHÔNG bind thêm listener trực tiếp ở đây (sẽ chạy bulkReview 2 lần / 1 cú bấm).
-  // Nút "Làm mới" thủ công.
-  $("#refresh-reports")?.addEventListener("click", () =>
-    loadReports({ force: true }),
-  );
 }
