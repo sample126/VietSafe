@@ -4,12 +4,14 @@ import { ADMIN_VIEWS, TOKEN_STORAGE_KEY } from "./config.js";
 import { setView } from "./navigation.js";
 import { authState, state } from "./state.js";
 import { $, $$, toast } from "./utils.js";
+import { onAuthChange } from "./views/notifications.js";
 
 // === Auth functions ===
 export async function checkAuth() {
   if (!authState.token) {
     authState.user = null;
     updateAuthUI();
+    onAuthChange();
     return;
   }
   try {
@@ -21,6 +23,7 @@ export async function checkAuth() {
     localStorage.removeItem(TOKEN_STORAGE_KEY);
   }
   updateAuthUI();
+  onAuthChange();
 }
 
 export function updateAuthUI() {
@@ -65,6 +68,7 @@ export async function doLogin(e) {
     authState.token = result.token;
     localStorage.setItem(TOKEN_STORAGE_KEY, result.token);
     updateAuthUI();
+    onAuthChange();
     $("#login-dialog").close();
     $("#login-form").reset();
     toast("Xin chào, " + result.user.display_name + "!");
@@ -91,6 +95,7 @@ export async function doRegister(e) {
     authState.token = result.token;
     localStorage.setItem(TOKEN_STORAGE_KEY, result.token);
     updateAuthUI();
+    onAuthChange();
     $("#register-dialog").close();
     $("#register-form").reset();
     toast("Đăng ký thành công! Xin chào, " + result.user.display_name + "!");
@@ -112,6 +117,7 @@ export async function doLogout() {
   authState.token = null;
   localStorage.removeItem(TOKEN_STORAGE_KEY);
   updateAuthUI();
+  onAuthChange();
   $("#user-menu").hidden = true;
   toast("Đã đăng xuất.");
 }

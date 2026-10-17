@@ -5,6 +5,7 @@ import { $$, toast } from "./utils.js";
 import { map } from "./map.js";
 import { renderForecast } from "./views/forecast.js";
 import { loadReports } from "./views/reports.js";
+import { loadMyReports } from "./views/my-reports.js";
 
 export function setView(view) {
   // Admin-only views
@@ -15,7 +16,7 @@ export function setView(view) {
   state.view = view;
   $$(".view").forEach((el) => (el.hidden = el.id !== view + "-view"));
   const reportButton = document.querySelector("#open-report");
-  if (reportButton) reportButton.hidden = ["rescue", "reports"].includes(view);
+  if (reportButton) reportButton.hidden = ["rescue", "reports", "my-reports"].includes(view);
   window.scrollTo({ top: 0, behavior: "instant" });
   $$(".nav-item[data-view]").forEach((el) =>
     el.classList.toggle("active", el.dataset.view === view),
@@ -23,6 +24,7 @@ export function setView(view) {
   if (view === "map") requestAnimationFrame(() => map.invalidateSize());
   if (view === "forecast" && state.data) renderForecast();
   if (view === "reports") loadReports();
+  if (view === "my-reports") loadMyReports();
 }
 
 export function initNavigation() {

@@ -16,7 +16,7 @@ CREATE TABLE IF NOT EXISTS reports(
   id TEXT PRIMARY KEY, road_id TEXT NOT NULL, type TEXT NOT NULL, severity INTEGER NOT NULL,
   lat REAL NOT NULL, lng REAL NOT NULL, address TEXT NOT NULL, description TEXT NOT NULL,
   status TEXT NOT NULL, created_at REAL NOT NULL, expires_at REAL NOT NULL,
-  media BLOB, media_type TEXT, reviewed_at REAL);
+  media BLOB, media_type TEXT, reviewed_at REAL, username TEXT);
 
 CREATE TABLE IF NOT EXISTS prediction_logs(
   tick INTEGER PRIMARY KEY, created_at REAL, model_version TEXT, scenario TEXT, payload TEXT);
@@ -35,6 +35,10 @@ CREATE TABLE IF NOT EXISTS sessions(
   username TEXT NOT NULL,
   created_at REAL NOT NULL,
   expires_at REAL NOT NULL);
+
+CREATE TABLE IF NOT EXISTS notifications(
+  id INTEGER PRIMARY KEY, username TEXT NOT NULL, report_id TEXT NOT NULL,
+  message TEXT NOT NULL, read INTEGER NOT NULL DEFAULT 0, created_at REAL NOT NULL);
 """
 
 
@@ -62,3 +66,6 @@ def init_schema():
         audit_columns = {row["name"] for row in db.execute("PRAGMA table_info(audit)")}
         if "detail" not in audit_columns:
             db.execute("ALTER TABLE audit ADD COLUMN detail TEXT")
+        report_columns = {row["name"] for row in db.execute("PRAGMA table_info(reports)")}
+        if "username" not in report_columns:
+            db.execute("ALTER TABLE reports ADD COLUMN username TEXT")

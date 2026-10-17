@@ -108,6 +108,7 @@ def build_snapshot(scenario="rain", reports=(), now=None):
     events = []
     for s in states:
         if s["event_type"] and s["known"]:
+            anchor = s.get("event_at")
             events.append(
                 dict(
                     id=s["report_id"] or "demo-" + s["id"],

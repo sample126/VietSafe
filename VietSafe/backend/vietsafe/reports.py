@@ -16,11 +16,17 @@ import io
 import math
 import secrets
 import time
+from PIL import Image
 
 from . import config
 from .core.network import NODES, ROADS, nearest_road
 from .core.search import normalize
 from .db import connect
+
+
+def get_road_names():
+    """Trả về danh sách tên đường trong mạng demo (cho autocomplete)."""
+    return sorted({road["name"] for road in ROADS} | {node["name"] for node in NODES.values()})
 
 REPORT_TYPES = ("flood", "traffic", "incident")
 REVIEW_TRANSITIONS = {"pending": ("verified", "rejected"), "verified": ("resolved",)}
@@ -35,8 +41,11 @@ _LIST_COLUMNS = (
 )
 
 
-def get_reports():
-    """Danh sách tối đa 500 phản ánh mới nhất; đồng thời đánh dấu `expired` các phản ánh quá hạn."""
+def get_reports(status=None, severity=None, date_from=None, date_to=None, username=None):
+    """Danh sách tối đa 500 phản ánh mới nhất; đồng thời đánh dấu `expired` các phản ánh quá hạn.
+    
+    Bộ lọc tùy chọn: status, severity, date_from, date_to, username.
+    """
     with connect() as db:
         now = time.time()
         expired = db.execute(
@@ -52,12 +61,89 @@ def get_reports():
                 "INSERT INTO audit(report_id,action,timestamp) VALUES(?,?,?)",
                 [(row["id"], "expired", now) for row in expired],
             )
-        rows = db.execute(
-            f"SELECT {_LIST_COLUMNS} FROM reports ORDER BY created_at DESC LIMIT 500"
-        ).fetchall()
+        # Build query with optional filters
+        conditions = []
+        params = []
+        if status:
+            conditions.append("status=?")
+            params.append(status)
+        if severity:
+            conditions.append("severity=?")
+            params.append(severity)
+        if date_from:
+            conditions.append("created_at>=?")
+            params.append(date_from)
+        if date_to:
+            conditions.append("created_at<=?")
+            params.append(date_to)
+        if username:
+            conditions.append("username=?")
+            params.append(username)
+        where_clause = " AND ".join(conditions) if conditions else "1=1"
+        query = f"SELECT {_LIST_COLUMNS} FROM reports WHERE {where_clause} ORDER BY created_at DESC LIMIT 500"
+        rows = db.execute(query, params).fetchall()
     return [
         dict(r, media_url="/api/report-media/" + r["id"] if r["media_type"] else None) for r in rows
     ]
+
+
+def get_my_reports(username):
+    """Lấy phản ánh của một người dùng cụ thể."""
+    return get_reports(username=username)
+
+
+def bulk_review(report_ids, status, reason=None):
+    """Duyệt nhiều phản ánh cùng lúc. Trả về {success: [...], failed: [...]}."""
+    if status not in ("verified", "rejected", "resolved"):
+        raise ValueError("Trạng thái không hợp lệ.")
+    if status == "rejected":
+        if not isinstance(reason, str) or not reason.strip():
+            raise ValueError("Cần nhập lý do từ chối phản ánh.")
+        reason = reason.strip()
+        if len(reason) > 240:
+            raise ValueError("Lý do từ chối tối đa 240 ký tự.")
+    else:
+        reason = None
+    
+    success = []
+    failed = []
+    notifications = []  # (username, report_id, message)
+    now = time.time()
+    
+    with connect() as db:
+        db.execute("BEGIN IMMEDIATE")
+        for report_id in report_ids:
+            try:
+                row = db.execute(
+                    "SELECT status, expires_at, address, username FROM reports WHERE id=?", (report_id,)
+                ).fetchone()
+                if not row:
+                    failed.append({"id": report_id, "error": "Không tìm thấy"})
+                    continue
+                if row["expires_at"] <= now or status not in REVIEW_TRANSITIONS.get(row["status"], ()):
+                    failed.append({"id": report_id, "error": "Không thể chuyển trạng thái"})
+                    continue
+                db.execute("UPDATE reports SET status=?,reviewed_at=? WHERE id=?", (status, now, report_id))
+                db.execute(
+                    "INSERT INTO audit(report_id,action,timestamp,detail) VALUES(?,?,?,?)",
+                    (report_id, status, now, reason),
+                )
+                success.append(report_id)
+                # Chuẩn bị thông báo (sau khi commit)
+                status_labels = {"verified": "đã được xác minh", "rejected": "đã bị từ chối", "resolved": "đã được xử lý"}
+                msg = f"Phản ánh {report_id} ({row['address']}) {status_labels[status]}."
+                if reason:
+                    msg += f" Lý do: {reason}"
+                notifications.append((row["username"] or "nguoidan", report_id, msg))
+            except Exception as e:
+                failed.append({"id": report_id, "error": str(e)})
+        db.execute("COMMIT")
+    
+    # Tạo thông báo sau khi transaction đã commit (tránh database locked)
+    for username, report_id, message in notifications:
+        create_notification(username, report_id, message)
+    
+    return {"success": success, "failed": failed}
 
 def get_report_history(report_id):
     """Lịch sử trạng thái cho một phản ánh; quyền truy cập được kiểm tra ở controller."""
@@ -80,6 +166,35 @@ def get_report_media(report_id):
     return row["media"], row["media_type"]
 
 
+def _compress_image(media, media_type):
+    """Nén ảnh để giảm dung lượng lưu trữ. Giữ nguyên nếu nhỏ hơn ngưỡng."""
+    if len(media) <= 500_000:  # Dưới 500KB không cần nén
+        return media, media_type
+    try:
+        img = Image.open(io.BytesIO(media))
+        # Resize nếu quá lớn (max 1200px)
+        max_dim = 1200
+        if max(img.size) > max_dim:
+            ratio = max_dim / max(img.size)
+            new_size = (int(img.size[0] * ratio), int(img.size[1] * ratio))
+            img = img.resize(new_size, Image.LANCZOS)
+        # Nén chất lượng
+        output = io.BytesIO()
+        if media_type == "image/jpeg":
+            img.save(output, format="JPEG", quality=75, optimize=True)
+        elif media_type == "image/png":
+            img.save(output, format="PNG", optimize=True)
+        else:  # webp
+            img.save(output, format="WEBP", quality=75)
+        compressed = output.getvalue()
+        # Chỉ dùng ảnh nén nếu nhỏ hơn
+        if len(compressed) < len(media):
+            return compressed, media_type
+    except Exception:
+        pass
+    return media, media_type
+
+
 def _decode_image(data_url):
     """Giải mã data URL ảnh; kiểm tra MIME, chữ ký file (magic bytes) và kích thước."""
     try:
@@ -90,6 +205,7 @@ def _decode_image(data_url):
         media = base64.b64decode(encoded, validate=True)
         if len(media) > config.REPORT_MAX_IMAGE_BYTES or not IMAGE_SIGNATURES[media_type](media):
             raise ValueError
+        media, media_type = _compress_image(media, media_type)
     except (ValueError, TypeError, AttributeError, binascii.Error):
         raise ValueError("Ảnh phải là JPG, PNG hoặc WebP, tối đa 1,5 MB.") from None
     return media, media_type
@@ -137,7 +253,7 @@ def _resolve_address(address):
     return next(iter(locations.values()))
 
 
-def create_report(body):
+def create_report(body, username=None):
     """Validate và lưu phản ánh mới (trạng thái `pending`).
 
     Trả về {id, status, road_id, duplicate}. Nếu cùng đoạn đường + loại + mô tả đã được gửi
@@ -206,7 +322,7 @@ def create_report(body):
             }
         report_id = "R-" + secrets.token_hex(4).upper()
         db.execute(
-            "INSERT INTO reports VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
+            "INSERT INTO reports VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
             (
                 report_id,
                 road["id"],
@@ -222,6 +338,7 @@ def create_report(body):
                 media,
                 media_type,
                 None,
+                username,
             ),
         )
         db.execute(
@@ -250,13 +367,15 @@ def review_report(report_id, status, reason=None):
             raise ValueError("Lý do từ chối tối đa 240 ký tự.")
     else:
         reason = None
+    notification_message = None
+    notification_username = None
     with connect() as db:
         db.execute("BEGIN IMMEDIATE")
         row = db.execute(
-            "SELECT status,expires_at FROM reports WHERE id=?", (report_id,)
+            "SELECT status, expires_at, address, username FROM reports WHERE id=?", (report_id,)
         ).fetchone()
         if not row:
-            raise ValueError("Không tìm thấy phản ánh.")
+            raise ValueError("Không tìm thật phản ánh.")
         if row["expires_at"] <= time.time() or status not in REVIEW_TRANSITIONS.get(
             row["status"], ()
         ):
@@ -267,7 +386,59 @@ def review_report(report_id, status, reason=None):
             "INSERT INTO audit(report_id,action,timestamp,detail) VALUES(?,?,?,?)",
             (report_id, status, now, reason),
         )
+        # Chuẩn bị thông báo (sau khi transaction commit)
+        status_labels = {"verified": "đã được xác minh", "rejected": "đã bị từ chối", "resolved": "đã được xử lý"}
+        notification_message = f"Phản ánh {report_id} ({row['address']}) {status_labels[status]}."
+        if reason:
+            notification_message += f" Lý do: {reason}"
+        notification_username = row["username"] or "nguoidan"
+    # Tạo thông báo sau khi transaction đã commit (tránh database locked)
+    if notification_message:
+        create_notification(notification_username, report_id, notification_message)
     return {"id": report_id, "status": status}
+
+
+def create_notification(username, report_id, message):
+    """Tạo thông báo cho người dùng khi phản ánh của họ được xử lý."""
+    with connect() as db:
+        db.execute(
+            "INSERT INTO notifications(username, report_id, message, created_at) VALUES(?,?,?,?)",
+            (username, report_id, message, time.time()),
+        )
+
+
+def get_notifications(username, limit=20):
+    """Lấy thông báo của người dùng (mới nhất trước)."""
+    with connect() as db:
+        rows = db.execute(
+            "SELECT id, report_id, message, read, created_at FROM notifications "
+            "WHERE username=? ORDER BY created_at DESC LIMIT ?",
+            (username, limit),
+        ).fetchall()
+    return [dict(row) for row in rows]
+
+
+def mark_notifications_read(username, notification_ids=None):
+    """Đánh dấu thông báo đã đọc. Nếu không chỉ định IDs, đánh dấu tất cả."""
+    with connect() as db:
+        if notification_ids:
+            placeholders = ",".join("?" for _ in notification_ids)
+            db.execute(
+                f"UPDATE notifications SET read=1 WHERE username=? AND id IN ({placeholders})",
+                [username, *notification_ids],
+            )
+        else:
+            db.execute("UPDATE notifications SET read=1 WHERE username=?", (username,))
+
+
+def get_unread_count(username):
+    """Số thông báo chưa đọc của người dùng."""
+    with connect() as db:
+        row = db.execute(
+            "SELECT COUNT(*) as count FROM notifications WHERE username=? AND read=0",
+            (username,),
+        ).fetchone()
+    return row["count"] if row else 0
 
 
 def export_csv(rows):

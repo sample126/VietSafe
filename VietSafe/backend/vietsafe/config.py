@@ -36,7 +36,7 @@ DEMO_ADMIN_PASSWORD = os.environ.get("VIETSAFE_ADMIN_PASSWORD", "vietsafe2026")
 DEMO_CITIZEN_PASSWORD = os.environ.get("VIETSAFE_CITIZEN_PASSWORD", "matkhau123")
 
 # --- Phản ánh cộng đồng ------------------------------------------------------------------
-REPORT_TTL_SECONDS = 2 * 3600  # phản ánh tự hết hạn sau 2 giờ
+REPORT_TTL_SECONDS = int(os.environ.get("REPORT_TTL_SECONDS", 4 * 3600))  # phản ánh tự hết hạn sau 4 giờ (configurable)
 REPORT_DUPLICATE_WINDOW_SECONDS = 300  # chặn gửi lặp cùng nội dung trong 5 phút
 REPORT_MAX_IMAGE_BYTES = 1_500_000
 REPORT_RATE_LIMIT_PER_MINUTE = 10  # theo địa chỉ IP

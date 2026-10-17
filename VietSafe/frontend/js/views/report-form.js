@@ -1,5 +1,5 @@
 /** Hộp thoại "Gửi phản ánh" của người dân: GPS, ảnh và gửi. */
-import { post } from "../api.js";
+import { api, post } from "../api.js";
 import { authState, state } from "../state.js";
 import { map, selectionLayer } from "../map.js";
 import { $, inPilotArea, toast } from "../utils.js";
@@ -7,6 +7,53 @@ import { refresh } from "../dashboard.js";
 
 let selectedReportImage = null;
 let reportSubmitting = false;
+let roadNames = [];
+
+// === Offline queue ===
+const OFFLINE_QUEUE_KEY = "vietsafe_offline_queue";
+
+function getOfflineQueue() {
+  try { return JSON.parse(localStorage.getItem(OFFLINE_QUEUE_KEY)) || []; }
+  catch { return []; }
+}
+
+function saveOfflineQueue(queue) {
+  localStorage.setItem(OFFLINE_QUEUE_KEY, JSON.stringify(queue));
+}
+
+function addToOfflineQueue(reportData) {
+  const queue = getOfflineQueue();
+  queue.push({ ...reportData, queuedAt: Date.now() });
+  saveOfflineQueue(queue);
+  toast("Đã lưu phản ánh tạm. Sẽ tự động gửi khi có mạng.");
+}
+
+async function flushOfflineQueue() {
+  const queue = getOfflineQueue();
+  if (!queue.length || !navigator.onLine) return;
+  const remaining = [];
+  for (const item of queue) {
+    try {
+      await post("/api/reports", item);
+    } catch {
+      remaining.push(item);
+    }
+  }
+  saveOfflineQueue(remaining);
+  if (remaining.length < queue.length) toast("Đã gửi xếp các phản ánh đã lưu.");
+}
+
+// Load road names for autocomplete
+async function loadRoadNames() {
+  try {
+    const data = await api("/api/roads");
+    roadNames = data.roads || [];
+    const datalist = $("#address-options");
+    if (datalist) {
+      datalist.innerHTML = roadNames.map((r) => `<option value="${r}">`).join("");
+    }
+  } catch { /* ignore */ }
+}
 
 function updateReportImage(file, source) {
   if (!file) return;
@@ -139,9 +186,33 @@ export async function submitReport(event) {
       e?.name === "TypeError" ||
       navigator.onLine === false ||
       e?.message?.includes("Máy chủ phản hồi chậm");
-    $("#report-error").textContent = isNetworkError
-      ? "Chưa gửi được do mất kết nối hoặc máy chủ phản hồi chậm. Hãy kiểm tra mạng rồi nhấn “Gửi phản ánh” để thử lại; thông tin bạn đã nhập vẫn được giữ."
-      : e.message || "Không thể gửi phản ánh lúc này. Vui lòng thử lại.";
+    if (isNetworkError) {
+      // Lưu vào offline queue
+      const reportData = {
+        ...(state.reportPosition || {}),
+        address,
+        type: $("input[name=type]:checked").value,
+        severity: Number($("#report-severity").value),
+        description: $("#report-description").value,
+      };
+      if (selectedReportImage) {
+        reportData.image = await new Promise((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = () => resolve(reader.result);
+          reader.onerror = () => reject(new Error("Không đọc được ảnh."));
+          reader.readAsDataURL(selectedReportImage);
+        });
+      }
+      addToOfflineQueue(reportData);
+      $("#report-dialog").close();
+      $("#report-form").reset();
+      clearReportImage();
+      state.reportPosition = null;
+      $("#report-coordinates").textContent = "Chưa chọn tọa độ.";
+      $("#report-coordinates").classList.remove("valid");
+      return;
+    }
+    $("#report-error").textContent = e.message || "Không thể gửi phản ánh lúc này. Vui lòng thử lại.";
     $("#report-error").hidden = false;
     return;
   } finally {
@@ -201,4 +272,9 @@ export function initReportForm() {
   $("#report-remove-image").addEventListener("click", clearReportImage);
   $("#report-gps").addEventListener("click", () => geolocate(true));
   $("#report-form").addEventListener("submit", submitReport);
+  // Load road names for autocomplete
+  loadRoadNames();
+  // Flush offline queue when online
+  window.addEventListener("online", flushOfflineQueue);
+  if (navigator.onLine) flushOfflineQueue();
 }
