@@ -287,6 +287,18 @@
   vertical-align: middle;
 }
 
+/* Color-coded severity */
+.severity-red { color: #d86b5c; font-weight: 600; }
+.severity-orange { color: #e8a838; font-weight: 600; }
+.severity-green { color: #49a68b; font-weight: 600; }
+
+/* Keyboard shortcut hint */
+.kbd-hint {
+  font-size: 10px;
+  color: #999;
+  margin-top: 4px;
+}
+
 /* Toggle label */
 .toggle-label {
   display: flex;

@@ -851,11 +851,14 @@
                 >Từ ngày<input id="report-date-from" type="date" /></label
               ><label
                 >Đến ngày<input id="report-date-to" type="date" /></label
+              ><label
+                >Sắp xếp<select id="report-sort">
+                  <option value="newest">Mới nhất</option>
+                  <option value="severity">Mức độ cao nhất</option>
+                  <option value="oldest">Cũ nhất</option>
+                </select></label
               ><label class="toggle-label"
                 ><input type="checkbox" id="only-pending-toggle" /> Chỉ xem chờ xử lý</label
-              ><button class="button secondary" id="refresh-reports">
-                Làm mới
-              </button>
             </div>
             <div id="bulk-actions-bar" class="bulk-actions-bar" hidden>
               <span><input type="checkbox" id="bulk-select-all"> <strong id="bulk-selected-count">0</strong> đã chọn</span>

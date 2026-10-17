@@ -29,6 +29,14 @@ function normalizeSearch(value) {
     .trim();
 }
 
+function timeAgo(unix) {
+  const seconds = Math.floor(Date.now() / 1000 - unix);
+  if (seconds < 60) return `${seconds} giây trước`;
+  if (seconds < 3600) return `${Math.floor(seconds / 60)} phút trước`;
+  if (seconds < 86400) return `${Math.floor(seconds / 3600)} giờ trước`;
+  return `${Math.floor(seconds / 86400)} ngày trước`;
+}
+
 export function renderReports() {
   const filter = $("#report-status-filter")?.value || "all";
   const severityFilter = $("#report-severity-filter")?.value;
@@ -36,6 +44,7 @@ export function renderReports() {
   const dateTo = $("#report-date-to")?.value;
   const query = normalizeSearch($("#report-search")?.value || "");
   const onlyPending = $("#only-pending-toggle")?.checked;
+  const sortBy = $("#report-sort")?.value || "newest";
 
   // Counts luôn tính từ TẤT CẢ phản ánh (không filter)
   const counts = state.reports.reduce(
@@ -54,7 +63,7 @@ export function renderReports() {
   ].join("");
 
   // Filter client-side cho list
-  const reports = state.reports
+  let reports = state.reports
     .filter((r) => filter === "all" || r.status === filter)
     .filter((r) => !severityFilter || r.severity === Number(severityFilter))
     .filter((r) => !onlyPending || r.status === "pending")
@@ -69,12 +78,16 @@ export function renderReports() {
       (r) =>
         !query ||
         normalizeSearch(`${r.address} ${r.description}`).includes(query),
-    )
-    .sort(
-      (a, b) =>
-        Number(b.status === "pending") - Number(a.status === "pending") ||
-        b.created_at - a.created_at,
     );
+
+  // Sort
+  reports.sort((a, b) => {
+    if (sortBy === "severity") return b.severity - a.severity;
+    if (sortBy === "oldest") return a.created_at - b.created_at;
+    // newest (default)
+    return b.created_at - a.created_at;
+  });
+
   $("#reports-list").innerHTML = reports.length
     ? reports.map((r) => renderReportCard(r)).join("")
     : `<div class="empty-state">${icon("report")}${query ? "Không tìm thấy phản ánh khớp với nội dung tìm kiếm." : state.reports.length ? "Chưa có phản ánh thuộc trạng thái này." : "Chưa có phản ánh tại máy."}</div>`;
@@ -130,13 +143,16 @@ function renderReportCard(report) {
   // "New" indicator: phản ánh tạo trong 5 phút gần nhất
   const isNew = (Date.now() / 1000 - report.created_at) < 300;
   const newBadge = isNew ? `<span class="new-badge">Mới</span>` : "";
+  // Color-coded severity (dùng CSS class, không dùng emoji để tránh lỗi font)
+  const severityColor = report.severity === 3 ? "red" : report.severity === 2 ? "orange" : "green";
+  const severityIcon = report.severity === 3 ? "●" : report.severity === 2 ? "●" : "●";
   const actions =
     report.status === "pending"
       ? `<button class="approve" data-review-id="${id}" data-status="verified">Xác minh phản ánh</button><button data-review-id="${id}" data-status="rejected">Từ chối</button>`
       : report.status === "verified"
         ? `<button class="approve" data-review-id="${id}" data-status="resolved">Đánh dấu đã xử lý</button>`
         : "";
-  return `<article class="review-card"><div class="review-top">${checkbox}<h3>${esc(report.address)} <span class="data-label">· ${typeNames[report.type]}</span></h3><span class="tag tag-${report.status === "verified" ? "teal" : report.status === "pending" ? "orange" : "gray"}">${statuses[report.status]}</span>${newBadge}</div><p>${esc(report.description)}</p><div class="review-evidence"><span><strong>Nguồn:</strong> Phản ánh cộng đồng do người dùng gửi</span><span><strong>Bằng chứng:</strong> Mô tả người gửi · ${report.media_url ? "Có ảnh đính kèm" : "Không có ảnh đính kèm"}</span></div><div class="review-meta">${id} · ${esc(report.road_id)} · Mức ${report.severity}/3 · ${new Date(report.created_at * 1000).toLocaleString("vi-VN")} · ${report.lat.toFixed(5)}, ${report.lng.toFixed(5)}</div>${report.media_url ? `<a href="${esc(report.media_url)}" target="_blank" rel="noopener" class="image-view-full"><img class="review-image" src="${esc(report.media_url)}" alt="Ảnh hiện trường do người dùng cung cấp"></a>` : ""}<div class="review-actions">${actions}<button data-report-map="${id}">Xem vị trí</button><button data-report-history="${id}" aria-expanded="false">Lịch sử xử lý</button></div><div class="review-history" data-history-for="${id}" hidden></div></article>`;
+  return `<article class="review-card"><div class="review-top">${checkbox}<h3>${esc(report.address)} <span class="data-label">· ${typeNames[report.type]}</span></h3><span class="tag tag-${report.status === "verified" ? "teal" : report.status === "pending" ? "orange" : "gray"}">${statuses[report.status]}</span>${newBadge}</div><p>${esc(report.description)}</p><div class="review-evidence"><span><strong>Nguồn:</strong> Phản ánh cộng đồng do người dùng gửi</span><span><strong>Bằng chứng:</strong> Mô tả người gửi · ${report.media_url ? "Có ảnh đính kèm" : "Không có ảnh đính kèm"}</span></div><div class="review-meta">${id} · ${esc(report.road_id)} · <span class="severity-${severityColor}">${severityIcon} Mức ${report.severity}/3</span> · ${timeAgo(report.created_at)} · ${report.lat.toFixed(5)}, ${report.lng.toFixed(5)}</div>${report.media_url ? `<a href="${esc(report.media_url)}" target="_blank" rel="noopener" class="image-view-full"><img class="review-image" src="${esc(report.media_url)}" alt="Ảnh hiện trường do người dùng cung cấp"></a>` : ""}<div class="review-actions">${actions}<button data-report-map="${id}">Xem vị trí</button><button data-report-history="${id}" aria-expanded="false">Lịch sử xử lý</button></div><div class="review-history" data-history-for="${id}" hidden></div></article>`;
 }
 
 export function initReports() {
@@ -291,7 +307,7 @@ export function initReports() {
       );
     }
   });
-  $("#refresh-reports").addEventListener("click", loadReports);
+  // Nút "Làm mới" đã bỏ — auto-refresh 5s đủ để cập nhật
   // Tất cả filter đều render client-side tức thì (không fetch lại)
   $("#report-status-filter")?.addEventListener("change", renderReports);
   $("#report-search")?.addEventListener("input", renderReports);
@@ -299,6 +315,38 @@ export function initReports() {
   $("#report-date-from")?.addEventListener("change", renderReports);
   $("#report-date-to")?.addEventListener("change", renderReports);
   $("#only-pending-toggle")?.addEventListener("change", renderReports);
+  $("#report-sort")?.addEventListener("change", renderReports);
+
+  // Keyboard shortcuts: V=verify, R=reject, S=resolve, M=map
+  document.addEventListener("keydown", (e) => {
+    if (state.view !== "reports") return;
+    if (e.target.tagName === "INPUT" || e.target.tagName === "TEXTAREA" || e.target.tagName === "SELECT") return;
+    const card = e.target.closest(".review-card");
+    if (!card) return;
+    const reviewId = card.querySelector("[data-review-id]")?.dataset?.reviewId;
+    const status = card.querySelector("[data-review-id]")?.dataset?.status;
+    if (!reviewId) return;
+    if (e.key === "v" || e.key === "V") {
+      e.preventDefault();
+      if (status === "verified") return;
+      const btn = card.querySelector('[data-review-id][data-status="verified"]');
+      if (btn) btn.click();
+    } else if (e.key === "r" || e.key === "R") {
+      e.preventDefault();
+      if (status === "rejected") return;
+      const btn = card.querySelector('[data-review-id][data-status="rejected"]');
+      if (btn) btn.click();
+    } else if (e.key === "s" || e.key === "S") {
+      e.preventDefault();
+      if (status === "resolved") return;
+      const btn = card.querySelector('[data-review-id][data-status="resolved"]');
+      if (btn) btn.click();
+    } else if (e.key === "m" || e.key === "M") {
+      e.preventDefault();
+      const mapBtn = card.querySelector("[data-report-map]");
+      if (mapBtn) mapBtn.click();
+    }
+  });
   // Bulk select all
   $("#bulk-select-all")?.addEventListener("change", (e) => {
     const checked = e.target.checked;
