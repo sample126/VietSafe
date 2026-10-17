@@ -9,6 +9,71 @@ let selectedReportImage = null;
 let reportSubmitting = false;
 let roadNames = [];
 
+// === Draft auto-save ===
+const DRAFT_KEY = "vietsafe_report_draft";
+let draftSaveTimer = null;
+
+function saveDraft() {
+  const draft = {
+    address: $("#report-address")?.value || "",
+    type: $("input[name=type]:checked")?.value || "flood",
+    severity: $("#report-severity")?.value || "2",
+    description: $("#report-description")?.value || "",
+    position: state.reportPosition,
+    savedAt: Date.now(),
+  };
+  localStorage.setItem(DRAFT_KEY, JSON.stringify(draft));
+}
+
+function loadDraft() {
+  try {
+    const draft = JSON.parse(localStorage.getItem(DRAFT_KEY));
+    if (!draft) return;
+    // Chỉ restore draft trong 30 phút
+    if (Date.now() - draft.savedAt > 30 * 60 * 1000) {
+      localStorage.removeItem(DRAFT_KEY);
+      return;
+    }
+    if (draft.address) $("#report-address").value = draft.address;
+    if (draft.type) $(`input[name=type][value="${draft.type}"]`).checked = true;
+    if (draft.severity) $("#report-severity").value = draft.severity;
+    if (draft.description) $("#report-description").value = draft.description;
+    if (draft.position) {
+      state.reportPosition = draft.position;
+      setReportPosition(draft.position.lat, draft.position.lng);
+    }
+    updateCharCount();
+    toast("Đã khôi phục nháp phản ánh.");
+  } catch { /* ignore */ }
+}
+
+function clearDraft() {
+  localStorage.removeItem(DRAFT_KEY);
+}
+
+function updateCharCount() {
+  const desc = $("#report-description")?.value || "";
+  const counter = $("#report-char-count");
+  if (counter) {
+    counter.textContent = `${desc.length}/1200`;
+    counter.classList.toggle("near-limit", desc.length > 1100);
+  }
+}
+
+// === Image preview ===
+function updateImagePreview(file) {
+  const preview = $("#report-image-preview");
+  if (!preview) return;
+  if (!file) {
+    preview.innerHTML = "";
+    preview.hidden = true;
+    return;
+  }
+  const url = URL.createObjectURL(file);
+  preview.innerHTML = `<img src="${url}" alt="Ảnh xem trước">`;
+  preview.hidden = false;
+}
+
 // === Offline queue ===
 const OFFLINE_QUEUE_KEY = "vietsafe_offline_queue";
 
@@ -86,6 +151,9 @@ export function openReport() {
   $("#report-error").textContent = "";
   $("#report-submit-status").hidden = true;
   $("#report-submit-status").textContent = "";
+  updateCharCount();
+  updateImagePreview(null);
+  loadDraft();
   $("#report-dialog").showModal();
 }
 
@@ -227,9 +295,11 @@ export async function submitReport(event) {
   $("#report-dialog").close();
   $("#report-form").reset();
   clearReportImage();
+  updateImagePreview(null);
   state.reportPosition = null;
   $("#report-coordinates").textContent = "Chưa chọn tọa độ.";
   $("#report-coordinates").classList.remove("valid");
+  clearDraft();
   toast(
     `${
       result.duplicate
@@ -263,15 +333,33 @@ export function initReportForm() {
   $("#report-choose-image").addEventListener("click", () =>
     $("#report-image").click(),
   );
-  $("#report-camera").addEventListener("change", (event) =>
-    updateReportImage(event.currentTarget.files[0], "camera"),
-  );
-  $("#report-image").addEventListener("change", (event) =>
-    updateReportImage(event.currentTarget.files[0], "picker"),
-  );
-  $("#report-remove-image").addEventListener("click", clearReportImage);
+  $("#report-camera").addEventListener("change", (event) => {
+    const file = event.currentTarget.files[0];
+    updateReportImage(file, "camera");
+    updateImagePreview(file);
+  });
+  $("#report-image").addEventListener("change", (event) => {
+    const file = event.currentTarget.files[0];
+    updateReportImage(file, "picker");
+    updateImagePreview(file);
+  });
+  $("#report-remove-image").addEventListener("click", () => {
+    clearReportImage();
+    updateImagePreview(null);
+  });
   $("#report-gps").addEventListener("click", () => geolocate(true));
   $("#report-form").addEventListener("submit", submitReport);
+  // Character counter
+  $("#report-description")?.addEventListener("input", updateCharCount);
+  // Auto-save draft (debounce 1s)
+  $("#report-address")?.addEventListener("input", () => {
+    clearTimeout(draftSaveTimer);
+    draftSaveTimer = setTimeout(saveDraft, 1000);
+  });
+  $("#report-description")?.addEventListener("input", () => {
+    clearTimeout(draftSaveTimer);
+    draftSaveTimer = setTimeout(saveDraft, 1000);
+  });
   // Load road names for autocomplete
   loadRoadNames();
   // Flush offline queue when online

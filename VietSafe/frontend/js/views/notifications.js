@@ -3,18 +3,24 @@ import { api, post } from "../api.js";
 import { authState, state } from "../state.js";
 import { $, $$, esc, toast } from "../utils.js";
 
-const POLL_INTERVAL = 30000; // 30 giây
+const POLL_INTERVAL = 5000; // 5 giây
 
 let pollTimer = null;
 
 export async function loadNotifications() {
   if (!authState.user) return;
   try {
+    const prevCount = state.unreadCount;
     const data = await api("/api/notifications");
     state.notifications = data.notifications || [];
     const countData = await api("/api/notifications/unread-count");
     state.unreadCount = countData.count || 0;
     updateNotificationBell();
+    // Toast khi có thông báo mới
+    if (state.unreadCount > prevCount && prevCount > 0) {
+      const latest = state.notifications[0];
+      if (latest) toast(latest.message);
+    }
   } catch { /* ignore */ }
 }
 

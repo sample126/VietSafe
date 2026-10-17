@@ -4,7 +4,7 @@
  */
 
 /** Chu kỳ tự cập nhật dữ liệu từ /api/snapshot (ms). */
-export const REFRESH_INTERVAL_MS = 10000;
+export const REFRESH_INTERVAL_MS = 5000;
 
 /** Khóa localStorage lưu token đăng nhập. */
 export const TOKEN_STORAGE_KEY = "vietsafe_token";

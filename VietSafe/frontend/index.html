@@ -851,6 +851,8 @@
                 >Từ ngày<input id="report-date-from" type="date" /></label
               ><label
                 >Đến ngày<input id="report-date-to" type="date" /></label
+              ><label class="toggle-label"
+                ><input type="checkbox" id="only-pending-toggle" /> Chỉ xem chờ xử lý</label
               ><button class="button secondary" id="refresh-reports">
                 Làm mới
               </button>
@@ -968,8 +970,11 @@
           placeholder="Ví dụ: Nước ngập gần nửa bánh xe, xe máy di chuyển chậm…"
           required
         ></textarea
+        ><span id="report-char-count" class="char-count">0/1200</span
         ><label for="report-image"
           >Ảnh hiện trường <span class="optional">(không bắt buộc)</span></label
+        >
+        <div id="report-image-preview" class="image-preview" hidden></div
         >
         <div class="report-image-actions">
           <input
