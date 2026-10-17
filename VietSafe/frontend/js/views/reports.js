@@ -143,15 +143,40 @@ function renderReportCard(report) {
   // "New" indicator: phản ánh tạo trong 5 phút gần nhất
   const isNew = (Date.now() / 1000 - report.created_at) < 300;
   const newBadge = isNew ? `<span class="new-badge">Mới</span>` : "";
-  // Color-coded severity (dùng CSS class)
+  // Color-coded severity
   const severityColor = report.severity === 3 ? "red" : report.severity === 2 ? "orange" : "green";
+  const severityLabel = report.severity === 3 ? "Nghiêm trọng" : report.severity === 2 ? "Trung bình" : "Nhẹ";
   const actions =
     report.status === "pending"
-      ? `<button class="approve" data-review-id="${id}" data-status="verified">Xác minh phản ánh</button><button data-review-id="${id}" data-status="rejected">Từ chối</button>`
+      ? `<button class="approve" data-review-id="${id}" data-status="verified">Xác minh</button><button data-review-id="${id}" data-status="rejected">Từ chối</button>`
       : report.status === "verified"
-        ? `<button class="approve" data-review-id="${id}" data-status="resolved">Đánh dấu đã xử lý</button>`
+        ? `<button class="approve" data-review-id="${id}" data-status="resolved">Đã xử lý</button>`
         : "";
-  return `<article class="review-card"><div class="review-top">${checkbox}<h3>${esc(report.address)} <span class="data-label">· ${typeNames[report.type]}</span></h3><span class="tag tag-${report.status === "verified" ? "teal" : report.status === "pending" ? "orange" : "gray"}">${statuses[report.status]}</span>${newBadge}</div><p>${esc(report.description)}</p><div class="review-evidence"><span><strong>Nguồn:</strong> Phản ánh cộng đồng do người dùng gửi</span><span><strong>Bằng chứng:</strong> Mô tả người gửi · ${report.media_url ? "Có ảnh đính kèm" : "Không có ảnh đính kèm"}</span></div><div class="review-meta">${id} · ${esc(report.road_id)} · <span class="severity-${severityColor}">Mức ${report.severity}/3</span> · ${timeAgo(report.created_at)} · ${report.lat.toFixed(5)}, ${report.lng.toFixed(5)}</div>${report.media_url ? `<a href="${esc(report.media_url)}" target="_blank" rel="noopener" class="image-view-full"><img class="review-image" src="${esc(report.media_url)}" alt="Ảnh hiện trường do người dùng cung cấp"></a>` : ""}<div class="review-actions">${actions}<button data-report-map="${id}">Xem vị trí</button><button data-report-history="${id}" aria-expanded="false">Lịch sử xử lý</button></div><div class="review-history" data-history-for="${id}" hidden></div></article>`;
+  return `<article class="review-card">
+    <div class="review-top">
+      ${checkbox}
+      <div class="review-title">
+        <h3>${esc(report.address)} <span class="data-label">· ${typeNames[report.type]}</span></h3>
+        ${newBadge}
+      </div>
+      <span class="tag tag-${report.status === "verified" ? "teal" : report.status === "pending" ? "orange" : "gray"}">${statuses[report.status]}</span>
+    </div>
+    <p class="review-desc">${esc(report.description)}</p>
+    <div class="review-evidence">
+      <span><strong>Nguồn:</strong> Phản ánh cộng đồng</span>
+      <span><strong>Bằng chứng:</strong> ${report.media_url ? "Có ảnh đính kèm" : "Không có ảnh"}</span>
+    </div>
+    <div class="review-meta">
+      <span class="review-id">${id}</span>
+      <span>${esc(report.road_id)}</span>
+      <span class="severity-${severityColor}">Mức ${report.severity}/3 — ${severityLabel}</span>
+      <span>${timeAgo(report.created_at)}</span>
+      <span>${report.lat.toFixed(5)}, ${report.lng.toFixed(5)}</span>
+    </div>
+    ${report.media_url ? `<a href="${esc(report.media_url)}" target="_blank" rel="noopener" class="image-view-full"><img class="review-image" src="${esc(report.media_url)}" alt="Ảnh hiện trường"></a>` : ""}
+    <div class="review-actions">${actions}<button data-report-map="${id}">Xem vị trí</button><button data-report-history="${id}" aria-expanded="false">Lịch sử</button></div>
+    <div class="review-history" data-history-for="${id}" hidden></div>
+  </article>`;
 }
 
 export function initReports() {
