@@ -1041,6 +1041,34 @@
         </div>
       </form>
     </dialog>
+    <dialog id="reject-dialog">
+      <form id="reject-form">
+        <div class="dialog-heading">
+          <div>
+            <div class="eyebrow red-text">TỪ CHỐI PHẢN ÁNH</div>
+            <h2>Nhập lý do từ chối</h2>
+          </div>
+          <button type="button" class="icon-button close-dialog" aria-label="Đóng">
+            <svg><use href="#i-close" /></svg>
+          </button>
+        </div>
+        <p class="dialog-intro">Lý do từ chối sẽ được gửi cho người dùng.</p>
+        <label for="reject-reason">Lý do từ chối</label>
+        <textarea
+          id="reject-reason"
+          rows="3"
+          maxlength="240"
+          placeholder="Ví dụ: Không đủ thông tin xác minh, trùng lặp..."
+          required
+        ></textarea>
+        <span id="reject-char-count" class="char-count">0/240</span>
+        <p id="reject-error" class="form-error" role="alert" hidden></p>
+        <div class="dialog-footer">
+          <button type="button" class="button secondary" id="reject-cancel">Hủy</button>
+          <button type="submit" class="button primary" id="reject-submit">Từ chối phản ánh</button>
+        </div>
+      </form>
+    </dialog>
     <dialog id="detail-dialog"><div id="detail-content"></div></dialog>
     <dialog id="about-dialog">
       <div class="dialog-heading">

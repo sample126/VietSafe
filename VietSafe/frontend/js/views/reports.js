@@ -183,17 +183,77 @@ export function initReports() {
     }
     if (button.dataset.reviewId) {
       const { reviewId, status } = button.dataset;
-      let reason;
+      let reason = null;
+
       if (status === "rejected") {
-        reason = window
-          .prompt("Nhập lý do từ chối (tối đa 240 ký tự):")
-          ?.trim();
-        if (!reason) return;
-        if (reason.length > 240) {
-          toast("Lý do từ chối tối đa 240 ký tự.");
+        // Mở dialog từ chối tùy chỉnh
+        const rejectDialog = $("#reject-dialog");
+        const reasonInput = $("#reject-reason");
+        const charCount = $("#reject-char-count");
+        const errorEl = $("#reject-error");
+        const rejectForm = $("#reject-form");
+
+        if (!rejectDialog || !reasonInput || !rejectForm) {
+          console.error("Reject dialog elements not found");
+          toast("Lỗi: không tìm thấy dialog từ chối.");
           return;
         }
+
+        reasonInput.value = "";
+        charCount.textContent = "0/240";
+        errorEl.hidden = true;
+
+        const result = await new Promise((resolve) => {
+          let resolved = false;
+          const doResolve = (val) => {
+            if (resolved) return;
+            resolved = true;
+            rejectForm.removeEventListener("submit", onSubmit);
+            rejectCancel.removeEventListener("click", onCancel);
+            rejectDialog.removeEventListener("cancel", onCancel);
+            reasonInput.removeEventListener("input", onInput);
+            resolve(val);
+          };
+
+          const onSubmit = (e) => {
+            e.preventDefault();
+            const r = reasonInput.value.trim();
+            if (!r) {
+              errorEl.textContent = "Vui lòng nhập lý do từ chối.";
+              errorEl.hidden = false;
+              return;
+            }
+            if (r.length > 240) {
+              errorEl.textContent = "Lý do từ chối tối đa 240 ký tự.";
+              errorEl.hidden = false;
+              return;
+            }
+            rejectDialog.close();
+            doResolve(r);
+          };
+          const onCancel = () => {
+            rejectDialog.close();
+            doResolve(null);
+          };
+          const onInput = () => {
+            const len = reasonInput.value.length;
+            charCount.textContent = `${len}/240`;
+            charCount.classList.toggle("near-limit", len > 220);
+          };
+
+          const rejectCancel = $("#reject-cancel");
+          rejectForm.addEventListener("submit", onSubmit);
+          rejectCancel.addEventListener("click", onCancel);
+          rejectDialog.addEventListener("cancel", onCancel);
+          reasonInput.addEventListener("input", onInput);
+
+          rejectDialog.showModal();
+        });
+
+        if (!result) return;
+        reason = result;
       }
+
       const confirmation =
         status === "verified"
           ? "Hãy kiểm tra mô tả, vị trí và ảnh đính kèm (nếu có) trước khi xác minh phản ánh này. Tiếp tục?"
