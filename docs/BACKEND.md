@@ -80,6 +80,7 @@ Mọi phản hồi là JSON (trừ ảnh, CSV). Lỗi luôn có dạng `{"error"
 | -------------------------------------------------------- | ----------- | ------------------------------------------------------------------------------------------------------------ |
 | `GET /api/health`                                        | công khai   | `{ok, mode, model_version}`                                                                                  |
 | `GET /api/snapshot`                                      | công khai   | Hiện trạng + dự báo toàn mạng (xem bên dưới)                                                                 |
+| `GET /api/major-roads`                                   | công khai   | Hình học đường chính OSM tĩnh, tách khỏi 111 hành lang có dự báo demo                                            |
 | `GET /api/search?q=`                                     | công khai   | `{results:[{id,name,lat,lng,kind}]}` — tối đa 12 kết quả, không phân biệt dấu                                |
 | `GET /api/routes?origin=&destination=&horizon=&vehicle=` | công khai   | Tuyến thay thế (xem bên dưới). `horizon` ∈ {0,30,60}; `vehicle` ∈ {`motorbike`,`car`}. 400 nếu sai           |
 | `POST /api/auth/login`                                   | công khai   | `{username,password}` → `{user, token}`; 401 sai thông tin                                                   |
@@ -111,7 +112,7 @@ Mã lỗi thường gặp: `400` dữ liệu sai · `401` cần đăng nhập ·
   "rainfall": 28,                   // mm/h (mô phỏng)
   "temperature": 27,                // °C (mô phỏng)
   "model_version": "spatial-rule-demo-1.0",
-  "roads": [ {                      // 36 phần tử
+  "roads": [ {                      // 111 phần tử
       "id": "HN-001", "name": "Cầu Giấy", "a": "caugiay", "b": "buoi",
       "coordinates": [[lat,lng],[lat,lng]], "length_km": 1.232,
       "susceptibility": 0.25, "free_speed": 35, "seed_event": "",   // tham số của bộ mô phỏng
@@ -120,17 +121,17 @@ Mã lỗi thường gặp: `400` dữ liệu sai · `401` cần đăng nhập ·
       "incident": false, "blocked": false, "event_type": null,      // flood | traffic | incident | null
       "origin": "demo",             // demo | local_report (do phản ánh đã xác minh)
       "report_id": null, "updated_at": 1759650000, "sources": ["..."], "evidence": ["..."],
-      "forecast": [ {"horizon":0,"flood_risk":12,"speed":24.1,"risk":31,"label":"Thấp"}, /* 15,30,45,60 */ ]
+      "forecast": [ {"horizon":0,"flood_risk":12,"traffic_risk":31,"incident_risk":18,"speed":24.1,"risk":31,"label":"Thấp"}, /* 15,30,45,60 */ ]
   } ],
   "events": [ {"id","road_id","type":"flood|traffic|incident","severity","lat","lng","status","blocked", "..."} ],
-  "nodes":  [ {"id":"caugiay","name":"…","lat":…,"lng":…} ],   // 25 nút giao
+  "nodes":  [ {"id":"caugiay","name":"…","lat":…,"lng":…} ],   // 79 nút
   "counts": {"flood":3,"traffic":3,"incident":1},              // chỉ đếm sự kiện đã xác minh
   "pending": 0,                     // số phản ánh đang chờ xác minh (còn hạn)
   "source_notice": "…", "forecast_notice": "…"                // nhãn trung thực hiển thị cho người dùng
 }
 ```
 
-Ghi chú: với đoạn `known: false`, `risk` và mọi giá trị trong `forecast[]` (`flood_risk`, `speed`, `risk`) là `null`, nhãn là
+Ghi chú: với đoạn `known: false`, `risk` và mọi giá trị trong `forecast[]` (`flood_risk`, `traffic_risk`, `incident_risk`, `speed`, `risk`) là `null`, nhãn là
 "Chưa đủ dữ liệu". Các trường `speed`, `depth`, `flood_risk` ở cấp đoạn đường vẫn mang số giả lập nhưng không được dùng để dự báo hay
 định tuyến, và giao diện nên hiển thị là "chưa rõ".
 

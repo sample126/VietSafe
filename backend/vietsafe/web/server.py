@@ -16,8 +16,9 @@ from .static import read_static
 
 CSP = (
     "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; "
-    "img-src 'self' data: blob: https://tiles.stadiamaps.com https://*.tile.openstreetmap.org; "
-    "connect-src 'self'; object-src 'none'; base-uri 'self'; frame-ancestors 'none'"
+    "img-src 'self' data: blob: https://tiles.openfreemap.org https://api.maptiler.com https://tiles.stadiamaps.com https://*.tile.openstreetmap.org; "
+    "connect-src 'self' https://tiles.openfreemap.org; worker-src 'self' blob:; "
+    "object-src 'none'; base-uri 'self'; frame-ancestors 'none'"
 )
 # Lỗi nghiệp vụ -> HTTP 400 (thông báo của lỗi được trả cho người dùng).
 CLIENT_ERRORS_GET = (ValueError, TypeError)

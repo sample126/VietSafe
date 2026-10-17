@@ -1,8 +1,17 @@
 """Tìm kiếm tên nút giao / đoạn đường (không phân biệt dấu và hoa thường)."""
 
 import unicodedata
+import json
+from functools import lru_cache
+from pathlib import Path
 
 from .network import NODES, ROADS
+
+
+@lru_cache(maxsize=1)
+def _streets():
+    path = Path(__file__).with_name("hanoi_street_search.json")
+    return json.loads(path.read_text(encoding="utf-8")) if path.exists() else []
 
 
 def normalize(text):
@@ -18,11 +27,13 @@ def search_places(query, limit=12):
         dict(
             id=r["id"],
             name=r["name"],
-            lat=sum(c[0] for c in r["coordinates"]) / 2,
-            lng=sum(c[1] for c in r["coordinates"]) / 2,
+            lat=r["center"][0],
+            lng=r["center"][1],
             kind="road",
         )
         for r in ROADS
         if term in normalize(r["name"])
     ]
+    if len(matches) < limit and len(term) >= 2:
+        matches += [dict(id=f"osm-{i}", name=name, lat=lat, lng=lng, kind="osm_street") for i, (name, lat, lng) in enumerate(_streets()) if term in normalize(name)][:limit - len(matches)]
     return matches[:limit]

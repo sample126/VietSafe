@@ -7,6 +7,7 @@
     <title>VietSafe — Bản đồ cảnh báo giao thông</title>
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
     <link rel="stylesheet" href="/vendor/leaflet.css" />
+    <link rel="stylesheet" href="/vendor/maplibre-gl.css" />
     <link rel="stylesheet" href="/css/base.css" />
     <link rel="stylesheet" href="/css/shell.css" />
     <link rel="stylesheet" href="/css/dashboard.css" />
@@ -27,6 +28,7 @@
     <link rel="stylesheet" href="/css/flood-simulator.css" />
     <link rel="stylesheet" href="/css/forecast-workspace.css" />
     <script defer src="/vendor/leaflet.js"></script>
+    <script defer src="/vendor/vector-map.js"></script>
     <script type="module" src="/js/main.js"></script>
   </head>
   <body>
@@ -70,6 +72,7 @@
           <circle cx="19" cy="19" r="2" />
           <path d="M8 5h8a4 4 0 0 1 0 8H8a3 3 0 0 0 0 6h8" />
         </symbol>
+        <symbol id="i-swap" viewBox="0 0 24 24"><path d="m3 16 4 4 4-4M7 20V4m14 4-4-4-4 4m4-4v16" /></symbol>
         <symbol id="i-plus" viewBox="0 0 24 24">
           <path d="M12 5v14M5 12h14" />
         </symbol>
@@ -243,6 +246,8 @@
                     ><label><input type="checkbox" data-layer="traffic" checked />Ùn tắc</label
                     ><label><input type="checkbox" data-layer="incident" checked />Sự cố</label
                     ><label><input type="checkbox" data-layer="pending" checked />Chờ xác minh</label
+                    ><label><input type="checkbox" data-layer="majorRoads" id="major-roads" checked />Đường chính OSM</label
+                    ><label><input type="checkbox" data-layer="demoRoads" checked />Tình trạng tuyến demo</label
                     ><label><input type="checkbox" id="base-tiles" checked />Bản đồ nền trực tuyến</label
                     ><small>Tắt bản đồ nền để xem sơ đồ ngoại tuyến.</small>
                   </div>
@@ -255,9 +260,11 @@
                     ><span><i class="legend-dot red-bg"></i>Sự cố / đóng</span
                     ><span><i class="legend-dot gray-bg"></i>Chưa có dữ liệu</span>
                   </div>
+                  <div id="route-map-key" hidden><span><i></i>Tuyến A→B</span><span id="route-alternative-key"><i></i>Phương án khác</span></div>
                   <span class="map-footnote" id="map-footnote"
-                    >Mạng đường giản lược · Không dùng để dẫn đường thực tế</span
+                    >Tuyến đường OSM · Cảnh báo mô phỏng</span
                   >
+                  <a class="map-footnote" href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">© OpenStreetMap contributors</a>
                 </div>
                 <div class="map-bottom-right">
                   <button
@@ -306,22 +313,22 @@
             </aside>
             <aside class="route-panel" id="route-panel" hidden>
               <div class="panel-heading">
-                <div>
-                  <h2>Hành trình của bạn</h2>
-                  <p>Tìm tuyến trên mạng đường thử nghiệm</p>
-                </div>
+                <div><h2>Hành trình của bạn</h2><p>Đồ thị đường OSM · Dữ liệu mô phỏng</p></div>
                 <button class="icon-button" id="close-route" aria-label="Đóng tìm tuyến">
                   <svg><use href="#i-close" /></svg>
                 </button>
               </div>
               <form id="route-form">
-                <label>Điểm đi<select id="route-origin" required></select></label
-                ><label>Điểm đến<select id="route-destination" required></select></label>
+                <div class="route-place-search"><label for="route-place-search">Tìm phố hoặc địa điểm</label><input id="route-place-search" type="search" autocomplete="off" placeholder="Ví dụ: Láng Hạ, Cầu Giấy…" /><div id="route-place-results" hidden></div></div>
+                <div class="route-location"><label>Điểm đi<select id="route-origin" required></select></label><button class="icon-button route-pick" type="button" data-route-pick="origin" title="Chọn điểm đi trên bản đồ" aria-label="Chọn điểm đi trên bản đồ"><svg><use href="#i-pin" /></svg></button></div>
+                <div class="route-location"><label>Điểm đến<select id="route-destination" required></select></label><button class="icon-button route-pick" type="button" data-route-pick="destination" title="Chọn điểm đến trên bản đồ" aria-label="Chọn điểm đến trên bản đồ"><svg><use href="#i-pin" /></svg></button></div>
+                <button class="route-swap" id="route-swap" type="button" title="Đảo điểm đi và đến" aria-label="Đảo điểm đi và đến"><svg><use href="#i-swap" /></svg></button>
                 <div class="form-row">
                   <label
                     >Phương tiện<select id="route-vehicle">
                       <option value="motorbike">Xe máy</option>
                       <option value="car">Ô tô</option>
+                      <option value="walk">Đi bộ</option>
                     </select></label
                   ><label
                     >Khởi hành<select id="route-time">
@@ -343,8 +350,7 @@
                 </div>
               </div>
               <p class="route-disclaimer">
-                Tuyến minh họa trên đồ thị giản lược, chưa có đầy đủ đường một chiều và hạn chế rẽ. Không dùng để dẫn
-                đường thực tế.
+                Dữ liệu mô phỏng. Tuyến bám mạng OSM, chưa xét cấm rẽ hoặc quy định theo giờ. Ngưỡng ngập thử nghiệm: xe máy 15 cm, ô tô 25 cm, đi bộ 10 cm; không phải khuyến nghị an toàn. Không dùng để dẫn đường thực tế.
               </p>
             </aside>
           </div>

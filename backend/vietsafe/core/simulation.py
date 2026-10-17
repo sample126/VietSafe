@@ -7,13 +7,66 @@ Quy tắc quan trọng (có test): phản ánh `pending` KHÔNG BAO GIỜ làm �
 chi phí định tuyến; chỉ phản ánh `verified` còn hạn mới có tác dụng.
 """
 
-import math
 import time
 
+from .. import config
+from .flood_provider import simulate_flood
 from .forecast import MODEL_VERSION, clamp, forecast
 from .network import NODES, ROADS
+from .traffic_provider import simulate_traffic
 
 SCENARIOS = {"normal": ("Trời khô", 0), "rain": ("Mưa lớn", 28), "storm": ("Mưa rất lớn", 55)}
+
+
+def _base_state(road, scenario, at):
+    """Deterministic 15-minute traffic and rainfall state in Hanoi local time."""
+    rain = SCENARIOS[scenario][1]
+    slot = int(at // 900)
+    seed = road["seed_event"]
+    depth = simulate_flood(road, scenario, at)
+    flooded = depth > 0
+    speed, incident = simulate_traffic(road, at, rain, depth)
+    return dict(
+        road,
+        road_segment_id=road["id"],
+        geometry={"type": "LineString", "coordinates": [[lng, lat] for lat, lng in road["coordinates"]]},
+        speed_limit=road["free_speed"],
+        simulated_speed=speed,
+        congestion_level="cao" if speed < road["free_speed"] * 0.45 else "vừa" if speed < road["free_speed"] * 0.7 else "thấp",
+        flood_depth=depth,
+        incident_type="incident" if incident else None,
+        simulated_timestamp=slot * 900,
+        scenario_id=scenario,
+        known=seed != "unknown",
+        speed=speed,
+        depth=depth,
+        flood_risk=round(clamp(depth * 2.2 + rain * road["susceptibility"] * 0.45)),
+        incident=incident,
+        blocked=depth >= 30,
+        severity=3 if depth >= 30 else 2 if depth >= 15 or seed in ("traffic", "incident") else 1,
+        event_type="flood" if flooded else seed if seed in ("traffic", "incident") else None,
+        updated_at=slot * 900,
+        sources=["Bộ mô phỏng tại máy"],
+        evidence=["Giá trị và sự kiện do kịch bản " + SCENARIOS[scenario][0] + " tạo ra; không phải quan trắc thực tế."],
+        origin="demo",
+        report_id=None,
+    )
+
+
+def _apply_reports(state, reports, at):
+    for report in sorted(reports, key=lambda r: r["created_at"]):
+        if report["road_id"] != state["id"] or report["status"] != "verified" or report["expires_at"] <= at or report["created_at"] > at:
+            continue
+        state.update(known=True, event_type=report["type"], severity=report["severity"], updated_at=report["created_at"], origin="local_report", report_id=report["id"])
+        state["sources"] = ["Phản ánh tại máy • đã xác minh thủ công"]
+        state["evidence"] = [report["description"]]
+        if report["type"] == "flood":
+            state.update(flood_risk=max(state["flood_risk"], report["severity"] * 28), blocked=state["blocked"] or report["severity"] == 3)
+        elif report["type"] == "incident":
+            state.update(incident=True, blocked=state["blocked"] or report["severity"] == 3)
+        elif report["type"] == "traffic":
+            state["speed"] = min(state["speed"], 22 - report["severity"] * 5)
+            state["simulated_speed"] = state["speed"]
 
 
 def build_snapshot(scenario="rain", reports=(), now=None):
@@ -21,89 +74,37 @@ def build_snapshot(scenario="rain", reports=(), now=None):
 
     - `scenario`: khóa trong SCENARIOS (quyết định lượng mưa mm/h).
     - `reports`: danh sách phản ánh (chỉ loại `verified` còn hạn mới được áp dụng).
-    - `now`: Unix time; mặc định là hiện tại. Dữ liệu dao động theo `now // 10` (đổi mỗi 10 giây).
+    - `now`: Unix time; mặc định là hiện tại. Trạng thái ổn định trong từng ô 15 phút.
 
     Trả về dict gồm: generated_at, mode, scenario, model_version, rainfall, roads (kèm
     forecast 0/15/30/45/60 phút), events, nodes, counts, pending, source_notice, forecast_notice.
     """
-    now = time.time() if now is None else now
-    tick = int(now // 10)
+    real_now = time.time() if now is None else now
+    now = config.SIMULATION_EPOCH + (real_now - config.SIMULATION_EPOCH) * config.SIMULATION_SPEED if now is None else now
     rain = SCENARIOS[scenario][1]
     states = []
-    for i, road in enumerate(ROADS):
-        seed = road["seed_event"]
-        wave = math.sin(tick * 0.17 + i) * 2
-        flooded = seed == "flood" and rain > 0
-        depth = (
-            round(max(0, (13 if scenario == "rain" else 31) + road["susceptibility"] * 9 + wave), 1)
-            if flooded
-            else 0
-        )
-        severity = 3 if depth >= 30 else 2 if depth >= 15 or seed in ("traffic", "incident") else 1
-        incident = seed == "incident"
-        speed = max(4, road["free_speed"] - (19 if seed == "traffic" else 5) - rain * 0.13 + wave)
-        if flooded:
-            speed = max(3, speed - depth * 0.37)
-        state = dict(
-            road,
-            known=seed != "unknown",
-            speed=round(speed, 1),
-            depth=depth,
-            flood_risk=round(clamp(depth * 2.2 + rain * road["susceptibility"] * 0.45)),
-            incident=incident,
-            blocked=depth >= 30,
-            severity=severity,
-            event_type="flood" if flooded else seed if seed in ("traffic", "incident") else None,
-            updated_at=tick * 10,
-            sources=["Bộ mô phỏng tại máy"],
-            evidence=["Quan sát tạo bởi kịch bản " + SCENARIOS[scenario][0]],
-            origin="demo",
-            report_id=None,
-        )
-        # Pending reports NEVER change road status or route costs.
-        for report in sorted(reports, key=lambda r: r["created_at"]):
-            if (
-                report["road_id"] != road["id"]
-                or report["status"] != "verified"
-                or report["expires_at"] <= now
-            ):
-                continue
-            state.update(
-                known=True,
-                event_type=report["type"],
-                severity=report["severity"],
-                updated_at=report["created_at"],
-                origin="local_report",
-                report_id=report["id"],
-            )
-            state["sources"] = ["Phản ánh tại máy • đã xác minh thủ công"]
-            state["evidence"] = [report["description"]]
-            if report["type"] == "flood":
-                state.update(
-                    flood_risk=max(state["flood_risk"], report["severity"] * 28),
-                    blocked=state["blocked"] or report["severity"] == 3,
-                )
-            elif report["type"] == "incident":
-                state.update(incident=True, blocked=state["blocked"] or report["severity"] == 3)
-            elif report["type"] == "traffic":
-                state["speed"] = min(state["speed"], 22 - report["severity"] * 5)
+    for road in ROADS:
+        state = _base_state(road, scenario, now)
+        _apply_reports(state, reports, real_now)
+        if road["reference_url"]:
+            state["evidence"].append("Địa điểm được nhắc trong bài viết lịch sử của Thoát nước Hà Nội; tình trạng hiện tại chưa được xác minh.")
         states.append(state)
+    future_states = {h: [_base_state(road, scenario, now + h * 60) for road in ROADS] for h in (15, 30, 45, 60)}
+    for h, future in future_states.items():
+        for state in future:
+            _apply_reports(state, reports, real_now + h * 60 / config.SIMULATION_SPEED)
+    adjacency = {s["id"]: [other["id"] for other in states if other["id"] != s["id"] and {other["a"], other["b"]} & {s["a"], s["b"]}] for s in states}
     for state in states:
-        neighbors = [
-            s["speed"]
-            for s in states
-            if s["id"] != state["id"] and s["known"] and {s["a"], s["b"]} & {state["a"], state["b"]}
-        ]
-        state["forecast"] = [
-            forecast(
-                state,
-                state,
-                sum(neighbors) / len(neighbors) if neighbors else state["speed"],
-                rain,
-                h,
-            )
-            for h in (0, 15, 30, 45, 60)
-        ]
+        state["forecast"] = []
+        for h in (0, 15, 30, 45, 60):
+            group = states if h == 0 else future_states[h]
+            current = group[int(state["id"][-3:]) - 1]
+            neighbors = [group[int(rid[-3:]) - 1]["speed"] for rid in adjacency[state["id"]] if group[int(rid[-3:]) - 1]["known"]]
+            point = forecast(state, current, sum(neighbors) / len(neighbors) if neighbors else current["speed"], rain, 0)
+            point["horizon"] = h
+            point["depth"] = current["depth"] if current["known"] else None
+            point["blocked"] = current["blocked"]
+            state["forecast"].append(point)
         state["risk"] = state["forecast"][0]["risk"]
     events = []
     for s in states:
@@ -115,8 +116,8 @@ def build_snapshot(scenario="rain", reports=(), now=None):
                     name=s["name"],
                     type=s["event_type"],
                     severity=s["severity"],
-                    lat=sum(c[0] for c in s["coordinates"]) / 2,
-                    lng=sum(c[1] for c in s["coordinates"]) / 2,
+                    lat=s["center"][0],
+                    lng=s["center"][1],
                     depth=s["depth"] if s["origin"] == "demo" else None,
                     speed=s["speed"],
                     updated_at=s["updated_at"],
@@ -128,7 +129,7 @@ def build_snapshot(scenario="rain", reports=(), now=None):
                 )
             )
     for r in reports:
-        if r["status"] == "pending" and r["expires_at"] > now:
+        if r["status"] == "pending" and r["expires_at"] > real_now:
             events.append(
                 dict(
                     id=r["id"],
@@ -150,6 +151,7 @@ def build_snapshot(scenario="rain", reports=(), now=None):
     return dict(
         generated_at=now,
         mode="demo",
+        simulation_speed=config.SIMULATION_SPEED,
         scenario=scenario,
         model_version=MODEL_VERSION,
         rainfall=rain,
@@ -161,7 +163,7 @@ def build_snapshot(scenario="rain", reports=(), now=None):
             t: sum(e["type"] == t and e["status"] == "verified" for e in events)
             for t in ("flood", "traffic", "incident")
         },
-        pending=sum(r["status"] == "pending" and r["expires_at"] > now for r in reports),
-        source_notice="Chưa kết nối VOV, camera hoặc cơ quan khí tượng/thoát nước.",
-        forecast_notice="Điểm nguy cơ theo quy tắc minh họa; không phải xác suất hoặc kết quả AI đã huấn luyện.",
+        pending=sum(r["status"] == "pending" and r["expires_at"] > real_now for r in reports),
+        source_notice="Hình học đường OpenStreetMap/OSRM và lớp đường chính OSM lưu cục bộ; cảnh báo mô phỏng, chưa kết nối Google Maps, VOV, camera hoặc quan trắc thoát nước.",
+        forecast_notice="Ngập, ùn tắc và sự cố là chỉ số theo quy tắc trên dữ liệu giả lập; không phải xác suất hay cảnh báo thời gian thực.",
     )

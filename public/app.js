@@ -7,10 +7,12 @@ const typeNames = {flood:'Ngập đường',traffic:'Ùn tắc',incident:'Sự c
 const typeIcons = {flood:'water',traffic:'car',incident:'alert'};
 const typeColors = {flood:'blue',traffic:'orange',incident:'red'};
 const statuses = {pending:'Chờ xác minh',verified:'Đã xác minh',resolved:'Đã xử lý',rejected:'Đã từ chối',expired:'Hết hạn'};
-const state = {data:null,view:'map',filter:'all',horizon:0,selected:'HN-019',layers:{flood:true,traffic:true,incident:true,pending:true},
-  reportPosition:null,picking:false,reports:[],routes:null,routeIndex:0,connected:false,lastGood:0};
+const state = {data:null,view:'map',filter:'all',horizon:0,selected:'HN-019',layers:{flood:true,traffic:true,incident:true,pending:true,majorRoads:true,demoRoads:true},
+  reportPosition:null,picking:false,routePicking:null,reports:[],routes:null,routeIndex:0,connected:false,lastGood:0};
 let map, baseTiles, roadLayer, eventLayer, routeLayer, selectionLayer, placeLayer;
+let majorRoadLines={};
 let refreshing=false, searchTimer, toastTimer, tileErrorCount=0, searchSerial=0;
+let lastRenderKey='';
 const timeText = unix => new Date(unix*1000).toLocaleTimeString('vi-VN',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
 const ago = unix => {const s=Math.max(0,Math.floor(Date.now()/1000-unix));return s<60?'Vừa cập nhật':`${Math.floor(s/60)} phút trước`;};
 
@@ -18,24 +20,28 @@ const ago = unix => {const s=Math.max(0,Math.floor(Date.now()/1000-unix));return
 const authState = { user: null, token: localStorage.getItem('vietsafe_token') };
 
 // === Tile providers ===
-// Nền chính: Stadia Maps "Alidade Smooth" (dữ liệu OSM, nền xám nhạt để lớp đoạn đường nổi rõ).
-// Gói free 200.000 tile/tháng, phi thương mại. Chạy trên localhost/127.0.0.1 không cần key.
-// Deploy lên domain thật: đăng ký domain tại https://client.stadiamaps.com hoặc điền API key vào STADIA_API_KEY.
-// Nếu Stadia lỗi, tự chuyển sang tile OSM, rồi mới rơi xuống sơ đồ ngoại tuyến.
+// Nền chính: OpenFreeMap Positron (vector OpenMapTiles, không cần khóa).
+// Khi WebGL/tile lỗi: MapTiler nếu có khóa, Stadia, OSM, rồi sơ đồ ngoại tuyến.
 const STADIA_API_KEY = '';
 const TILE_PROVIDERS = {
+  openfreemap: { style:'https://tiles.openfreemap.org/styles/positron',
+    attr:'&copy; <a href="https://openfreemap.org/" target="_blank" rel="noopener">OpenFreeMap</a> &copy; <a href="https://openmaptiles.org/" target="_blank" rel="noopener">OpenMapTiles</a> &copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a>' },
+  openmaptiles: { url:'https://api.maptiler.com/maps/openstreetmap/{z}/{x}/{y}.png?key={key}',
+    attr:'&copy; <a href="https://openmaptiles.org/" target="_blank" rel="noopener">OpenMapTiles</a> &copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap contributors</a>', maxZoom:19 },
   stadia: { url:'https://tiles.stadiamaps.com/tiles/alidade_smooth/{z}/{x}/{y}{r}.png'+(STADIA_API_KEY?`?api_key=${encodeURIComponent(STADIA_API_KEY)}`:''),
     attr:'&copy; <a href="https://www.stadiamaps.com/" target="_blank" rel="noopener">Stadia Maps</a> &copy; <a href="https://openmaptiles.org/" target="_blank" rel="noopener">OpenMapTiles</a> &copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a>', maxZoom:20 },
   osm: { url:'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', attr:'&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a>', maxZoom:19 },
 };
-const TILE_ORDER = ['stadia','osm'];
+const TILE_ORDER = ['openfreemap','openmaptiles','stadia','osm'];
 // Khóa vùng nhìn trong Hà Nội: tránh kéo bản đồ ra vùng biển đảo mà tile toàn cầu ghi nhãn không theo quy ước Việt Nam.
-const HANOI_BOUNDS = [[20.90,105.65],[21.15,106.02]];
+const HANOI_BOUNDS = [[20.58,105.27],[21.36,106.08]];
 let tileProviderIndex = 0;
+let maptilerKey = '';
+function nextTileProvider(after){for(let i=after+1;i<TILE_ORDER.length;i++){if(TILE_ORDER[i]==='openfreemap'&&(!window.VietSafeVectorMaps||!window.WebGL2RenderingContext))continue;if(TILE_ORDER[i]==='openmaptiles'&&!maptilerKey)continue;return i;}return -1;}
 
 async function api(path, options={}) {
   const controller=new AbortController();
-  const timeout=setTimeout(()=>controller.abort(),12000);
+  const timeout=setTimeout(()=>controller.abort(),options.timeoutMs??12000);
   const authHeaders = authState.token ? {'X-VietSafe-Session': authState.token} : {};
   try {
     const response=await fetch(path,{...options,signal:controller.signal,headers:{'X-VietSafe':'local',...authHeaders,...(options.body?{'Content-Type':'application/json'}:{}),...options.headers}});
@@ -48,42 +54,66 @@ async function api(path, options={}) {
 const post = (path, body) => api(path,{method:'POST',body:JSON.stringify(body)});
 function toast(message) {$('#toast').textContent=message;$('#toast').hidden=false;clearTimeout(toastTimer);toastTimer=setTimeout(()=>$('#toast').hidden=true,5200);}
 
-const FOOTNOTE_ONLINE='Mạng đường giản lược · Không dùng để dẫn đường thực tế';
-const FOOTNOTE_OFFLINE='Sơ đồ ngoại tuyến · Mạng đường giản lược · Không dùng để dẫn đường';
+const FOOTNOTE_ONLINE='Tuyến đường OSM · Dữ liệu cảnh báo mô phỏng · Không dùng để dẫn đường';
+const FOOTNOTE_OFFLINE='Nền ngoại tuyến · Tuyến đường OSM · Cảnh báo mô phỏng';
 function buildTileLayer(key) {
   const cfg=TILE_PROVIDERS[key];
-  const layer=L.tileLayer(cfg.url,{maxZoom:cfg.maxZoom,attribution:cfg.attr});
+  if(key==='openfreemap')return window.VietSafeVectorMaps.maplibreGL({style:cfg.style,interactive:false,attributionControl:{customAttribution:cfg.attr}});
+  const url=key==='openmaptiles'?cfg.url.replace('{key}',encodeURIComponent(maptilerKey)):cfg.url;
+  const layer=L.tileLayer(url,{maxZoom:cfg.maxZoom,attribution:cfg.attr});
   layer.on('tileerror',()=>{if(++tileErrorCount>=6 && map.hasLayer(layer)) switchTileProvider();});
   return layer;
 }
+function addBaseLayer(){try{baseTiles.addTo(map);}catch(error){if(TILE_ORDER[tileProviderIndex]!=='openfreemap')throw error;switchTileProvider();return;}map.getContainer().classList.toggle('map-vector',TILE_ORDER[tileProviderIndex]==='openfreemap');if(TILE_ORDER[tileProviderIndex]!=='openfreemap')return;const layer=baseTiles,gl=layer.getMaplibreMap();let loaded=false;const timeout=setTimeout(()=>{if(!loaded&&map.hasLayer(layer))switchTileProvider();},10000);gl.once('load',()=>{loaded=true;clearTimeout(timeout);for(const id of ['label_city','label_city_capital','label_town','water_name_point_label','water_name_line_label'])if(gl.getLayer(id))gl.setLayoutProperty(id,'text-field',['coalesce',['get','name:vi'],['get','name'],['get','name_en']]);});gl.on('error',()=>{if(!loaded&&map.hasLayer(layer)){clearTimeout(timeout);switchTileProvider();}});}
 // Hết nhà cung cấp tile thì rơi xuống sơ đồ ngoại tuyến (nền lưới CSS + hồ vẽ tay).
 function switchTileProvider() {
   map.removeLayer(baseTiles);tileErrorCount=0;
-  if(++tileProviderIndex<TILE_ORDER.length){baseTiles=buildTileLayer(TILE_ORDER[tileProviderIndex]);baseTiles.addTo(map);return;}
-  tileProviderIndex=0;baseTiles=buildTileLayer(TILE_ORDER[0]);
+  const next=nextTileProvider(tileProviderIndex);
+  if(next!==-1){tileProviderIndex=next;baseTiles=buildTileLayer(TILE_ORDER[tileProviderIndex]);addBaseLayer();return;}
+  tileProviderIndex=nextTileProvider(-1);baseTiles=buildTileLayer(TILE_ORDER[tileProviderIndex]);
   setBaseTiles(false);$('#base-tiles').checked=false;toast('Không tải được bản đồ nền. Đang hiển thị sơ đồ ngoại tuyến.');
 }
 function setBaseTiles(on) {
-  if(on){if(!map.hasLayer(baseTiles)){tileErrorCount=0;baseTiles.addTo(map);}map.removeLayer(geographyLayer);$('#map-footnote').textContent=FOOTNOTE_ONLINE;}
-  else{if(map.hasLayer(baseTiles))map.removeLayer(baseTiles);geographyLayer.addTo(map);$('#map-footnote').textContent=FOOTNOTE_OFFLINE;}
+  if(on){if(!map.hasLayer(baseTiles)){tileErrorCount=0;addBaseLayer();}map.removeLayer(geographyLayer);$('#map-footnote').textContent=FOOTNOTE_ONLINE;}
+  else{if(map.hasLayer(baseTiles))map.removeLayer(baseTiles);map.getContainer().classList.remove('map-vector');geographyLayer.addTo(map);$('#map-footnote').textContent=FOOTNOTE_OFFLINE;}
 }
 let geographyLayer;
-function initializeMap() {
-  map=L.map('map',{zoomControl:false,minZoom:12,maxZoom:18,maxBounds:HANOI_BOUNDS,maxBoundsViscosity:1}).setView([21.025,105.830],13);
+function initializeMap(key='') {
+  maptilerKey=key;tileProviderIndex=nextTileProvider(-1);
+  map=L.map('map',{zoomControl:false,minZoom:9,maxZoom:18,maxBounds:HANOI_BOUNDS,maxBoundsViscosity:1}).setView([21.02,105.79],10);
+  const syncLabelVisibility=()=>map.getContainer().classList.toggle('map-wide',map.getZoom()<12);
+  map.on('zoomend',syncLabelVisibility);syncLabelVisibility();
   L.control.zoom({position:'bottomright'}).addTo(map);
   baseTiles=buildTileLayer(TILE_ORDER[tileProviderIndex]);
-  baseTiles.addTo(map);
+  addBaseLayer();
   // Hồ vẽ tay chỉ dùng cho sơ đồ ngoại tuyến; trên nền tile thật hồ đã được vẽ đúng hình.
   geographyLayer=L.layerGroup();
   const lakes=[['Hồ Tây',[[21.043,105.825],[21.048,105.817],[21.058,105.812],[21.070,105.819],[21.073,105.835],[21.060,105.842],[21.048,105.839]]],['Hồ Hoàn Kiếm',[[21.0313,105.852],[21.0300,105.8537],[21.026,105.8537],[21.0252,105.8518],[21.028,105.8509]]],['Hồ Bảy Mẫu',[[21.0135,105.8443],[21.0134,105.8470],[21.009,105.8477],[21.0074,105.8460],[21.008,105.8444]]],['Hồ Thủ Lệ',[[21.0335,105.8006],[21.0339,105.8060],[21.0308,105.8078],[21.0300,105.8028]]]];
   for(const [name,shape] of lakes)L.polygon(shape,{color:'#b7d1d0',fillColor:'#c7dddd',fillOpacity:.8,weight:1,interactive:false}).addTo(geographyLayer).bindTooltip(name,{permanent:true,direction:'center',className:'water-label'});
   placeLayer=L.layerGroup().addTo(map);
+  map.createPane('majorRoadPane');map.getPane('majorRoadPane').style.zIndex=390;
   roadLayer=L.layerGroup().addTo(map);
   routeLayer=L.layerGroup().addTo(map);
   eventLayer=L.layerGroup().addTo(map);
   selectionLayer=L.layerGroup().addTo(map);
-  map.on('click', e=>{if(state.picking) finishPick(e.latlng.lat,e.latlng.lng);});
+  map.on('click', e=>{if(state.picking) finishPick(e.latlng.lat,e.latlng.lng);else if(state.routePicking)setPickedPoint(state.routePicking,e.latlng.lat,e.latlng.lng);});
   map.on('movestart',()=>$('#search-results').hidden=true);
+  map.on('zoomend',syncMajorRoads);
+  map.on('moveend',()=>{if(state.data)renderMap();});
+  fetch('/api/major-roads').then(response=>response.ok?response.json():Promise.reject(new Error('major roads unavailable'))).then(data=>{
+    for(const [kind,shapes] of Object.entries(data.classes))majorRoadLines[kind]=L.polyline(shapes,{pane:'majorRoadPane',color:'#667783',weight:kind==='motorway'||kind==='trunk'?2.5:kind==='tertiary'?1.4:1.8,opacity:.4,interactive:false,smoothFactor:1.5});
+    syncMajorRoads();
+  }).catch(()=>{$('#major-roads').disabled=true;});
+}
+
+function syncMajorRoads(){
+  const minimumZoom={motorway:9,trunk:9,primary:9,secondary:11,tertiary:13};
+  for(const [kind,line] of Object.entries(majorRoadLines)){
+    const visible=state.layers.majorRoads&&map.getZoom()>=minimumZoom[kind];
+    line.setStyle({opacity:kind==='tertiary'?.34:map.getZoom()>=11?.56:.4});
+    if(visible&&!map.hasLayer(line))line.addTo(map);
+    if(!visible&&map.hasLayer(line))map.removeLayer(line);
+  }
 }
 
 async function refresh() {
@@ -94,7 +124,7 @@ async function refresh() {
     const first=!state.data;
     state.data=await api('/api/snapshot');state.connected=true;state.lastGood=Date.now();
     $('#connection-error').hidden=true;
-    $('#sync-status').textContent='Kết nối local · Dữ liệu mô phỏng';
+  $('#sync-status').textContent=`Kết nối local · Dữ liệu mô phỏng${state.data.simulation_speed!==1?` · ${state.data.simulation_speed}×`:''}`;
     $('.status-dot').style.background='#49a68b';
     if(first) populateControls();
     updateDashboard();
@@ -142,33 +172,56 @@ function roadColor(r) {
   if(!r.known) return '#aab5af';
   if(state.horizon) {
     const risk=r.forecast[state.horizon/15].risk;
-    return risk>=65?'#d76e62':risk>=35?'#daa34d':'#74ad92';
+    return risk>=65?'#cf5149':risk>=35?'#cc8a2b':'#288d6d';
   }
-  if(r.blocked) return '#c95650';
-  if(r.event_type && state.layers[r.event_type]) return {flood:'#568eeb',traffic:'#e9a34d',incident:'#df7469'}[r.event_type];
-  return '#86b9a0';
+  if(r.blocked) return '#cf5149';
+  if(r.event_type && state.layers[r.event_type]) return {flood:'#347ec5',traffic:'#cc8a2b',incident:'#cf5149'}[r.event_type];
+  return '#288d6d';
 }
 
 function renderMap() {
+  if(!state.data)return;
+  const bounds=(map.getSize().x&&map.getSize().y?map.getBounds():L.latLngBounds(HANOI_BOUNDS)).pad(.12);
+  const key=[state.data.scenario,state.data.roads[0]?.simulated_timestamp,state.data.events.map(e=>`${e.id}:${e.updated_at}`).join('|'),state.horizon,state.selected,map.getZoom(),Math.round(bounds.getCenter().lat*200),Math.round(bounds.getCenter().lng*200),JSON.stringify(state.layers),map.getContainer().classList.contains('route-active')].join(':');
+  if(key===lastRenderKey)return;
+  lastRenderKey=key;
   roadLayer.clearLayers();eventLayer.clearLayers();
   for(const r of state.data.roads) {
+    if(!state.layers.demoRoads||!bounds.intersects(L.latLngBounds(r.coordinates)))continue;
+    if(map.getContainer().classList.contains('route-active')&&!r.event_type&&r.id!==state.selected)continue;
+    if(map.getZoom()<12&&r.id!==state.selected&&!r.event_type)continue;
     const f=r.forecast[state.horizon/15];
-    const color=roadColor(r), weight=r.id===state.selected?7:4;
-    const line=L.polyline(r.coordinates,{color,weight,opacity:.88,dashArray:r.known?null:'5 6'}).addTo(roadLayer);
+    const color=roadColor(r), weight=r.id===state.selected?6:4;
+    L.polyline(r.coordinates,{color:'#fff',weight:weight+3,opacity:.94,interactive:false}).addTo(roadLayer);
+    const line=L.polyline(r.coordinates,{color,weight,opacity:.98,dashArray:r.known?null:'5 6'}).addTo(roadLayer);
     line.bindTooltip(`<strong>${esc(r.name)}</strong><br>${!r.known?'Chưa đủ dữ liệu':state.horizon?`Dự báo +${state.horizon} phút · Nguy cơ ${f.risk}/100`:`${r.speed} km/h · ${r.blocked?'Đóng trong kịch bản':'Dữ liệu thử nghiệm'}`}`);
-    line.on('click',e=>{L.DomEvent.stopPropagation(e);if(state.picking)finishPick(e.latlng.lat,e.latlng.lng);else selectRoad(r.id,true);});
+    line.on('click',e=>{L.DomEvent.stopPropagation(e);if(state.picking)finishPick(e.latlng.lat,e.latlng.lng);else if(state.routePicking)setPickedPoint(state.routePicking,e.latlng.lat,e.latlng.lng);else selectRoad(r.id,true);});
   }
+  const markers=[];
   if(!state.horizon) for(const e of state.data.events) {
     if(!state.layers[e.type] || (e.status==='pending'&&!state.layers.pending)) continue;
-    const marker=L.marker([e.lat,e.lng],{icon:L.divIcon({className:`event-marker ${e.type} ${e.status==='pending'?'pending':''}`,html:icon(typeIcons[e.type]),iconSize:[32,32]}),title:`${typeNames[e.type]}: ${e.name}`}).addTo(eventLayer);
-    marker.bindTooltip(`${esc(e.name)} · ${e.status==='pending'?'Chờ xác minh':typeNames[e.type]}`);
-    marker.on('click',()=>state.picking?finishPick(e.lat,e.lng):showEvent(e.id));
+    if(!bounds.contains([e.lat,e.lng]))continue;
+    markers.push({lat:e.lat,lng:e.lng,type:e.type,pending:e.status==='pending',title:`${typeNames[e.type]}: ${e.name}`,tooltip:`${esc(e.name)} · ${e.status==='pending'?'Chờ xác minh':typeNames[e.type]}`,click:()=>state.picking?finishPick(e.lat,e.lng):showEvent(e.id)});
+  }
+  else for(const r of state.data.roads) {
+    if(!r.known||!bounds.contains(r.center))continue;
+    const f=r.forecast[state.horizon/15];
+    const [type,score]=[['flood',f.flood_risk],['traffic',f.traffic_risk],['incident',f.incident_risk]].reduce((best,item)=>item[1]>best[1]?item:best);
+    if(score<65||!state.layers[type])continue;
+    const [lat,lng]=r.center;
+    markers.push({lat,lng,type,title:`${typeNames[type]} · dự báo +${state.horizon} phút`,tooltip:`${esc(r.name)} · ${typeNames[type]} ${score}/100 (mô phỏng)`,click:()=>state.picking?finishPick(lat,lng):selectRoad(r.id,true)});
+  }
+  const groups=new Map();
+  for(const item of markers){const p=map.latLngToContainerPoint([item.lat,item.lng]);const key=map.getZoom()<13?`${Math.floor(p.x/54)}:${Math.floor(p.y/54)}`:`${item.lat}:${item.lng}:${item.title}`;if(!groups.has(key))groups.set(key,[]);groups.get(key).push(item);}
+  for(const group of groups.values()){
+    if(group.length>1&&map.getZoom()<13){const lat=group.reduce((sum,e)=>sum+e.lat,0)/group.length,lng=group.reduce((sum,e)=>sum+e.lng,0)/group.length;L.marker([lat,lng],{icon:L.divIcon({className:'',html:`<span class="event-cluster">${group.length}</span>`,iconSize:[35,35]}),title:`${group.length} cảnh báo mô phỏng`}).addTo(eventLayer).on('click',()=>map.setView([lat,lng],Math.min(15,map.getZoom()+2)));continue;}
+    const e=group[0];const marker=L.marker([e.lat,e.lng],{icon:L.divIcon({className:`event-marker ${e.type} ${e.pending?'pending':''}`,html:icon(typeIcons[e.type]),iconSize:[32,32]}),title:e.title}).addTo(eventLayer);marker.bindTooltip(e.tooltip);marker.on('click',()=>state.routePicking?setPickedPoint(state.routePicking,e.lat,e.lng):e.click());
   }
   $('#map-mode-label').hidden=!state.horizon;
   $('#map-mode-label').textContent=`Dự báo +${state.horizon} phút · Nguy cơ thấp → trung bình → cao`;
   $('.map-legend').innerHTML=state.horizon?
-    '<span><i class="legend-dot green"></i>Thấp &lt;35</span><span><i class="legend-dot orange-bg"></i>Trung bình 35–64</span><span><i class="legend-dot red-bg"></i>Cao ≥65</span><span><i class="legend-dot gray-bg"></i>Chưa đủ dữ liệu</span>':
-    '<span><i class="legend-dot green"></i>Thông thoáng</span><span><i class="legend-dot orange-bg"></i>Ùn tắc</span><span><i class="legend-dot blue-bg"></i>Ngập</span><span><i class="legend-dot red-bg"></i>Sự cố / đóng</span><span><i class="legend-dot gray-bg"></i>Chưa có dữ liệu</span>';
+    '<span><i class="legend-dot green"></i>Thấp &lt;35</span><span><i class="legend-dot orange-bg"></i>Trung bình 35–64</span><span><i class="legend-dot red-bg"></i>Cao ≥65</span><span><i class="legend-dot gray-bg"></i>Chưa đủ dữ liệu</span><span><i class="legend-line"></i>Đường chính OSM</span>':
+    '<span><i class="legend-dot green"></i>Thông thoáng</span><span><i class="legend-dot orange-bg"></i>Ùn tắc</span><span><i class="legend-dot blue-bg"></i>Ngập</span><span><i class="legend-dot red-bg"></i>Sự cố / đóng</span><span><i class="legend-dot gray-bg"></i>Chưa có dữ liệu</span><span><i class="legend-line"></i>Đường chính OSM</span>';
 }
 
 function renderEvents() {
@@ -184,7 +237,7 @@ function renderInsight() {
   const road=state.data.roads.find(r=>r.id===state.selected)||state.data.roads[0];
   $('#insight-road').textContent=road.name;
   const last=road.forecast[4];
-  $('#insight-summary').textContent=road.known?`Sau 60 phút: nguy cơ ngập ${last.flood_risk}/100, tốc độ ước tính ${last.speed} km/h. Chọn một đoạn trên bản đồ để xem thêm.`:'Đoạn đường chưa đủ dữ liệu. Hệ thống không suy diễn thành trạng thái an toàn.';
+  $('#insight-summary').textContent=road.known?`Sau 60 phút: ngập ${last.flood_risk}, ùn tắc ${last.traffic_risk}, sự cố ${last.incident_risk}/100; tốc độ ước tính ${last.speed} km/h.`:'Đoạn đường chưa đủ dữ liệu. Hệ thống không suy diễn thành trạng thái an toàn.';
   $('#mini-forecast').innerHTML=road.forecast.map((f,i)=>`<div class="mini-column ${i===2||i===4?'focus':''}"><b>${f.flood_risk??'—'}</b><div class="bar" style="height:${f.flood_risk??0}%"></div><span>${f.horizon?'+'+f.horizon+' phút':'Hiện tại'}</span></div>`).join('');
 }
 
@@ -197,7 +250,7 @@ function selectRoad(id,details=false) {
 function showRoadDetails(id,event=null) {
   const r=state.data.roads.find(r=>r.id===id);if(!r)return;
   const f=r.forecast[2];
-  $('#detail-content').innerHTML=`<div class="dialog-heading"><div><div class="eyebrow teal-text">${event?.status==='pending'?'PHẢN ÁNH CHỜ XÁC MINH':'CHI TIẾT ĐOẠN ĐƯỜNG'}</div><h2>${esc(event?.name||r.name)}</h2></div><button class="icon-button close-dialog" aria-label="Đóng chi tiết">${icon('close')}</button></div><span class="tag tag-${event?.status==='pending'?'gray':'teal'}">${event?.status==='pending'?'Chưa ảnh hưởng định tuyến':r.origin==='demo'?'Dữ liệu mô phỏng':'Phản ánh đã xác minh tại máy'}</span><div class="detail-stats"><div><span>Tốc độ hiện tại</span><strong>${r.known?r.speed+' km/h':'Chưa rõ'}</strong></div><div><span>Nguy cơ ngập +30p</span><strong>${f.flood_risk==null?'Chưa rõ':f.flood_risk+'/100'}</strong></div><div><span>Lưu thông</span><strong>${!r.known?'Chưa rõ':r.blocked?'Bị chặn':'Có thể đi*'}</strong></div></div><p class="data-label">${esc((event?.sources||r.sources).join(' · '))} · ${timeText(event?.updated_at||r.updated_at)}</p><div class="detail-evidence">${esc((event?.evidence||r.evidence).join('\n'))}</div><p class="muted">*Trạng thái trong mạng thử nghiệm. Điểm nguy cơ là chỉ số theo quy tắc, không phải xác suất. Không dùng kết quả để quyết định đi qua vùng ngập thực tế.</p><div class="dialog-footer"><button class="button secondary" data-focus-road="${r.id}">${icon('pin')}Xem trên bản đồ</button><button class="button primary" data-forecast-detail="${r.id}">Xem dự báo ${icon('arrow')}</button></div>`;
+  $('#detail-content').innerHTML=`<div class="dialog-heading"><div><div class="eyebrow teal-text">${event?.status==='pending'?'PHẢN ÁNH CHỜ XÁC MINH':'CHI TIẾT ĐOẠN ĐƯỜNG'}</div><h2>${esc(event?.name||r.name)}</h2></div><button class="icon-button close-dialog" aria-label="Đóng chi tiết">${icon('close')}</button></div><span class="tag tag-${event?.status==='pending'?'gray':'teal'}">${event?.status==='pending'?'Chưa ảnh hưởng định tuyến':r.origin==='demo'?'Dữ liệu mô phỏng':'Phản ánh đã xác minh tại máy'}</span><div class="detail-stats"><div><span>Tốc độ hiện tại</span><strong>${r.known?r.speed+' km/h':'Chưa rõ'}</strong></div><div><span>Nguy cơ ngập +30p</span><strong>${f.flood_risk==null?'Chưa rõ':f.flood_risk+'/100'}</strong></div><div><span>Lưu thông</span><strong>${!r.known?'Chưa rõ':r.blocked?'Bị chặn':'Có thể đi*'}</strong></div></div><p class="muted">+30 phút · Ngập ${f.flood_risk??'—'} · Ùn tắc ${f.traffic_risk??'—'} · Sự cố ${f.incident_risk??'—'} /100</p><p class="data-label">${esc((event?.sources||r.sources).join(' · '))} · ${timeText(event?.updated_at||r.updated_at)}</p><div class="detail-evidence">${esc((event?.evidence||r.evidence).join('\n'))}</div>${r.reference_url&&r.origin==='demo'?`<a href="${esc(r.reference_url)}" target="_blank" rel="noopener">Nguồn tham khảo địa điểm</a>`:''}<p class="muted">*Trạng thái trong mạng thử nghiệm. Điểm nguy cơ là chỉ số theo quy tắc, không phải xác suất. Không dùng kết quả để quyết định đi qua vùng ngập thực tế.</p><div class="dialog-footer"><button class="button secondary" data-focus-road="${r.id}">${icon('pin')}Xem trên bản đồ</button><button class="button primary" data-forecast-detail="${r.id}">Xem dự báo ${icon('arrow')}</button></div>`;
   if(!$('#detail-dialog').open)$('#detail-dialog').showModal();
 }
 function showEvent(id) {const e=state.data.events.find(e=>e.id===id);if(!e)return;selectRoad(e.road_id);map.setView([e.lat,e.lng],15);showRoadDetails(e.road_id,e);}
@@ -220,19 +273,20 @@ function renderForecast() {
   if(!r.known){$('#forecast-chart').innerHTML='<div class="empty-state">Chưa đủ dữ liệu để dự báo đoạn đường này. Không có dữ liệu không có nghĩa là không có nguy cơ.</div>';return;}
   const xs=[65,270,475,680,885],y=v=>205-v*1.75;
   const path=key=>r.forecast.map((f,i)=>`${i?'L':'M'}${xs[i]},${y(f[key])}`).join(' ');
-  let svg=`<svg class="large-chart" viewBox="0 0 950 245" role="img" aria-label="Dự báo điểm nguy cơ ngập và rủi ro tổng hợp cho ${esc(r.name)}">`;
+  let svg=`<svg class="large-chart" viewBox="0 0 950 245" role="img" aria-label="Dự báo nguy cơ ngập, ùn tắc và sự cố cho ${esc(r.name)}">`;
   for(const v of [0,25,50,75,100])svg+=`<line x1="65" y1="${y(v)}" x2="885" y2="${y(v)}" stroke="#e7ede7" stroke-dasharray="4 5"/><text x="30" y="${y(v)+4}" fill="#91a494">${v}</text>`;
-  svg+=`<path d="${path('flood_risk')} L885,205 L65,205 Z" fill="#edf3fd" stroke="none"/><path d="${path('flood_risk')}" fill="none" stroke="#5188d7" stroke-width="3"/><path d="${path('risk')}" fill="none" stroke="#dfaa5c" stroke-width="3" stroke-dasharray="7 5"/>`;
+  svg+=`<path d="${path('flood_risk')} L885,205 L65,205 Z" fill="#edf3fd" stroke="none"/><path d="${path('flood_risk')}" fill="none" stroke="#347ec5" stroke-width="3"/><path d="${path('traffic_risk')}" fill="none" stroke="#cc8a2b" stroke-width="3"/><path d="${path('incident_risk')}" fill="none" stroke="#cf5149" stroke-width="3"/>`;
   r.forecast.forEach((f,i)=>{svg+=`<circle cx="${xs[i]}" cy="${y(f.flood_risk)}" r="5" fill="white" stroke="#5188d7" stroke-width="2"/><text x="${xs[i]}" y="234" text-anchor="middle" fill="#89a18e">${f.horizon?'+'+f.horizon+' phút':'Hiện tại'}</text>`;});
   svg+='</svg>';
-  $('#forecast-chart').innerHTML=svg+`<div class="chart-legend"><span><i class="legend-dot blue-bg"></i>Nguy cơ ngập /100</span><span><i class="legend-dot orange-bg"></i>Rủi ro tổng hợp /100</span></div><div class="forecast-table-wrap"><table class="forecast-table"><thead><tr><th>Thời điểm</th><th>Nguy cơ ngập</th><th>Tốc độ ước tính</th><th>Rủi ro tổng hợp</th></tr></thead><tbody>${r.forecast.map(f=>`<tr><td>${f.horizon?'Sau '+f.horizon+' phút':'Hiện tại'}</td><td>${f.flood_risk}/100</td><td>${f.speed} km/h</td><td><span class="tag tag-${f.risk>=65?'red':f.risk>=35?'orange':'teal'}">${f.label} · ${f.risk}/100</span></td></tr>`).join('')}</tbody></table></div>`;
+  $('#forecast-chart').innerHTML=svg+`<div class="chart-legend"><span><i class="legend-dot blue-bg"></i>Ngập</span><span><i class="legend-dot orange-bg"></i>Ùn tắc</span><span><i class="legend-dot red-bg"></i>Sự cố</span></div><div class="forecast-table-wrap"><table class="forecast-table"><thead><tr><th>Thời điểm</th><th>Ngập</th><th>Ùn tắc</th><th>Sự cố</th><th>Tốc độ</th><th>Tổng hợp</th></tr></thead><tbody>${r.forecast.map(f=>`<tr><td>${f.horizon?'Sau '+f.horizon+' phút':'Hiện tại'}</td><td>${f.flood_risk}/100</td><td>${f.traffic_risk}/100</td><td>${f.incident_risk}/100</td><td>${f.speed} km/h</td><td><span class="tag tag-${f.risk>=65?'red':f.risk>=35?'orange':'teal'}">${f.label} · ${f.risk}/100</span></td></tr>`).join('')}</tbody></table></div>`;
 }
 
 function renderSources() {
   const sources=[
+    ['route','OpenStreetMap / OSRM','Hình học lưu cục bộ','teal','111 hành lang demo và 17.711 đoạn đường chính tham chiếu bám theo OpenStreetMap. Không bao gồm tốc độ hoặc sự cố thực tế.','Làm mới thủ công bằng scripts/build-hanoi-road-geometry.py và scripts/build-hanoi-major-roads.py.'],
     ['cloud','Vệ tinh NASA GPM (IMERG)','Dữ liệu viễn thám NASA','blue','Lượng mưa radar viễn thám toàn cầu chu kỳ 30 phút, độ phân giải 0.1° (~10km). Đón đầu hướng di chuyển mây dông trước khi mưa chạm đất.','Tải mở hoàn toàn qua cổng NASA Earthdata Search (search.earthdata.nasa.gov) bằng Python script (thư viện earthaccess).'],
     ['water','NASA SMAP & NASADEM (TWI)','Độ ẩm đất & Địa hình NASA','teal','Chỉ số độ ẩm bão hòa đất (SMAP) & Chỉ số trũng địa hình (Topographic Wetness Index - TWI 30m). Xác định các điểm tụ nước tự nhiên.','Khai thác DEM 30m từ NASA SRTM/NASADEM tính TWI; nạp độ ẩm đất SMAP làm biến điều kiện bão hòa dòng chảy mặt.'],
-    ['chart','Bộ mô phỏng giao thông','Đang chạy tại máy','teal','36 đoạn đường, 25 nút. Cập nhật mỗi 10 giây theo kịch bản.','—'],
+    ['chart','Bộ mô phỏng giao thông','Đang chạy tại máy','teal','Mạng mẫu nhiều khu vực Hà Nội; nguy cơ ngập, ùn tắc và sự cố được tính theo kịch bản mỗi 10 giây.','—'],
     ['report','Phản ánh cộng đồng','Lưu thật tại máy','teal','Vị trí, mô tả, ảnh lưu trong SQLite. Cần xác minh thủ công.','—'],
     ['cloud','API Khí tượng (NCHMF / OpenWeather)','Sẵn sàng tích hợp','orange','Lượng mưa trạm mặt đất, dự báo 3 giờ tới. 3 kịch bản mô phỏng hiện tại.','Đăng ký API key OpenWeatherMap miễn phí (1000 calls/ngày) hoặc crawl bản tin NCHMF.'],
     ['car','VOV Giao thông','Chưa kết nối','gray','Bản tin ùn tắc, tai nạn, đường bị ảnh hưởng theo thời gian thực.','Xin phép API/RSS từ VOV. Hoặc crawl vovgiaothong.vn + NLP trích xuất tên đường, loại sự kiện.'],
@@ -266,27 +320,32 @@ async function searchLocation() {
   }catch(e){toast(e.message);}
 }
 
-function clearRoutes(){routeLayer.clearLayers();state.routes=null;$('#route-results').innerHTML='<div class="empty-state">Chọn điểm đi và đến, sau đó tìm tuyến theo dữ liệu mới nhất.</div>';}
+function clearRoutes(){routeLayer.clearLayers();map.getContainer().classList.remove('route-active');if(state.data)renderMap();$('#route-map-key').hidden=true;state.routes=null;$('#route-results').innerHTML='<div class="empty-state">Chọn điểm đi và đến, sau đó tìm tuyến theo dữ liệu mới nhất.</div>';}
+function setPickedPoint(field,lat,lng){const select=$('#route-'+field);select.querySelector('[data-picked="true"]')?.remove();const option=new Option(`Điểm trên bản đồ · ${lat.toFixed(4)}, ${lng.toFixed(4)}`,`${lat.toFixed(6)},${lng.toFixed(6)}`);option.dataset.picked='true';select.add(option);select.value=option.value;state.routePicking=null;$$('.route-pick').forEach(button=>button.classList.remove('active'));$('#route-pick-hint')?.remove();}
 function openRoute(){if(!state.data){toast('Đang tải dữ liệu, vui lòng thử lại.');return;}$('#event-panel').hidden=true;$('#route-panel').hidden=false;requestAnimationFrame(()=>map.invalidateSize());}
 async function findRoutes(e){
   e.preventDefault();if(!state.connected){toast('Cần kết nối máy chủ để tính tuyến mới.');return;}
   const button=$('button[type=submit]',$('#route-form'));button.disabled=true;button.textContent='Đang tính tuyến…';
   try{
     const query=new URLSearchParams({origin:$('#route-origin').value,destination:$('#route-destination').value,horizon:$('#route-time').value,vehicle:$('#route-vehicle').value});
-    state.routes=await api('/api/routes?'+query);state.routeIndex=0;renderRoutes();
+    state.routes=await api('/api/routes?'+query,{timeoutMs:30000});state.routeIndex=0;state.horizon=Number($('#route-time').value);$$('#map-horizon button').forEach(item=>item.classList.toggle('active',Number(item.dataset.horizon)===state.horizon));renderMap();renderRoutes();
   }catch(err){clearRoutes();$('#route-results').innerHTML=`<div class="empty-state">${esc(err.message)}</div>`;}
   finally{button.disabled=false;button.innerHTML=icon('route')+'Tìm tuyến gợi ý';}
 }
 function renderRoutes(){
   routeLayer.clearLayers();const result=state.routes;
-  if(!result.routes.length){$('#route-results').innerHTML=`<div class="empty-state">${icon('alert')}${esc(result.message)}</div>`;return;}
-  $('#route-results').innerHTML=result.routes.map((r,i)=>`<button class="route-choice ${i===state.routeIndex?'selected':''}" data-route-index="${i}"><h3>${esc(r.title)}</h3><strong>${Math.ceil(r.eta_minutes)}<small>phút</small></strong><span class="data-label">${r.distance_km} km</span><p>${esc(r.steps.join(' → '))}</p><p>${r.warnings.length?'Còn cảnh báo trên '+r.warnings.length+' đoạn':'Không đi qua sự kiện đang hiển thị'} · Mô phỏng</p></button>`).join('')+`<p class="route-timestamp" id="route-calculation-note">Tính lúc ${timeText(result.calculated_at)} · Loại ${result.excluded} đoạn đóng / thiếu dữ liệu.</p>`;
+  if(!result.routes.length){map.getContainer().classList.remove('route-active');renderMap();$('#route-map-key').hidden=true;$('#route-results').innerHTML=`<div class="empty-state">${icon('alert')}${esc(result.message)}</div>`;return;}
+  const selected=result.routes[state.routeIndex];
+  $('#route-results').innerHTML=result.routes.map((r,i)=>`<button class="route-choice ${i===state.routeIndex?'selected':''}" data-route-index="${i}" type="button"><div class="route-summary"><h3>${esc(r.title)}</h3><strong>${Math.ceil(r.eta_minutes)}<small>phút</small></strong></div><p class="route-meta">${r.distance_km} km · ${esc({motorbike:'Xe máy',car:'Ô tô',walk:'Đi bộ'}[r.vehicle])} · Nguy cơ ${r.max_risk}/100</p><p class="route-warnings">${r.warnings.length?`${r.warnings.length} cảnh báo trên tuyến`:'Không có cảnh báo trên tuyến'}</p></button>`).join('')+`<div class="route-forecast">${selected.forecast_timeline.map(p=>`<button type="button" data-route-horizon="${p.horizon}" class="${Number($('#route-time').value)===p.horizon?'active':''}"><span>${p.horizon?'+'+p.horizon+' phút':'Hiện tại'}</span><strong>${Math.ceil(p.eta_minutes)} phút</strong><small>${p.congested_segments} ùn tắc · ${p.flooded_segments} ngập</small></button>`).join('')}</div><details class="route-details"><summary>Chi tiết hành trình</summary><p><strong>${esc(selected.origin_name)}</strong> → <strong>${esc(selected.destination_name)}</strong></p><p>Đoạn cần lưu ý: ${selected.warnings.length?esc(selected.warnings.join(', ')):'Không có cảnh báo mô phỏng trên tuyến.'}</p><ol>${selected.steps.map(name=>`<li>${esc(name)}</li>`).join('')}</ol></details><p class="route-timestamp" id="route-calculation-note">Tính lúc ${timeText(result.calculated_at)} · Loại ${result.excluded} đoạn đóng / thiếu dữ liệu.</p>`;
   const chosen=result.routes[state.routeIndex];
-  for(const [i,r] of result.routes.entries())if(i!==state.routeIndex)L.polyline(r.coordinates,{color:'#adb7b4',weight:6,opacity:.8,dashArray:'7 6'}).addTo(routeLayer);
-  L.polyline(chosen.coordinates,{color:'white',weight:10,opacity:.95}).addTo(routeLayer);
-  const line=L.polyline(chosen.coordinates,{color:'#0c7665',weight:6,opacity:1}).addTo(routeLayer);
+  map.getContainer().classList.add('route-active');
+  renderMap();
+  $('#route-map-key').hidden=false;$('#route-alternative-key').hidden=result.routes.length<2;
+  for(const [i,r] of result.routes.entries())if(i!==state.routeIndex)L.polyline(r.coordinates,{color:'#7f7696',weight:4,opacity:.85,dashArray:'8 7'}).addTo(routeLayer);
+  L.polyline(chosen.coordinates,{color:'white',weight:12,opacity:.98,interactive:false}).addTo(routeLayer);
+  const line=L.polyline(chosen.coordinates,{color:'#6940cf',weight:7,opacity:1}).addTo(routeLayer);
   for(const [coord,label] of [[chosen.coordinates[0],'A'],[chosen.coordinates.at(-1),'B']])
-    L.marker(coord,{icon:L.divIcon({className:'event-marker',html:`<strong>${label}</strong>`,iconSize:[32,32]})}).addTo(routeLayer);
+    L.marker(coord,{zIndexOffset:2000,icon:L.divIcon({className:`route-endpoint route-${label.toLowerCase()}`,html:`<strong>${label}</strong>`,iconSize:[32,32]})}).addTo(routeLayer);
   map.fitBounds(line.getBounds(),{padding:[60,75],maxZoom:14});
 }
 
@@ -298,9 +357,9 @@ function setReportPosition(lat,lng,address){
 }
 function startPick(){state.picking=true;$('#report-dialog').close();setView('map');$('#pick-banner').hidden=false;$('.map-surface').classList.add('picking');$('#map').scrollIntoView({behavior:'smooth',block:'center'});}
 function finishPick(lat,lng){
-  if(lat<20.98||lat>21.065||lng<105.77||lng>105.88){toast('Hãy chọn vị trí trong vùng thử nghiệm Hà Nội.');return;}
+  if(lat<20.68||lat>21.31||lng<105.33||lng>106.0){toast('Hãy chọn vị trí trong vùng thử nghiệm Hà Nội.');return;}
   state.picking=false;$('#pick-banner').hidden=true;$('.map-surface').classList.remove('picking');
-  const nearest=state.data.roads.map(r=>({r,d:Math.hypot(lat-(r.coordinates[0][0]+r.coordinates[1][0])/2,lng-(r.coordinates[0][1]+r.coordinates[1][1])/2)})).sort((a,b)=>a.d-b.d)[0].r;
+  const nearest=state.data.roads.map(r=>({r,d:Math.hypot(lat-r.center[0],lng-r.center[1])})).sort((a,b)=>a.d-b.d)[0].r;
   setReportPosition(lat,lng,nearest.name);selectionLayer.clearLayers();L.circleMarker([lat,lng],{radius:9,color:'#087f72',fillOpacity:.3}).addTo(selectionLayer);$('#report-dialog').showModal();
 }
 function geolocate(forReport=false){
@@ -308,7 +367,7 @@ function geolocate(forReport=false){
   toast('Đang xác định vị trí. Cho phép trình duyệt truy cập vị trí nếu được hỏi.');
   navigator.geolocation.getCurrentPosition(p=>{
     const {latitude:lat,longitude:lng}=p.coords;
-    if(lat<20.98||lat>21.065||lng<105.77||lng>105.88){toast('Bạn đang ngoài vùng thử nghiệm Hà Nội. Hãy chọn địa chỉ hoặc ghim trong vùng.');return;}
+    if(lat<20.68||lat>21.31||lng<105.33||lng>106.0){toast('Bạn đang ngoài vùng thử nghiệm Hà Nội. Hãy chọn địa chỉ hoặc ghim trong vùng.');return;}
     if(forReport)setReportPosition(lat,lng,'Vị trí GPS của tôi');
     else{map.setView([lat,lng],15);selectionLayer.clearLayers();L.circleMarker([lat,lng],{radius:9,color:'#087f72'}).addTo(selectionLayer);}
   },()=>toast('Chưa lấy được GPS. Hãy nhập địa điểm hoặc chọn vị trí trên bản đồ.'),{timeout:10000,maximumAge:60000});
@@ -356,20 +415,25 @@ document.addEventListener('click',async e=>{
   if(button.dataset.focusRoad){$('#detail-dialog').close();setView('map');const r=state.data.roads.find(r=>r.id===button.dataset.focusRoad);map.fitBounds(r.coordinates,{padding:[100,100],maxZoom:15});}
   if(button.dataset.forecastDetail){$('#detail-dialog').close();selectRoad(button.dataset.forecastDetail);setView('forecast');}
   if(button.dataset.routeIndex){state.routeIndex=Number(button.dataset.routeIndex);renderRoutes();}
+  if(button.dataset.routeHorizon!==undefined){$('#route-time').value=button.dataset.routeHorizon;findRoutes(new Event('submit'));}
   if(button.dataset.reviewId){button.disabled=true;try{await post('/api/reports/'+button.dataset.reviewId,{status:button.dataset.status});await loadReports();await refresh();clearRoutes();toast('Đã cập nhật trạng thái phản ánh.');}catch(err){toast(err.message);button.disabled=false;}}
   if(button.dataset.reportMap){const r=state.reports.find(r=>r.id===button.dataset.reportMap);setView('map');map.setView([r.lat,r.lng],15);selectionLayer.clearLayers();L.circleMarker([r.lat,r.lng],{radius:10,color:'#087f72'}).addTo(selectionLayer);}
 });
 $('#search-form').addEventListener('submit',e=>{e.preventDefault();searchLocation();});
 $('#map-search').addEventListener('input',()=>{clearTimeout(searchTimer);searchTimer=setTimeout(searchLocation,300);});
+let routeSearchTimer,routeSearchSerial=0;
+$('#route-place-search').addEventListener('input',()=>{clearTimeout(routeSearchTimer);const serial=++routeSearchSerial,query=$('#route-place-search').value.trim(),container=$('#route-place-results');if(query.length<2){container.hidden=true;return;}routeSearchTimer=setTimeout(async()=>{try{const {results}=await api('/api/search?q='+encodeURIComponent(query));if(serial!==routeSearchSerial)return;container.replaceChildren();if(!results.length){container.textContent='Không tìm thấy địa điểm trong dữ liệu OSM cục bộ.';container.hidden=false;return;}for(const place of results){const row=document.createElement('div');row.className='route-place-item';const label=document.createElement('span');label.textContent=place.name;row.append(label);for(const [field,letter] of [['origin','A'],['destination','B']]){const button=document.createElement('button');button.type='button';button.textContent=letter;button.title=`Chọn làm điểm ${field==='origin'?'đi':'đến'}`;button.addEventListener('click',()=>{if(place.kind==='node')$('#route-'+field).value=place.id;else setPickedPoint(field,place.lat,place.lng);$('#route-place-search').value=place.name;container.hidden=true;});row.append(button);}container.append(row);}container.hidden=false;}catch(error){toast(error.message);}},300);});
 $('#toggle-layers').addEventListener('click',()=>$('#layer-menu').hidden=!$('#layer-menu').hidden);
-$$('[data-layer]').forEach(el=>el.addEventListener('change',()=>{state.layers[el.dataset.layer]=el.checked;if(state.data)renderMap();}));
+$$('[data-layer]').forEach(el=>el.addEventListener('change',()=>{state.layers[el.dataset.layer]=el.checked;if(el.dataset.layer==='majorRoads'){syncMajorRoads();return;}if(state.data)renderMap();}));
 $('#base-tiles').addEventListener('change',e=>setBaseTiles(e.target.checked));
 $('#fit-map').addEventListener('click',()=>{if(state.data)map.fitBounds(state.data.nodes.map(n=>[n.lat,n.lng]),{padding:[40,55]});});
 $('#my-location').addEventListener('click',()=>geolocate());
 $('#open-report').addEventListener('click',openReport);
 $('#about-button').addEventListener('click',()=>$('#about-dialog').showModal());
 $('#open-route').addEventListener('click',openRoute);
-$('#close-route').addEventListener('click',()=>{$('#route-panel').hidden=true;$('#event-panel').hidden=false;routeLayer.clearLayers();});
+$('#route-swap').addEventListener('click',()=>{const a=$('#route-origin'),b=$('#route-destination'),old=a.value;for(const [source,target] of [[a,b],[b,a]]){const picked=source.querySelector('[data-picked="true"]');if(picked&&![...target.options].some(option=>option.value===picked.value))target.add(picked.cloneNode(true));}a.value=b.value;b.value=old;});
+$$('.route-pick').forEach(button=>button.addEventListener('click',()=>{state.routePicking=button.dataset.routePick;$$('.route-pick').forEach(item=>item.classList.toggle('active',item===button));$('#route-pick-hint')?.remove();$('#route-form').insertAdjacentHTML('beforeend','<p id="route-pick-hint" class="route-pick-hint">Chạm vào bản đồ để chọn vị trí.</p>');toast('Chạm vào bản đồ để chọn điểm.');}));
+$('#close-route').addEventListener('click',()=>{$('#route-panel').hidden=true;$('#event-panel').hidden=false;state.routePicking=null;routeLayer.clearLayers();map.getContainer().classList.remove('route-active');renderMap();$('#route-map-key').hidden=true;});
 $('#route-form').addEventListener('submit',findRoutes);
 $('#forecast-road').addEventListener('change',()=>{state.selected=$('#forecast-road').value;renderForecast();renderInsight();});
 $('#forecast-scenario').addEventListener('change',e=>changeScenario(e.target.value));
@@ -580,5 +644,5 @@ if (rescueForm) {
 
 // === Init ===
 if(typeof L==='undefined'){$('#connection-error').hidden=false;$('#connection-error').textContent='Thiếu thư viện bản đồ local. Kiểm tra thư mục public/vendor.';}
-else{initializeMap();checkAuth();refresh();setInterval(refresh,10000);}
+else{fetch('/api/map-config').then(response=>response.ok?response.json():{}).catch(()=>({})).then(config=>{initializeMap(config.maptiler_key||'');checkAuth();refresh();setInterval(refresh,10000);});}
 

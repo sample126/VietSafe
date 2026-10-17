@@ -123,9 +123,7 @@
     margin-left: 10px;
   }
   .route-panel #route-form {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 12px;
+    display: block;
   }
   .route-panel .form-row {
     margin: 0;

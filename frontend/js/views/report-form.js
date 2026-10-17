@@ -47,8 +47,8 @@ export function finishPick(lat, lng) {
     .map((r) => ({
       r,
       d: Math.hypot(
-        lat - (r.coordinates[0][0] + r.coordinates[1][0]) / 2,
-        lng - (r.coordinates[0][1] + r.coordinates[1][1]) / 2,
+        lat - r.center[0],
+        lng - r.center[1],
       ),
     }))
     .sort((a, b) => a.d - b.d)[0].r;

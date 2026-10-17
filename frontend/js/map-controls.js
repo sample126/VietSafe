@@ -1,5 +1,5 @@
 /** Điều khiển trên bản đồ: lớp hiển thị, nền bản đồ, thu phóng, vị trí của tôi, mốc thời gian. */
-import { map, renderMap, setBaseTiles } from "./map.js";
+import { map, renderMap, setBaseTiles, syncMajorRoads } from "./map.js";
 import { state } from "./state.js";
 import { $, $$ } from "./utils.js";
 import { geolocate } from "./views/report-form.js";
@@ -20,6 +20,7 @@ export function initMapControls() {
   $$("[data-layer]").forEach((el) =>
     el.addEventListener("change", () => {
       state.layers[el.dataset.layer] = el.checked;
+      if (el.dataset.layer === "majorRoads") { syncMajorRoads(); return; }
       if (state.data) renderMap();
     }),
   );

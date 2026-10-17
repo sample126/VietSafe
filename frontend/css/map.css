@@ -65,8 +65,8 @@
   background: #f0f1e9;
 }
 
-.leaflet-tile-pane {
-  filter: saturate(0.35) contrast(0.94) brightness(1.035);
+.leaflet-tile-pane > .leaflet-tile-container {
+  filter: saturate(0.72) contrast(0.96) brightness(1.02);
 }
 
 .leaflet-container {
@@ -105,6 +105,11 @@
   font-size: 10px;
   color: #77908b;
   text-shadow: 0 1px 0 white;
+}
+
+.map-vector .place-label,
+.map-wide .place-label {
+  display: none;
 }
 
 .place-label:before {
@@ -288,6 +293,12 @@
   height: 6px;
   display: inline-block;
   border-radius: 50%;
+}
+
+.legend-line {
+  display: inline-block;
+  width: 15px;
+  border-top: 2px solid #667783;
 }
 
 .green {

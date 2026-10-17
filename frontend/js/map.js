@@ -20,29 +20,82 @@ import { finishPick } from "./views/report-form.js";
  */
 export let map, baseTiles, roadLayer, eventLayer, routeLayer, selectionLayer, placeLayer;
 let geographyLayer;
+let majorRoadLines = {};
 let tileErrorCount = 0;
 let tileProviderIndex = 0;
+let maptilerKey = "";
+let lastRenderKey = "";
+
+function nextTileProvider(after) {
+  for (let i = after + 1; i < TILE_ORDER.length; i++) {
+    if (TILE_ORDER[i] === "openfreemap" && (!window.VietSafeVectorMaps || !window.WebGL2RenderingContext)) continue;
+    if (TILE_ORDER[i] === "openmaptiles" && !maptilerKey) continue;
+    return i;
+  }
+  return -1;
+}
 
 function buildTileLayer(key) {
   const cfg = TILE_PROVIDERS[key];
-  const layer = L.tileLayer(cfg.url, { maxZoom: cfg.maxZoom, attribution: cfg.attr });
+  if (key === "openfreemap") {
+    return window.VietSafeVectorMaps.maplibreGL({
+      style: cfg.style,
+      interactive: false,
+      attributionControl: { customAttribution: cfg.attr },
+    });
+  }
+  const url = key === "openmaptiles" ? cfg.url.replace("{key}", encodeURIComponent(maptilerKey)) : cfg.url;
+  const layer = L.tileLayer(url, { maxZoom: cfg.maxZoom, attribution: cfg.attr });
   layer.on("tileerror", () => {
     if (++tileErrorCount >= 6 && map.hasLayer(layer)) switchTileProvider();
   });
   return layer;
 }
 
+function addBaseLayer() {
+  try {
+    baseTiles.addTo(map);
+  } catch (error) {
+    if (TILE_ORDER[tileProviderIndex] !== "openfreemap") throw error;
+    switchTileProvider();
+    return;
+  }
+  map.getContainer().classList.toggle("map-vector", TILE_ORDER[tileProviderIndex] === "openfreemap");
+  if (TILE_ORDER[tileProviderIndex] !== "openfreemap") return;
+  const layer = baseTiles;
+  const gl = layer.getMaplibreMap();
+  let loaded = false;
+  const timeout = setTimeout(() => {
+    if (!loaded && map.hasLayer(layer)) switchTileProvider();
+  }, 10000);
+  gl.once("load", () => {
+    loaded = true;
+    clearTimeout(timeout);
+    for (const id of ["label_city", "label_city_capital", "label_town", "water_name_point_label", "water_name_line_label"]) {
+      if (gl.getLayer(id)) gl.setLayoutProperty(id, "text-field", ["coalesce", ["get", "name:vi"], ["get", "name"], ["get", "name_en"]]);
+    }
+  });
+  gl.on("error", () => {
+    if (!loaded && map.hasLayer(layer)) {
+      clearTimeout(timeout);
+      switchTileProvider();
+    }
+  });
+}
+
 // Hết nhà cung cấp tile thì rơi xuống sơ đồ ngoại tuyến (nền lưới CSS + hồ vẽ tay).
 function switchTileProvider() {
   map.removeLayer(baseTiles);
   tileErrorCount = 0;
-  if (++tileProviderIndex < TILE_ORDER.length) {
+  const next = nextTileProvider(tileProviderIndex);
+  if (next !== -1) {
+    tileProviderIndex = next;
     baseTiles = buildTileLayer(TILE_ORDER[tileProviderIndex]);
-    baseTiles.addTo(map);
+    addBaseLayer();
     return;
   }
-  tileProviderIndex = 0;
-  baseTiles = buildTileLayer(TILE_ORDER[0]);
+  tileProviderIndex = nextTileProvider(-1);
+  baseTiles = buildTileLayer(TILE_ORDER[tileProviderIndex]);
   setBaseTiles(false);
   $("#base-tiles").checked = false;
   toast("Không tải được bản đồ nền. Đang hiển thị sơ đồ ngoại tuyến.");
@@ -52,28 +105,35 @@ export function setBaseTiles(on) {
   if (on) {
     if (!map.hasLayer(baseTiles)) {
       tileErrorCount = 0;
-      baseTiles.addTo(map);
+      addBaseLayer();
     }
     map.removeLayer(geographyLayer);
     $("#map-footnote").textContent = FOOTNOTE_ONLINE;
   } else {
     if (map.hasLayer(baseTiles)) map.removeLayer(baseTiles);
+    map.getContainer().classList.remove("map-vector");
     geographyLayer.addTo(map);
     $("#map-footnote").textContent = FOOTNOTE_OFFLINE;
   }
 }
 
-export function initializeMap() {
+export function initializeMap(key = "") {
+  maptilerKey = key;
+  tileProviderIndex = nextTileProvider(-1);
   map = L.map("map", {
     zoomControl: false,
-    minZoom: 12,
+    minZoom: 9,
     maxZoom: 18,
     maxBounds: HANOI_BOUNDS,
     maxBoundsViscosity: 1,
-  }).setView([21.025, 105.83], 13);
+  }).setView([21.02, 105.79], 10);
+  const syncLabelVisibility = () =>
+    map.getContainer().classList.toggle("map-wide", map.getZoom() < 12);
+  map.on("zoomend", syncLabelVisibility);
+  syncLabelVisibility();
   L.control.zoom({ position: "bottomright" }).addTo(map);
   baseTiles = buildTileLayer(TILE_ORDER[tileProviderIndex]);
-  baseTiles.addTo(map);
+  addBaseLayer();
   // Hồ vẽ tay chỉ dùng cho sơ đồ ngoại tuyến; trên nền tile thật hồ đã được vẽ đúng hình.
   geographyLayer = L.layerGroup();
   const lakes = [
@@ -130,39 +190,87 @@ export function initializeMap() {
       .addTo(geographyLayer)
       .bindTooltip(name, { permanent: true, direction: "center", className: "water-label" });
   placeLayer = L.layerGroup().addTo(map);
+  map.createPane("majorRoadPane");
+  map.getPane("majorRoadPane").style.zIndex = 390;
   roadLayer = L.layerGroup().addTo(map);
   routeLayer = L.layerGroup().addTo(map);
   eventLayer = L.layerGroup().addTo(map);
   selectionLayer = L.layerGroup().addTo(map);
   map.on("click", (e) => {
     if (state.picking) finishPick(e.latlng.lat, e.latlng.lng);
+    else if (state.routePicking) window.dispatchEvent(new CustomEvent("route-point-picked", { detail: { lat: e.latlng.lat, lng: e.latlng.lng } }));
   });
   map.on("movestart", () => ($("#search-results").hidden = true));
+  map.on("zoomend", syncMajorRoads);
+  map.on("moveend", () => { if (state.data) renderMap(); });
+  fetch("/api/major-roads")
+    .then((response) => response.ok ? response.json() : Promise.reject(new Error("major roads unavailable")))
+    .then((data) => {
+      for (const [kind, shapes] of Object.entries(data.classes))
+        majorRoadLines[kind] = L.polyline(shapes, {
+          pane: "majorRoadPane",
+          color: "#667783",
+          weight: kind === "motorway" || kind === "trunk" ? 2.5 : kind === "tertiary" ? 1.4 : 1.8,
+          opacity: 0.4,
+          interactive: false,
+          smoothFactor: 1.5,
+        });
+      syncMajorRoads();
+    })
+    .catch(() => { $("#major-roads").disabled = true; });
+}
+
+export function syncMajorRoads() {
+  const minimumZoom = { motorway: 9, trunk: 9, primary: 9, secondary: 11, tertiary: 13 };
+  for (const [kind, line] of Object.entries(majorRoadLines)) {
+    const visible = state.layers.majorRoads && map.getZoom() >= minimumZoom[kind];
+    line.setStyle({ opacity: kind === "tertiary" ? 0.34 : map.getZoom() >= 11 ? 0.56 : 0.4 });
+    if (visible && !map.hasLayer(line)) line.addTo(map);
+    if (!visible && map.hasLayer(line)) map.removeLayer(line);
+  }
 }
 
 export function roadColor(r) {
   if (!r.known) return "#aab5af";
   if (state.horizon) {
     const risk = r.forecast[state.horizon / 15].risk;
-    return risk >= 65 ? "#d76e62" : risk >= 35 ? "#daa34d" : "#74ad92";
+    return risk >= 65 ? "#cf5149" : risk >= 35 ? "#cc8a2b" : "#288d6d";
   }
-  if (r.blocked) return "#c95650";
+  if (r.blocked) return "#cf5149";
   if (r.event_type && state.layers[r.event_type])
-    return { flood: "#568eeb", traffic: "#e9a34d", incident: "#df7469" }[r.event_type];
-  return "#86b9a0";
+    return { flood: "#347ec5", traffic: "#cc8a2b", incident: "#cf5149" }[r.event_type];
+  return "#288d6d";
 }
 
 export function renderMap() {
+  if (!state.data) return;
+  const bounds = (map.getSize().x && map.getSize().y ? map.getBounds() : L.latLngBounds(HANOI_BOUNDS)).pad(0.12);
+  const key = [state.data.scenario, state.data.roads[0]?.simulated_timestamp,
+    state.data.events.map((event) => `${event.id}:${event.updated_at}`).join("|"),
+    state.horizon, state.selected, map.getZoom(),
+    Math.round(bounds.getCenter().lat * 200), Math.round(bounds.getCenter().lng * 200),
+    JSON.stringify(state.layers), map.getContainer().classList.contains("route-active")].join(":");
+  if (key === lastRenderKey) return;
+  lastRenderKey = key;
   roadLayer.clearLayers();
   eventLayer.clearLayers();
   for (const r of state.data.roads) {
+    if (!state.layers.demoRoads || !bounds.intersects(L.latLngBounds(r.coordinates))) continue;
+    if (map.getContainer().classList.contains("route-active") && !r.event_type && r.id !== state.selected) continue;
+    if (map.getZoom() < 12 && r.id !== state.selected && !r.event_type) continue;
     const f = r.forecast[state.horizon / 15];
     const color = roadColor(r),
-      weight = r.id === state.selected ? 7 : 4;
+      weight = r.id === state.selected ? 6 : 4;
+    L.polyline(r.coordinates, {
+      color: "#fff",
+      weight: weight + 3,
+      opacity: 0.94,
+      interactive: false,
+    }).addTo(roadLayer);
     const line = L.polyline(r.coordinates, {
       color,
       weight,
-      opacity: 0.88,
+      opacity: 0.98,
       dashArray: r.known ? null : "5 6",
     }).addTo(roadLayer);
     line.bindTooltip(
@@ -171,29 +279,60 @@ export function renderMap() {
     line.on("click", (e) => {
       L.DomEvent.stopPropagation(e);
       if (state.picking) finishPick(e.latlng.lat, e.latlng.lng);
+      else if (state.routePicking) window.dispatchEvent(new CustomEvent("route-point-picked", { detail: { lat: e.latlng.lat, lng: e.latlng.lng } }));
       else selectRoad(r.id, true);
     });
   }
+  const markers = [];
   if (!state.horizon)
     for (const e of state.data.events) {
       if (!state.layers[e.type] || (e.status === "pending" && !state.layers.pending)) continue;
+      if (!bounds.contains([e.lat, e.lng])) continue;
+      markers.push({ lat: e.lat, lng: e.lng, type: e.type, title: `${typeNames[e.type]}: ${e.name}`, tooltip: `${esc(e.name)} · ${e.status === "pending" ? "Chờ xác minh" : typeNames[e.type]}`, pending: e.status === "pending", click: () => (state.picking ? finishPick(e.lat, e.lng) : showEvent(e.id)) });
+    }
+  else
+    for (const r of state.data.roads) {
+      if (!r.known || !bounds.contains(r.center)) continue;
+      const predicted = r.forecast[state.horizon / 15];
+      const [type, score] = [["flood", predicted.flood_risk], ["traffic", predicted.traffic_risk], ["incident", predicted.incident_risk]].reduce((best, item) => (item[1] > best[1] ? item : best));
+      if (score < 65 || !state.layers[type]) continue;
+      const [lat, lng] = r.center;
+      markers.push({ lat, lng, type, title: `${typeNames[type]} · dự báo +${state.horizon} phút`, tooltip: `${esc(r.name)} · ${typeNames[type]} ${score}/100 (mô phỏng)`, click: () => (state.picking ? finishPick(lat, lng) : selectRoad(r.id, true)) });
+    }
+  const groups = new Map();
+  for (const item of markers) {
+    const p = map.latLngToContainerPoint([item.lat, item.lng]);
+    const key = map.getZoom() < 13 ? `${Math.floor(p.x / 54)}:${Math.floor(p.y / 54)}` : `${item.lat}:${item.lng}:${item.title}`;
+    if (!groups.has(key)) groups.set(key, []);
+    groups.get(key).push(item);
+  }
+  for (const group of groups.values()) {
+    if (group.length > 1 && map.getZoom() < 13) {
+      const lat = group.reduce((sum, item) => sum + item.lat, 0) / group.length;
+      const lng = group.reduce((sum, item) => sum + item.lng, 0) / group.length;
+      const cluster = L.marker([lat, lng], { icon: L.divIcon({ className: "", html: `<span class="event-cluster">${group.length}</span>`, iconSize: [35, 35] }), title: `${group.length} cảnh báo mô phỏng` }).addTo(eventLayer);
+      cluster.on("click", () => map.setView([lat, lng], Math.min(15, map.getZoom() + 2)));
+      continue;
+    }
+    const e = group[0];
       const marker = L.marker([e.lat, e.lng], {
         icon: L.divIcon({
-          className: `event-marker ${e.type} ${e.status === "pending" ? "pending" : ""}`,
+          className: `event-marker ${e.type} ${e.pending ? "pending" : ""}`,
           html: icon(typeIcons[e.type]),
           iconSize: [32, 32],
         }),
-        title: `${typeNames[e.type]}: ${e.name}`,
+        title: e.title,
       }).addTo(eventLayer);
-      marker.bindTooltip(
-        `${esc(e.name)} · ${e.status === "pending" ? "Chờ xác minh" : typeNames[e.type]}`,
-      );
-      marker.on("click", () => (state.picking ? finishPick(e.lat, e.lng) : showEvent(e.id)));
-    }
+      marker.bindTooltip(e.tooltip);
+      marker.on("click", () => {
+        if (state.routePicking) window.dispatchEvent(new CustomEvent("route-point-picked", { detail: { lat: e.lat, lng: e.lng } }));
+        else e.click();
+      });
+  }
   $("#map-mode-label").hidden = !state.horizon;
   $("#map-mode-label").textContent =
     `Dự báo +${state.horizon} phút · Nguy cơ thấp → trung bình → cao`;
   $(".map-legend").innerHTML = state.horizon
-    ? '<span><i class="legend-dot green"></i>Thấp &lt;35</span><span><i class="legend-dot orange-bg"></i>Trung bình 35–64</span><span><i class="legend-dot red-bg"></i>Cao ≥65</span><span><i class="legend-dot gray-bg"></i>Chưa đủ dữ liệu</span>'
-    : '<span><i class="legend-dot green"></i>Thông thoáng</span><span><i class="legend-dot orange-bg"></i>Ùn tắc</span><span><i class="legend-dot blue-bg"></i>Ngập</span><span><i class="legend-dot red-bg"></i>Sự cố / đóng</span><span><i class="legend-dot gray-bg"></i>Chưa có dữ liệu</span>';
+    ? '<span><i class="legend-dot green"></i>Thấp &lt;35</span><span><i class="legend-dot orange-bg"></i>Trung bình 35–64</span><span><i class="legend-dot red-bg"></i>Cao ≥65</span><span><i class="legend-dot gray-bg"></i>Chưa đủ dữ liệu</span><span><i class="legend-line"></i>Đường chính OSM</span>'
+    : '<span><i class="legend-dot green"></i>Thông thoáng</span><span><i class="legend-dot orange-bg"></i>Ùn tắc</span><span><i class="legend-dot blue-bg"></i>Ngập</span><span><i class="legend-dot red-bg"></i>Sự cố / đóng</span><span><i class="legend-dot gray-bg"></i>Chưa có dữ liệu</span><span><i class="legend-line"></i>Đường chính OSM</span>';
 }

@@ -5,6 +5,7 @@ import time
 import unittest
 
 from vietsafe import auth, reports, service
+from vietsafe.core.forecast import MODEL_VERSION
 from vietsafe.core.routing import calculate_routes
 from vietsafe.core.simulation import build_snapshot
 from vietsafe.db import connect
@@ -89,8 +90,8 @@ class ServiceTests(DatabaseTestCase):
         service.current_snapshot()
         with connect() as db:
             row = db.execute("SELECT * FROM prediction_logs LIMIT 1").fetchone()
-        self.assertEqual(row["model_version"], "spatial-rule-demo-1.0")
-        self.assertEqual(len(json.loads(row["payload"])), 36)
+        self.assertEqual(row["model_version"], MODEL_VERSION)
+        self.assertEqual(len(json.loads(row["payload"])), 111)
 
     def test_scenario_roundtrip_and_validation(self):
         self.assertEqual(service.get_scenario(), "rain")

@@ -4,7 +4,7 @@ import { authState } from "./state.js";
 /** GET (hoặc method tùy ý qua options). Ném Error(message tiếng Việt) khi lỗi. */
 export async function api(path, options = {}) {
   const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), 12000);
+  const timeout = setTimeout(() => controller.abort(), options.timeoutMs ?? 12000);
   const authHeaders = authState.token ? { "X-VietSafe-Session": authState.token } : {};
   try {
     const response = await fetch(path, {

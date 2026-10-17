@@ -97,8 +97,20 @@ Chưa có hệ thống CI tự động; hãy chạy các lệnh ở mục 3 trư
 | Render                   | Kết nối repo, dùng `render.yaml`; **đặt** `VIETSAFE_ADMIN_PASSWORD` và `VIETSAFE_CITIZEN_PASSWORD` trong dashboard (xem [mục 8](#8-vấn-đề-đã-biết))     |
 | Docker                   | `Dockerfile` ở gốc (Python 3.11-slim); chạy bằng user không phải root; gắn volume vào `/app/data` để giữ dữ liệu (xem [mục 8](#8-vấn-đề-đã-biết))       |
 
-Bản đồ nền chạy được trên `localhost`; deploy lên tên miền thật có thể cần khóa Stadia Maps (`STADIA_API_KEY` trong `frontend/js/config.js`) —
-nếu không, ứng dụng tự chuyển sang tile OpenStreetMap rồi sang sơ đồ ngoại tuyến.
+Nền mặc định là OpenFreeMap Positron (vector OpenMapTiles), không cần API key. Để dựng lại thư viện bản đồ
+đã đóng gói trong `frontend/vendor/` và `public/vendor/`, chạy `npm run build:map-vendor` sau `npm install`.
+
+Để dùng thêm nguồn raster OpenMapTiles qua MapTiler Cloud khi nền mặc định không tải được, đặt biến môi trường
+`MAPTILER_API_KEY` trước khi chạy server
+(lấy khóa từ [MapTiler Cloud](https://www.maptiler.com/cloud/)). Ví dụ PowerShell:
+
+```powershell
+$env:MAPTILER_API_KEY = "your-key"
+.\scripts\start.ps1
+```
+
+Nếu không đặt khóa hoặc tile lỗi, bản đồ chuyển sang Stadia Maps, OpenStreetMap rồi sơ đồ ngoại tuyến. Trên tên miền thật, Stadia có thể cần
+khóa riêng (`STADIA_API_KEY` trong `frontend/js/config.js`).
 
 Máy chủ mặc định lắng nghe ở `localhost` và chỉ nhận Host là `localhost`/`127.0.0.1` cùng cổng hoặc tên miền có hậu tố trong `ALLOWED_HOST_SUFFIXES`
 (`config.py`). Khi chạy sau tunnel/hosting khác, thêm hậu tố tương ứng vào danh sách này.

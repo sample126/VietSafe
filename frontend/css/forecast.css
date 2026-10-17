@@ -62,6 +62,7 @@
 .chart-legend {
   display: flex;
   gap: 24px;
+  flex-wrap: wrap;
   font-size: 11px;
   justify-content: center;
   margin: 10px;

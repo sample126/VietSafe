@@ -138,7 +138,10 @@ const mapModule = await import(url("map.js"));
 
 const loaded = await waitFor(() => state.data, { label: "snapshot đầu tiên" });
 check("lấy được snapshot từ API", loaded);
-check("snapshot có 36 đoạn đường", state.data?.roads?.length === 36);
+check("snapshot có 111 đoạn đường", state.data?.roads?.length === 111);
+check("dự báo có ba chỉ số nguy cơ", state.data?.roads?.some((r) =>
+  r.forecast?.every((point) => "traffic_risk" in point && "incident_risk" in point),
+));
 check(
   "thẻ thống kê được điền",
   /\d/.test($("#stat-flood").textContent),
@@ -152,6 +155,7 @@ check(
 );
 check("thẻ 'Nhìn trước hành trình' được điền", $("#insight-road").textContent.trim().length > 0);
 check("ô tìm tuyến có danh sách điểm", $("#route-origin").options.length > 2);
+check("có công tắc đường chính OSM", $("#major-roads")?.checked === true);
 
 console.log("\n[2] Điều hướng & dự báo");
 click($('[data-view="forecast"]'));
@@ -172,8 +176,20 @@ check(
   "nhận và hiển thị kết quả tuyến",
   await waitFor(() => $$("#route-results .route-choice").length > 0, { label: "kết quả tuyến" }),
 );
+check("tuyến A-B tách màu cảnh báo", mapModule.routeLayer.getLayers().some((layer) => layer.options?.color === "#6940cf"));
+check("chú giải A-B hiện trên bản đồ", !$("#route-map-key").hidden);
+check("có ba mốc so sánh hành trình", $$("#route-results .route-forecast button").length === 3);
+check("có chế độ đi bộ", [...$("#route-vehicle").options].some((option) => option.value === "walk"));
+click($("#route-swap"));
+check("đảo A-B", $("#route-origin").value === "hoankiem" && $("#route-destination").value === "caugiay");
+$("#route-place-search").value = "Vo Chi Cong";
+$("#route-place-search").dispatchEvent(new window.Event("input", { bubbles: true }));
+check("tìm phố OSM trong panel", await waitFor(() => $$("#route-place-results .route-place-item").length > 0));
+click($("#route-place-results .route-place-item button"));
+check("gán kết quả tìm kiếm làm A", $("#route-origin").value === "vochicong" || $("#route-origin").value.includes(","));
 click($("#close-route"));
 check("đóng bảng tìm tuyến", !visible($("#route-panel")) && visible($("#event-panel")));
+check("chú giải A-B ẩn khi đóng tuyến", $("#route-map-key").hidden);
 
 console.log("\n[4] Đăng nhập & phân quyền");
 check("ban đầu là khách", authState.user === null);

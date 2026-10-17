@@ -25,7 +25,7 @@ flowchart LR
 - **Không có bước build, không có thư viện ngoài** ở thời điểm chạy. `ruff` (backend) và các gói trong `package.json`
   (Prettier, ESLint, jsdom) chỉ để format, lint và test.
 - **Trạng thái nằm ở SQLite**: phản ánh, tài khoản, phiên đăng nhập, kịch bản hiện hành, nhật ký dự báo.
-  Mạng đường (25 nút, 36 đoạn) là dữ liệu tĩnh trong code (`core/network.py`).
+  Mạng cảnh báo demo (79 điểm, 111 hành lang) là dữ liệu tĩnh trong code (`core/network.py`); hình học hành lang OSM/OSRM lưu cục bộ trong `core/hanoi_roads_osrm.json`. Định tuyến A-B dùng đồ thị OSM có hướng riêng (`core/hanoi_routing_graph.json.gz`), trích từ Geofabrik và lọc quanh hành lang demo, đồng thời giữ toàn bộ đường chính. Lớp hiển thị 17.711 way nằm trong `core/hanoi_major_roads.json`.
 
 ## 2. Cấu trúc thư mục
 
@@ -39,10 +39,13 @@ backend/vietsafe/
 ├── reports.py         Phản ánh: tạo / duyệt / liệt kê / CSV
 ├── service.py         get/set_scenario, current_snapshot, prediction_logs
 ├── core/              ← LOGIC THUẦN: không biết gì về HTTP hay cơ sở dữ liệu
-│   ├── network.py     25 nút, 36 đoạn đường, nearest_road()
+│   ├── network.py     79 nút, 111 đoạn đường, nearest_road()
+│   ├── osm_graph.py   đồ thị đường OSM có hướng, ghép cảnh báo, ghép điểm A/B
+│   ├── traffic_provider.py  tốc độ giao thông demo theo giờ
+│   ├── flood_provider.py    độ sâu ngập demo theo kịch bản
 │   ├── simulation.py  build_snapshot(): dữ liệu quan sát GIẢ LẬP theo kịch bản
 │   ├── forecast.py    forecast(): công thức dự báo quy tắc
-│   ├── routing.py     calculate_routes(): Dijkstra có phạt rủi ro
+│   ├── routing.py     calculate_routes(): A* có phạt rủi ro trên OSM
 │   └── search.py      search_places(): tìm tên, bỏ dấu tiếng Việt
 └── web/               ← TẦNG HTTP
     ├── server.py      Handler: kiểm tra Host/Origin, đọc body, gắn security header
@@ -93,7 +96,7 @@ sequenceDiagram
     A->>S: current_snapshot()
     S->>R: phản ánh còn hạn (tự đánh dấu expired)
     S->>C: build_snapshot(kịch bản, phản ánh)
-    C-->>S: 36 đoạn đường + dự báo 5 mốc + sự kiện
+    C-->>S: 111 đoạn đường + dự báo 5 mốc + sự kiện
     S->>S: ghi prediction_logs (tối đa 1 bản/10s, giữ 24h)
     S-->>B: JSON → state.data → updateDashboard() vẽ lại
 ```
@@ -135,7 +138,7 @@ Mọi chuyển trạng thái của admin được ghi vào bảng `audit`.
 | ------------------------------------------------------------------ | --------------------------------------------------------------------------------------- |
 | Chỉ dùng thư viện chuẩn Python                                     | Chạy được ngay trên máy bất kỳ (kể cả máy thi), Docker nhỏ, không rủi ro chuỗi cung ứng |
 | Frontend thuần HTML/CSS/ES modules, không framework, không build   | App nhỏ; `<script type="module">` chạy trực tiếp và tương thích CSP `script-src 'self'` |
-| Snapshot tính lại mỗi request (không cache trạng thái)             | Đơn giản, xác định, dễ test; chi phí rất nhỏ với 36 đoạn đường                          |
+| Snapshot tính lại mỗi request (không cache trạng thái)             | Đơn giản, xác định, dễ test; chi phí nhỏ với 111 đoạn đường                              |
 | Kiểm duyệt phản ánh trước khi có hiệu lực                          | Dữ liệu cộng đồng không đáng tin mặc định; tránh chặn đường oan                         |
 | Đoạn đường thiếu dữ liệu: dự báo trả `null`, không bịa số          | Trung thực với người dùng; định tuyến loại các đoạn `known=false`                       |
 | `core/` tách khỏi HTTP/DB                                          | Thay mô hình/nguồn dữ liệu mà không đụng phần còn lại; test nhanh                       |
@@ -169,9 +172,9 @@ Mọi chuyển trạng thái của admin được ghi vào bảng `audit`.
 
 ## 6. Dữ liệu thật và dữ liệu giả lập
 
-- **Giả lập:** toàn bộ quan sát theo đoạn đường (tốc độ, độ sâu ngập, sự kiện nền) do `core/simulation.py` sinh ra từ kịch bản thời tiết
-  (`normal` 0 mm/h, `rain` 28 mm/h, `storm` 55 mm/h), cộng một dao động nhỏ theo thời gian. Mạng đường là đồ thị giản lược dựng tay.
-- **Quy tắc, không phải AI đã huấn luyện:** `core/forecast.py` là công thức quy tắc (`MODEL_VERSION = "spatial-rule-demo-1.0"`);
+- **Giả lập:** tốc độ, độ sâu ngập và sự kiện nền do `core/traffic_provider.py`, `core/flood_provider.py` và `core/simulation.py` sinh từ kịch bản thời tiết
+  (`normal` 0 mm/h, `rain` 28 mm/h, `storm` 55 mm/h). Trạng thái lặp lại được trong mỗi ô 15 phút theo giờ Hà Nội; có mẫu giờ cao điểm và cuối tuần. Đồ thị định tuyến trích từ OSM, không phải đồ thị 79 nút thủ công; cảnh báo vẫn được gán gần hành lang demo.
+- **Quy tắc, không phải AI đã huấn luyện:** `core/forecast.py` là công thức quy tắc (`MODEL_VERSION = "hanoi-schedule-demo-2.0"`);
   điểm nguy cơ không phải xác suất đã hiệu chỉnh.
 - **Dữ liệu từ người dùng:** phản ánh cộng đồng đã được admin xác minh là nguồn duy nhất không do bộ mô phỏng tạo ra.
 - **Chưa kết nối:** dữ liệu mưa, mực nước, camera, cơ quan khí tượng/thoát nước. `/api/snapshot` trả sẵn `source_notice` và

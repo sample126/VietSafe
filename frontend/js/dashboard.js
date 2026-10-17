@@ -29,7 +29,7 @@ export async function refresh() {
     state.connected = true;
     state.lastGood = Date.now();
     $("#connection-error").hidden = true;
-    $("#sync-status").textContent = "Kết nối local · Dữ liệu mô phỏng";
+    $("#sync-status").textContent = `Kết nối local · Dữ liệu mô phỏng${state.data.simulation_speed !== 1 ? ` · ${state.data.simulation_speed}×` : ""}`;
     $(".status-dot").style.background = "#49a68b";
     if (first) populateControls();
     updateDashboard();

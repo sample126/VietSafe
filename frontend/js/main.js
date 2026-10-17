@@ -45,8 +45,13 @@ if (typeof L === "undefined") {
   $("#connection-error").textContent =
     "Thiếu thư viện bản đồ local. Kiểm tra thư mục frontend/vendor.";
 } else {
-  initializeMap();
-  checkAuth();
-  refresh();
-  setInterval(refresh, REFRESH_INTERVAL_MS);
+  fetch("/api/map-config")
+    .then((response) => response.ok ? response.json() : {})
+    .catch(() => ({}))
+    .then((config) => {
+      initializeMap(config.maptiler_key || "");
+      checkAuth();
+      refresh();
+      setInterval(refresh, REFRESH_INTERVAL_MS);
+    });
 }
