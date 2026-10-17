@@ -42,7 +42,7 @@ function renderMyReportCard(report) {
     </div>
     <p>${esc(report.description)}</p>
     <div class="review-evidence">
-      <span><strong>Vị trí:</strong> ${report.lat.toFixed(5)}, ${report.lng.toFixed(5)}</span>
+      <span><strong>Thời gian:</strong> ${timeAgo(report.created_at)}</span>
       <span><strong>Mức độ:</strong> ${report.severity}/3</span>
     </div>
     <div class="review-meta">

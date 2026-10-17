@@ -155,26 +155,19 @@ function renderReportCard(report) {
   return `<article class="review-card">
     <div class="review-top">
       ${checkbox}
-      <div class="review-title">
-        <h3>${esc(report.address)} <span class="data-label">· ${typeNames[report.type]}</span></h3>
-        ${newBadge}
-      </div>
+      <h3>${esc(report.address)} <span class="data-label">· ${typeNames[report.type]}</span></h3>
       <span class="tag tag-${report.status === "verified" ? "teal" : report.status === "pending" ? "orange" : "gray"}">${statuses[report.status]}</span>
+      ${newBadge}
     </div>
     <p class="review-desc">${esc(report.description)}</p>
-    <div class="review-evidence">
-      <span><strong>Nguồn:</strong> Phản ánh cộng đồng</span>
-      <span><strong>Bằng chứng:</strong> ${report.media_url ? "Có ảnh đính kèm" : "Không có ảnh"}</span>
-    </div>
     <div class="review-meta">
       <span class="review-id">${id}</span>
       <span>${esc(report.road_id)}</span>
-      <span class="severity-${severityColor}">Mức ${report.severity}/3 — ${severityLabel}</span>
+      <span class="severity-${severityColor}">Mức ${report.severity}/3</span>
       <span>${timeAgo(report.created_at)}</span>
-      <span>${report.lat.toFixed(5)}, ${report.lng.toFixed(5)}</span>
     </div>
-    ${report.media_url ? `<a href="${esc(report.media_url)}" target="_blank" rel="noopener" class="image-view-full"><img class="review-image" src="${esc(report.media_url)}" alt="Ảnh hiện trường"></a>` : ""}
-    <div class="review-actions">${actions}<button data-report-map="${id}">Xem vị trí</button><button data-report-history="${id}" aria-expanded="false">Lịch sử</button></div>
+    ${report.media_url ? `<a href="${esc(report.media_url)}" target="_blank" rel="noopener"><img class="review-image" src="${esc(report.media_url)}" alt="Ảnh hiện trường"></a>` : ""}
+    <div class="review-actions">${actions}<button data-report-map="${id}">Vị trí</button><button data-report-history="${id}" aria-expanded="false">Lịch sử</button></div>
     <div class="review-history" data-history-for="${id}" hidden></div>
   </article>`;
 }
