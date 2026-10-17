@@ -141,10 +141,20 @@
         <button class="nav-item" data-view="forecast" title="Dự báo">
           <svg><use href="#i-chart" /></svg><span>Dự báo</span>
         </button>
-        <button class="nav-item user-only" data-view="rescue" title="Ứng cứu khẩn cấp" hidden>
+        <button
+          class="nav-item user-only"
+          data-view="rescue"
+          title="Ứng cứu khẩn cấp"
+          hidden
+        >
           <svg><use href="#i-rescue" /></svg><span>Ứng cứu</span>
         </button>
-        <button class="nav-item user-only" data-view="my-reports" title="Phản ánh của tôi" hidden>
+        <button
+          class="nav-item user-only"
+          data-view="my-reports"
+          title="Phản ánh của tôi"
+          hidden
+        >
           <svg><use href="#i-report" /></svg><span>Phản ánh của tôi</span>
         </button>
         <button
@@ -184,14 +194,20 @@
           <span class="location-chip"
             ><svg><use href="#i-pin" /></svg>Hà Nội</span
           ><span class="demo-chip"><i></i>Bản thử nghiệm</span>
-          <button class="notification-bell" id="notification-bell" title="Thông báo">
+          <button
+            class="notification-bell"
+            id="notification-bell"
+            title="Thông báo"
+          >
             <svg><use href="#i-bell" /></svg>
             <b id="notification-badge" hidden>0</b>
           </button>
           <div id="notification-panel" class="notification-panel" hidden>
             <div class="notification-header">
               <strong>Thông báo</strong>
-              <button id="mark-all-read" class="text-button">Đánh dấu đã đọc</button>
+              <button id="mark-all-read" class="text-button">
+                Đánh dấu đã đọc
+              </button>
             </div>
             <div id="notification-list"></div>
           </div>
@@ -582,17 +598,25 @@
             <div class="section-title">
               <div>
                 <h2>Danh bạ cứu hộ</h2>
-                <p>
-                  Các đơn vị cứu hộ xe máy, ô tô và xe tải tại Hà Nội.
-                </p>
+                <p>Các đơn vị cứu hộ xe máy, ô tô và xe tải tại Hà Nội.</p>
               </div>
             </div>
-            <div class="rescue-emergency" role="group" aria-label="Số cấp cứu khẩn cấp">
+            <div
+              class="rescue-emergency"
+              role="group"
+              aria-label="Số cấp cứu khẩn cấp"
+            >
               <span class="rescue-emergency-label">Khẩn cấp?</span>
-              <a class="rescue-emergency-btn rescue-emergency-115" href="tel:115">
+              <a
+                class="rescue-emergency-btn rescue-emergency-115"
+                href="tel:115"
+              >
                 <svg><use href="#i-phone" /></svg>Gọi 115 — Cấp cứu y tế
               </a>
-              <a class="rescue-emergency-btn rescue-emergency-113" href="tel:113">
+              <a
+                class="rescue-emergency-btn rescue-emergency-113"
+                href="tel:113"
+              >
                 <svg><use href="#i-phone" /></svg>Gọi 113 — Công an
               </a>
             </div>
@@ -654,7 +678,11 @@
                       placeholder="Ví dụ: Cầu Giấy, Đường Láng"
                       autocomplete="off"
                     />
-                    <div id="rescue-origin-suggestions" class="rescue-origin-suggestions" hidden></div>
+                    <div
+                      id="rescue-origin-suggestions"
+                      class="rescue-origin-suggestions"
+                      hidden
+                    ></div>
                   </div>
                   <button
                     type="button"
@@ -742,9 +770,7 @@
                     </div>
                     <div class="rescue-form-pair">
                       <div class="rescue-form-field">
-                        <label for="rescue-phone"
-                          >Số điện thoại</label
-                        >
+                        <label for="rescue-phone">Số điện thoại (*)</label>
                         <input
                           id="rescue-phone"
                           type="tel"
@@ -871,10 +897,8 @@
                   <option value="2">Trung bình</option>
                   <option value="3">Nghiêm trọng</option>
                 </select></label
-              ><label
-                >Từ ngày<input id="report-date-from" type="date" /></label
-              ><label
-                >Đến ngày<input id="report-date-to" type="date" /></label
+              ><label>Từ ngày<input id="report-date-from" type="date" /></label
+              ><label>Đến ngày<input id="report-date-to" type="date" /></label
               ><label
                 >Sắp xếp<select id="report-sort">
                   <option value="newest">Mới nhất</option>
@@ -882,16 +906,38 @@
                   <option value="oldest">Cũ nhất</option>
                 </select></label
               ><label class="toggle-label"
-                ><input type="checkbox" id="only-pending-toggle" /> Chỉ xem chờ xử lý</label
+                ><input type="checkbox" id="only-pending-toggle" /> Chỉ xem chờ
+                xử lý</label
               ><button class="button secondary" id="refresh-reports">
                 Làm mới
               </button>
             </div>
             <div id="bulk-actions-bar" class="bulk-actions-bar" hidden>
-              <span><input type="checkbox" id="bulk-select-all"> <strong id="bulk-selected-count">0</strong> đã chọn</span>
-              <button class="button small" id="bulk-verify" data-bulk-action="verified">Xác minh</button>
-              <button class="button small" id="bulk-reject" data-bulk-action="rejected">Từ chối</button>
-              <button class="button small" id="bulk-resolve" data-bulk-action="resolved">Đã xử lý</button>
+              <span
+                ><input type="checkbox" id="bulk-select-all" />
+                <strong id="bulk-selected-count">0</strong> đã chọn</span
+              >
+              <button
+                class="button small"
+                id="bulk-verify"
+                data-bulk-action="verified"
+              >
+                Xác minh
+              </button>
+              <button
+                class="button small"
+                id="bulk-reject"
+                data-bulk-action="rejected"
+              >
+                Từ chối
+              </button>
+              <button
+                class="button small"
+                id="bulk-resolve"
+                data-bulk-action="resolved"
+              >
+                Đã xử lý
+              </button>
             </div>
             <div id="reports-list"></div>
             <div id="reports-pagination" class="reports-pagination"></div>
@@ -921,7 +967,6 @@
                 </select></label
               >
             </div>
-            <p id="my-reports-count" class="muted">0 phản ánh</p>
             <div id="my-reports-list"></div>
           </div>
         </section>
@@ -969,7 +1014,7 @@
             ></label
           >
         </div>
-        <label for="report-address">Vị trí / địa chỉ cụ thể</label
+        <label for="report-address">Vị trí / địa chỉ cụ thể (*)</label
         ><input
           id="report-address"
           list="address-options"
@@ -994,7 +1039,7 @@
           <option value="1">Nhẹ — vẫn lưu thông</option>
           <option value="2" selected>Trung bình — di chuyển khó khăn</option>
           <option value="3">Nghiêm trọng — không thể lưu thông</option></select
-        ><label for="report-description">Mô tả hiện trường</label
+        ><label for="report-description">Mô tả hiện trường (*)</label
         ><textarea
           id="report-description"
           rows="3"
@@ -1007,8 +1052,7 @@
         ><label for="report-image"
           >Ảnh hiện trường <span class="optional">(không bắt buộc)</span></label
         >
-        <div id="report-image-preview" class="image-preview" hidden></div
-        >
+        <div id="report-image-preview" class="image-preview" hidden></div>
         <div class="report-image-actions">
           <input
             id="report-camera"
@@ -1081,7 +1125,11 @@
             <div class="eyebrow red-text">TỪ CHỐI PHẢN ÁNH</div>
             <h2>Nhập lý do từ chối</h2>
           </div>
-          <button type="button" class="icon-button close-dialog" aria-label="Đóng">
+          <button
+            type="button"
+            class="icon-button close-dialog"
+            aria-label="Đóng"
+          >
             <svg><use href="#i-close" /></svg>
           </button>
         </div>
@@ -1097,8 +1145,12 @@
         <span id="reject-char-count" class="char-count">0/240</span>
         <p id="reject-error" class="form-error" role="alert" hidden></p>
         <div class="dialog-footer">
-          <button type="button" class="button secondary" id="reject-cancel">Hủy</button>
-          <button type="submit" class="button primary" id="reject-submit">Từ chối phản ánh</button>
+          <button type="button" class="button secondary" id="reject-cancel">
+            Hủy
+          </button>
+          <button type="submit" class="button primary" id="reject-submit">
+            Từ chối phản ánh
+          </button>
         </div>
       </form>
     </dialog>

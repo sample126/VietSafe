@@ -44,12 +44,19 @@
   filter: brightness(0.92);
 }
 
-.rescue-emergency-115 { background: #c94436; }
-.rescue-emergency-113 { background: #1f5fbf; }
+.rescue-emergency-115 {
+  background: #c94436;
+}
+.rescue-emergency-113 {
+  background: #1f5fbf;
+}
 
 /* === Thanh số khẩn cấp: mobile === */
 @media (max-width: 600px) {
-  .rescue-emergency-btn { flex: 1; justify-content: center; }
+  .rescue-emergency-btn {
+    flex: 1;
+    justify-content: center;
+  }
 }
 
 .rescue-online-tag {
@@ -425,7 +432,8 @@
   background: #fffbf0;
   border: 1.5px solid #f6dfa9;
   border-radius: 12px;
-  padding: 20px;
+  padding: 10px;
+  margin-bottom: 16px;
 }
 
 .safety-box-toggle {

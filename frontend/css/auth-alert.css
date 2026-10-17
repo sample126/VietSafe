@@ -74,8 +74,8 @@
 
 .user-menu {
   position: fixed;
-  right: 30px;
-  top: 68px;
+  right: 18px;
+  top: 49px;
   z-index: 1500;
   background: white;
   border: 1px solid var(--line);

@@ -12,12 +12,18 @@ const STEPS = [
 
 function currentStep(status) {
   switch (status) {
-    case "pending": return 0;
-    case "verified": return 1;
-    case "resolved": return 2;
-    case "rejected": return -1;
-    case "expired": return -1;
-    default: return 0;
+    case "pending":
+      return 0;
+    case "verified":
+      return 1;
+    case "resolved":
+      return 2;
+    case "rejected":
+      return -1;
+    case "expired":
+      return -1;
+    default:
+      return 0;
   }
 }
 
@@ -28,14 +34,18 @@ function renderStepper(status) {
     const label = status === "rejected" ? "Bị từ chối" : "Hết hạn";
     return `<div class="stepper stepper-${cls}"><span class="stepper-end">${label}</span></div>`;
   }
-  return `<div class="stepper">` + STEPS.map((s, i) => {
-    const done = i < step;
-    const active = i === step;
-    return `<div class="stepper-step ${done ? "done" : ""} ${active ? "active" : ""}">
+  return (
+    `<div class="stepper">` +
+    STEPS.map((s, i) => {
+      const done = i < step;
+      const active = i === step;
+      return `<div class="stepper-step ${done ? "done" : ""} ${active ? "active" : ""}">
       <div class="stepper-dot"></div>
       <span class="stepper-label">${s.label}</span>
     </div>`;
-  }).join(`<div class="stepper-line"></div>`) + `</div>`;
+    }).join(`<div class="stepper-line"></div>`) +
+    `</div>`
+  );
 }
 
 export async function loadMyReports() {
@@ -53,10 +63,11 @@ export function renderMyReports() {
   renderMyStats(reports);
 
   const filtered = reports
-    .filter((r) => state.myReportsFilter === "all" || r.status === state.myReportsFilter)
+    .filter(
+      (r) =>
+        state.myReportsFilter === "all" || r.status === state.myReportsFilter,
+    )
     .sort((a, b) => b.created_at - a.created_at);
-
-  $("#my-reports-count").textContent = filtered.length;
 
   $("#my-reports-list").innerHTML = filtered.length
     ? filtered.map((r) => renderMyReportCard(r)).join("")
@@ -111,28 +122,35 @@ function renderDescription(desc) {
  * Nếu mô tả dài nhưng vẫn vừa khít 4 dòng → bỏ clamp, khỏi hiện nút thừa.
  */
 function refineDescriptionClamps() {
-  document.querySelectorAll("#my-reports-list .my-desc.clampable").forEach((p) => {
-    const hasOverflow = p.scrollHeight > p.clientHeight + 2;
-    const btn = p.nextElementSibling;
-    if (hasOverflow) {
-      if (btn?.matches("[data-desc-toggle]")) btn.hidden = false;
-    } else {
-      p.classList.remove("clampable");
-      btn?.matches("[data-desc-toggle]") && btn.remove();
-    }
-  });
+  document
+    .querySelectorAll("#my-reports-list .my-desc.clampable")
+    .forEach((p) => {
+      const hasOverflow = p.scrollHeight > p.clientHeight + 2;
+      const btn = p.nextElementSibling;
+      if (hasOverflow) {
+        if (btn?.matches("[data-desc-toggle]")) btn.hidden = false;
+      } else {
+        p.classList.remove("clampable");
+        btn?.matches("[data-desc-toggle]") && btn.remove();
+      }
+    });
 }
 
 function renderMyReportCard(report) {
   const id = esc(report.id);
   const statusClass =
-    report.status === "verified" ? "teal" :
-    report.status === "pending" ? "orange" :
-    report.status === "rejected" ? "red" : "gray";
+    report.status === "verified"
+      ? "teal"
+      : report.status === "pending"
+        ? "orange"
+        : report.status === "rejected"
+          ? "red"
+          : "gray";
   const sevColor = SEVERITY_COLORS[report.severity] || "green";
-  const reasonHtml = report.status === "rejected" && report.reason
-    ? `<div class="reject-reason"><strong>Lý do từ chối:</strong> ${esc(report.reason)}</div>`
-    : "";
+  const reasonHtml =
+    report.status === "rejected" && report.reason
+      ? `<div class="reject-reason"><strong>Lý do từ chối:</strong> ${esc(report.reason)}</div>`
+      : "";
   return `<article class="review-card">
     <div class="review-top">
       <h3>${esc(report.address)} <span class="data-label">· ${typeNames[report.type]}</span></h3>
@@ -180,14 +198,19 @@ export function initMyReports() {
     const button = e.target.closest("button");
     if (!button) return;
     if (button.dataset.myReportMap) {
-      const r = state.myReports?.find((r) => r.id === button.dataset.myReportMap);
+      const r = state.myReports?.find(
+        (r) => r.id === button.dataset.myReportMap,
+      );
       if (r) {
         import("../navigation.js").then(({ setView }) => {
           setView("map");
           import("../map.js").then(({ map, selectionLayer }) => {
             map.setView([r.lat, r.lng], 15);
             selectionLayer.clearLayers();
-            L.circleMarker([r.lat, r.lng], { radius: 10, color: "#087f72" }).addTo(selectionLayer);
+            L.circleMarker([r.lat, r.lng], {
+              radius: 10,
+              color: "#087f72",
+            }).addTo(selectionLayer);
           });
         });
       }
