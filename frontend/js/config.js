@@ -24,6 +24,17 @@ export const PILOT_BOUNDS = { lat: [20.68, 21.31], lng: [105.33, 106.0] };
 export const typeNames = { flood: "Ngập đường", traffic: "Ùn tắc", incident: "Sự cố giao thông" };
 export const typeIcons = { flood: "water", traffic: "car", incident: "alert" };
 export const typeColors = { flood: "blue", traffic: "orange", incident: "red" };
+
+/** Loại chính (dùng cho icon/màu/lớp bản đồ) khi phản ánh có nhiều loại. */
+export const primaryType = (type) => String(type || "").split(",")[0];
+
+/** Nhãn hiển thị "Ngập đường · Ùn tắc" cho trường type nhiều giá trị. */
+export const typeLabel = (type) =>
+  String(type || "")
+    .split(",")
+    .filter((t) => typeNames[t])
+    .map((t) => typeNames[t])
+    .join(" · ") || "Không rõ loại";
 export const statuses = {
   pending: "Chờ xác minh",
   verified: "Đã xác minh",

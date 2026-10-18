@@ -376,6 +376,11 @@
   margin: 10px 0;
 }
 
+.review-meta-severity {
+  margin-top: 4px;
+  font-weight: 600;
+}
+
 .review-actions {
   display: flex;
   gap: 8px;
