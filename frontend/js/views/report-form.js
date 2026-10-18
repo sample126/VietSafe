@@ -4,20 +4,26 @@ import { refresh } from "../dashboard.js";
 import { map, selectionLayer } from "../map.js";
 import { setView } from "../navigation.js";
 import { authState, state } from "../state.js";
-import { $, inPilotArea, toast } from "../utils.js";
+import { $, $$, inPilotArea, toast } from "../utils.js";
 
 let selectedReportImage = null;
 let reportSubmitting = false;
 let roadNames = [];
 
+/** Các loại phản ánh đang được tick (checkbox) — gửi dạng "flood,traffic". */
+function selectedReportTypes() {
+  return $$('input[name="type"]:checked').map((i) => i.value);
+}
+
 // === Draft auto-save ===
 const DRAFT_KEY = "vietsafe_report_draft";
 let draftSaveTimer = null;
+let geocodeTimer = null;
 
 function saveDraft() {
   const draft = {
     address: $("#report-address")?.value || "",
-    type: $("input[name=type]:checked")?.value || "flood",
+    type: selectedReportTypes().join(",") || "flood",
     severity: $("#report-severity")?.value || "2",
     description: $("#report-description")?.value || "",
     position: state.reportPosition,
@@ -36,7 +42,16 @@ function loadDraft() {
       return;
     }
     if (draft.address) $("#report-address").value = draft.address;
-    if (draft.type) $(`input[name=type][value="${draft.type}"]`).checked = true;
+    if (draft.type) {
+      const saved = String(draft.type).split(",").filter((t) => t);
+      $$('input[name="type"]').forEach((box) => {
+        box.checked = saved.includes(box.value);
+      });
+      if (!$$('input[name="type"]:checked').length) {
+        const first = $('input[name="type"]');
+        if (first) first.checked = true;
+      }
+    }
     if (draft.severity) $("#report-severity").value = draft.severity;
     if (draft.description) $("#report-description").value = draft.description;
     if (draft.position) {
@@ -239,37 +254,36 @@ export function geolocate(forReport = false) {
   );
 }
 
-/** Định vị địa chỉ đã nhập bằng API tìm kiếm nội bộ. */
+/** Tự động định vị địa chỉ đang nhập bằng API tìm kiếm nội bộ (không ghi đè ô nhập). */
 export async function locateReportAddress() {
   const value = $("#report-address").value.trim();
-  if (!value) {
-    toast("Hãy nhập tên đường hoặc địa điểm.");
+  if (value.length < 3) return;
+  let result;
+  try {
+    result = await api("/api/search?q=" + encodeURIComponent(value));
+  } catch {
     return;
   }
-  try {
-    const result = await api("/api/search?q=" + encodeURIComponent(value));
-    const exact = result.results.find(
-      (p) => p.name.toLocaleLowerCase("vi") === value.toLocaleLowerCase("vi"),
-    );
-    if (exact || result.results.length === 1) {
-      const p = exact || result.results[0];
-      setReportPosition(p.lat, p.lng, p.name);
-    } else if (result.results.length > 1) {
-      $("#report-error").textContent =
-        "Có nhiều địa điểm phù hợp: " +
-        result.results
-          .slice(0, 4)
-          .map((p) => p.name)
-          .join("; ") +
-        ". Chọn tên đầy đủ hoặc đặt ghim.";
-      $("#report-error").hidden = false;
-    } else {
-      toast(
-        "Địa chỉ chưa có trong danh mục local. Dùng “Chọn trên bản đồ” để đặt vị trí chính xác.",
-      );
-    }
-  } catch (e) {
-    toast(e.message);
+  if ($("#report-address").value.trim() !== value) return;
+  const exact = result.results.find(
+    (p) => p.name.toLocaleLowerCase("vi") === value.toLocaleLowerCase("vi"),
+  );
+  if (exact || result.results.length === 1) {
+    const p = exact || result.results[0];
+    setReportPosition(p.lat, p.lng);
+  } else if (result.results.length > 1) {
+    $("#report-coordinates").classList.remove("valid");
+    $("#report-coordinates").textContent =
+      "Có nhiều địa điểm phù hợp: " +
+      result.results
+        .slice(0, 3)
+        .map((p) => p.name)
+        .join("; ") +
+      " — gõ thêm hoặc chọn trên bản đồ.";
+  } else {
+    $("#report-coordinates").classList.remove("valid");
+    $("#report-coordinates").textContent =
+      "Chưa tìm thấy địa chỉ trong danh mục — dùng GPS hoặc chọn trên bản đồ.";
   }
 }
 
@@ -278,6 +292,11 @@ export async function submitReport(event) {
   if (reportSubmitting) return;
   $("#report-error").hidden = true;
   $("#report-error").textContent = "";
+  if (!selectedReportTypes().length) {
+    $("#report-error").textContent = "Hãy chọn ít nhất một loại phản ánh.";
+    $("#report-error").hidden = false;
+    return;
+  }
   const address = $("#report-address").value.trim();
   if (!state.reportPosition && !address) {
     $("#report-error").textContent =
@@ -314,7 +333,7 @@ export async function submitReport(event) {
     result = await post("/api/reports", {
       ...(state.reportPosition || {}),
       address,
-      type: $("input[name=type]:checked").value,
+      type: selectedReportTypes().join(","),
       severity: Number($("#report-severity").value),
       description: $("#report-description").value,
       image,
@@ -329,7 +348,7 @@ export async function submitReport(event) {
       const reportData = {
         ...(state.reportPosition || {}),
         address,
-        type: $("input[name=type]:checked").value,
+        type: selectedReportTypes().join(","),
         severity: Number($("#report-severity").value),
         description: $("#report-description").value,
       };
@@ -419,7 +438,6 @@ export function initReportForm() {
   });
   $("#report-gps").addEventListener("click", () => geolocate(true));
   $("#report-pick").addEventListener("click", startPick);
-  $("#report-find").addEventListener("click", locateReportAddress);
   $("#cancel-pick").addEventListener("click", () => {
     state.picking = false;
     $("#pick-banner").hidden = true;
@@ -429,16 +447,18 @@ export function initReportForm() {
   $("#report-form").addEventListener("submit", submitReport);
   // Character counter
   $("#report-description")?.addEventListener("input", updateCharCount);
-  // Auto-save draft (debounce 1s) + bỏ ghim cũ khi người dùng tự gõ địa chỉ
+  // Auto-save draft (debounce 1s) + tự động định vị địa chỉ khi ngừng gõ (debounce 400ms)
   const onAddressInput = () => {
     clearTimeout(draftSaveTimer);
     draftSaveTimer = setTimeout(saveDraft, 1000);
-    if (state.reportPosition) {
-      state.reportPosition = null;
-      $("#report-coordinates").textContent =
-        "Địa chỉ đã thay đổi. Hãy định vị lại hoặc chọn trên bản đồ.";
-      $("#report-coordinates").classList.remove("valid");
-    }
+    if (state.reportPosition) state.reportPosition = null;
+    const value = $("#report-address").value.trim();
+    $("#report-coordinates").classList.remove("valid");
+    $("#report-coordinates").textContent =
+      value.length >= 3 ? "Đang định vị địa chỉ…" : "";
+    clearTimeout(geocodeTimer);
+    if (value.length < 3) return;
+    geocodeTimer = setTimeout(() => void locateReportAddress(), 400);
   };
   $("#report-address")?.addEventListener("input", onAddressInput);
   $("#report-description")?.addEventListener("input", () => {

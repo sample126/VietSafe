@@ -1,6 +1,6 @@
 /** Trang "Phản ánh của tôi": người dân xem lịch sử phản ánh đã gửi và trạng thái hiện tại. */
 import { api } from "../api.js";
-import { statuses, typeNames } from "../config.js";
+import { statuses, typeLabel } from "../config.js";
 import { state } from "../state.js";
 import { $, esc, timeAgo } from "../utils.js";
 
@@ -153,7 +153,7 @@ function renderMyReportCard(report) {
       : "";
   return `<article class="review-card">
     <div class="review-top">
-      <h3>${esc(report.address)} <span class="data-label">· ${typeNames[report.type]}</span></h3>
+      <h3>${esc(report.address)} <span class="data-label">· ${typeLabel(report.type)}</span></h3>
       <span class="tag tag-${statusClass}">${statuses[report.status]}</span>
     </div>
     ${renderStepper(report.status)}

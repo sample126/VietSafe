@@ -237,8 +237,8 @@ def _resolve_address(address):
         dict(
             id=road["id"],
             name=road["name"],
-            lat=sum(point[0] for point in road["coordinates"]) / 2,
-            lng=sum(point[1] for point in road["coordinates"]) / 2,
+            lat=road["center"][0],
+            lng=road["center"][1],
             kind="road",
         )
         for road in ROADS
@@ -270,8 +270,17 @@ def create_report(body, username=None):
     """
     if not isinstance(body, dict):
         raise ValueError("Nội dung phản ánh không hợp lệ.")
-    if body.get("type") not in REPORT_TYPES:
+    raw_type = body.get("type")
+    if isinstance(raw_type, str):
+        wanted = [t.strip() for t in raw_type.split(",") if t.strip()]
+    elif isinstance(raw_type, (list, tuple)):
+        wanted = [str(t).strip() for t in raw_type]
+    else:
+        wanted = []
+    if not wanted or any(t not in REPORT_TYPES for t in wanted):
         raise ValueError("Loại phản ánh không hợp lệ.")
+    # Chuẩn hóa: bỏ trùng, sắp theo thứ tự flood, traffic, incident
+    report_type = ",".join(t for t in REPORT_TYPES if t in set(wanted))
     if type(body.get("severity")) is not int or body["severity"] not in (1, 2, 3):
         raise ValueError("Hãy chọn mức độ 1–3.")
     address = body.get("address", "")
@@ -315,7 +324,7 @@ def create_report(body, username=None):
             "AND created_at>? AND status='pending'",
             (
                 road["id"],
-                body["type"],
+                report_type,
                 description.strip(),
                 now - config.REPORT_DUPLICATE_WINDOW_SECONDS,
             ),
@@ -334,7 +343,7 @@ def create_report(body, username=None):
             (
                 report_id,
                 road["id"],
-                body["type"],
+                report_type,
                 body["severity"],
                 lat,
                 lng,

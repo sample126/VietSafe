@@ -5,7 +5,9 @@ import {
   HANOI_BOUNDS,
   TILE_ORDER,
   TILE_PROVIDERS,
+  primaryType,
   typeIcons,
+  typeLabel,
   typeNames,
 } from "./config.js";
 import { state } from "./state.js";
@@ -301,9 +303,9 @@ export function roadColor(r) {
     return risk >= 65 ? "#cf5149" : risk >= 35 ? "#cc8a2b" : "#288d6d";
   }
   if (r.blocked) return "#cf5149";
-  if (r.event_type && state.layers[r.event_type])
+  if (r.event_type && state.layers[primaryType(r.event_type)])
     return { flood: "#347ec5", traffic: "#cc8a2b", incident: "#cf5149" }[
-      r.event_type
+      primaryType(r.event_type)
     ];
   return "#288d6d";
 }
@@ -381,7 +383,7 @@ export function renderMap() {
   if (!state.horizon)
     for (const e of state.data.events) {
       if (
-        !state.layers[e.type] ||
+        !state.layers[primaryType(e.type)] ||
         (e.status === "pending" && !state.layers.pending)
       )
         continue;
@@ -389,9 +391,9 @@ export function renderMap() {
       markers.push({
         lat: e.lat,
         lng: e.lng,
-        type: e.type,
-        title: `${typeNames[e.type]}: ${e.name}`,
-        tooltip: `${esc(e.name)} · ${e.status === "pending" ? "Chờ xác minh" : typeNames[e.type]}`,
+        type: primaryType(e.type),
+        title: `${typeLabel(e.type)}: ${e.name}`,
+        tooltip: `${esc(e.name)} · ${e.status === "pending" ? "Chờ xác minh" : typeLabel(e.type)}`,
         pending: e.status === "pending",
         click: () =>
           state.picking ? finishPick(e.lat, e.lng) : showEvent(e.id),

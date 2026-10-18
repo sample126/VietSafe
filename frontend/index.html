@@ -996,15 +996,15 @@
         <label>Loại phản ánh</label>
         <div class="report-types">
           <label
-            ><input type="radio" name="type" value="flood" checked /><span
+            ><input type="checkbox" name="type" value="flood" checked /><span
               ><svg><use href="#i-water" /></svg>Ngập đường</span
             ></label
           ><label
-            ><input type="radio" name="type" value="traffic" /><span
+            ><input type="checkbox" name="type" value="traffic" /><span
               ><svg><use href="#i-car" /></svg>Ùn tắc</span
             ></label
           ><label
-            ><input type="radio" name="type" value="incident" /><span
+            ><input type="checkbox" name="type" value="incident" /><span
               ><svg><use href="#i-alert" /></svg>Sự cố</span
             ></label
           >
@@ -1021,13 +1021,10 @@
           <button type="button" id="report-gps">
             <svg><use href="#i-target" /></svg>Vị trí của tôi</button
           ><button type="button" id="report-pick">
-            <svg><use href="#i-map" /></svg>Chọn trên bản đồ</button
-          ><button type="button" id="report-find">
-            <svg><use href="#i-search" /></svg>Định vị địa chỉ
-          </button>
+            <svg><use href="#i-map" /></svg>Chọn trên bản đồ</button>
         </div>
         <p id="report-coordinates" class="field-hint">
-          Chọn địa điểm gợi ý, định vị địa chỉ hoặc đặt ghim để xác định tọa độ.
+          Nhập địa chỉ để tự định vị, dùng GPS hoặc đặt ghim trên bản đồ.
         </p>
         <label for="report-severity">Mức độ ảnh hưởng</label
         ><select id="report-severity">

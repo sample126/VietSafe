@@ -1,6 +1,6 @@
 /** Trang "Phản ánh" (admin): danh sách, bộ lọc, duyệt / từ chối / đánh dấu đã xử lý, xuất dữ liệu. */
 import { api, post } from "../api.js";
-import { statuses, typeNames } from "../config.js";
+import { statuses, typeLabel } from "../config.js";
 import { refresh } from "../dashboard.js";
 import { map, selectionLayer } from "../map.js";
 import { setView } from "../navigation.js";
@@ -212,7 +212,7 @@ function renderReportCard(report) {
   return `<article class="review-card">
     <div class="review-top">
       ${checkbox}
-      <h3>${esc(report.address)} <span class="data-label">· ${typeNames[report.type]}</span></h3>
+      <h3>${esc(report.address)} <span class="data-label">· ${typeLabel(report.type)}</span></h3>
       <span class="tag tag-${report.status === "verified" ? "teal" : report.status === "pending" ? "orange" : "gray"}">${statuses[report.status]}</span>
       ${newBadge}
     </div>
@@ -220,8 +220,8 @@ function renderReportCard(report) {
     <div class="review-meta">
       <span class="review-id">${id}</span>
       <span>${esc(report.road_id)}</span>
-      <span class="severity-${severityColor}">Mức ${report.severity}/3</span>
       <span>${timeAgo(report.created_at)}</span>
+      <div class="review-meta-severity severity-${severityColor}">Mức độ: ${report.severity}/3 — ${severityLabel}</div>
     </div>
     ${report.media_url ? `<a href="${esc(report.media_url)}" target="_blank" rel="noopener"><img class="review-image" src="${esc(report.media_url)}" alt="Ảnh hiện trường"></a>` : ""}
     <div class="review-actions">${actions}<button data-report-map="${id}">Vị trí</button><button data-report-history="${id}" aria-expanded="false">Lịch sử</button></div>
