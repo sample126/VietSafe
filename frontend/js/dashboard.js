@@ -10,6 +10,7 @@ import { $, esc, timeText } from "./utils.js";
 import { updateAlertBanner } from "./views/alert-banner.js";
 import { renderEvents } from "./views/events-panel.js";
 import { renderForecast } from "./views/forecast.js";
+import { loadReports } from "./views/reports.js";
 import { renderSources } from "./views/sources.js";
 let refreshing = false;
 
@@ -33,6 +34,7 @@ export async function refresh() {
     updateDashboard();
     updateAlertBanner();
     if (state.view === "reports") await loadReports();
+    return true;
   } catch (e) {
     // Lỗi trong lúc VẼ cũng rơi vào đây và hiện như "mất kết nối" - nên luôn ghi ra console.
     console.error("refresh thất bại:", e);
@@ -42,6 +44,7 @@ export async function refresh() {
       ? "Mất kết nối · Dữ liệu đã cũ"
       : "Chưa kết nối máy chủ";
     $(".status-dot").style.background = "#d86b5c";
+    return false;
   } finally {
     refreshing = false;
     complete();

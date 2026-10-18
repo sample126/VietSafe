@@ -50,6 +50,10 @@
         <symbol id="i-report" viewBox="0 0 24 24">
           <path d="M8 4H5v17h14V4h-3M8 3h8v4H8zM8 11h8M8 15h5" />
         </symbol>
+        <symbol id="i-bell" viewBox="0 0 24 24">
+          <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
+          <path d="M13.73 21a2 2 0 0 1-3.46 0" />
+        </symbol>
         <symbol id="i-search" viewBox="0 0 24 24">
           <circle cx="10" cy="10" r="6" />
           <path d="m15 15 6 6" />
@@ -141,6 +145,14 @@
           <svg><use href="#i-rescue" /></svg><span>Ứng cứu</span>
         </button>
         <button
+          class="nav-item user-only"
+          data-view="my-reports"
+          title="Phản ánh của tôi"
+          hidden
+        >
+          <svg><use href="#i-report" /></svg><span>Phản ánh của tôi</span>
+        </button>
+        <button
           class="nav-item admin-only"
           data-view="sources"
           title="Nguồn dữ liệu"
@@ -177,6 +189,23 @@
           <span class="location-chip"
             ><svg><use href="#i-pin" /></svg>Hà Nội</span
           ><span class="demo-chip"><i></i>Bản thử nghiệm</span>
+          <button
+            class="notification-bell"
+            id="notification-bell"
+            title="Thông báo"
+          >
+            <svg><use href="#i-bell" /></svg>
+            <b id="notification-badge" hidden>0</b>
+          </button>
+          <div id="notification-panel" class="notification-panel" hidden>
+            <div class="notification-header">
+              <strong>Thông báo</strong>
+              <button id="mark-all-read" class="text-button">
+                Đánh dấu đã đọc
+              </button>
+            </div>
+            <div id="notification-list"></div>
+          </div>
           <button class="button primary" id="open-report">
             <svg><use href="#i-plus" /></svg>Gửi phản ánh
           </button>
@@ -563,233 +592,203 @@
           <div class="section-card">
             <div class="section-title">
               <div>
-                <h2>Mạng Lưới Ứng Cứu & Cứu Hộ Giao Thông Khẩn Cấp</h2>
-                <p>
-                  Hỗ trợ khẩn cấp 24/7 cho phương tiện bị ngập nước, chết máy,
-                  tai nạn hoặc hư hỏng trên địa bàn Hà Nội.
-                </p>
-              </div>
-              <div class="rescue-online-tag">
-                <span class="live-dot"></span>Trực ban 24/7
+                <h2>Danh bạ cứu hộ</h2>
+                <p>Các đơn vị cứu hộ xe máy, ô tô và xe tải tại Hà Nội.</p>
               </div>
             </div>
-            <div class="rescue-hotline-bar">
-              <div class="hotline-box bike-box">
-                <div class="hotline-icon">
-                  <svg><use href="#i-phone" /></svg>
-                </div>
-                <div class="hotline-content">
-                  <span>Cứu hộ Xe máy 247</span><strong>0944.883.288</strong
-                  ><small>Sửa tận nơi · Xử lý chết máy ngập nước</small>
-                </div>
-                <a href="tel:0944883288" class="button primary phone-btn"
-                  ><svg><use href="#i-phone" /></svg>Gọi ngay</a
-                >
-              </div>
-              <div class="hotline-box car-box">
-                <div class="hotline-icon">
-                  <svg><use href="#i-phone" /></svg>
-                </div>
-                <div class="hotline-content">
-                  <span>Cứu hộ Ô tô 24h</span><strong>0967.119.119</strong
-                  ><small>Kéo xe sàn trượt · Cẩu xe ngập nước</small>
-                </div>
-                <a href="tel:0967119119" class="button primary phone-btn"
-                  ><svg><use href="#i-phone" /></svg>Gọi ngay</a
-                >
-              </div>
-              <div class="hotline-box heavy-box">
-                <div class="hotline-icon">
-                  <svg><use href="#i-phone" /></svg>
-                </div>
-                <div class="hotline-content">
-                  <span>Trung Tâm Cứu Hộ 116</span><strong>0896.116.116</strong
-                  ><small>Đội xe cứu hộ chuyên dụng toàn miền Bắc</small>
-                </div>
-                <a href="tel:0896116116" class="button primary phone-btn"
-                  ><svg><use href="#i-phone" /></svg>Gọi ngay</a
-                >
-              </div>
+            <div
+              class="rescue-emergency"
+              role="group"
+              aria-label="Số cấp cứu khẩn cấp"
+            >
+              <span class="rescue-emergency-label">Khẩn cấp?</span>
+              <a
+                class="rescue-emergency-btn rescue-emergency-115"
+                href="tel:115"
+              >
+                <svg><use href="#i-phone" /></svg>Gọi 115 — Cấp cứu y tế
+              </a>
+              <a
+                class="rescue-emergency-btn rescue-emergency-113"
+                href="tel:113"
+              >
+                <svg><use href="#i-phone" /></svg>Gọi 113 — Công an
+              </a>
             </div>
+            <details class="safety-box">
+              <summary class="safety-box-toggle">
+                <span class="safety-box-heading"
+                  ><svg aria-hidden="true"><use href="#i-shield" /></svg>4
+                  NGUYÊN TẮC VÀNG KHI XE BỊ NGẬP NƯỚC</span
+                >
+                <span class="safety-box-preview"
+                  >Xe chết máy trong nước: không đề nổ lại.</span
+                >
+              </summary>
+              <ol>
+                <li>
+                  <strong>TUYỆT ĐỐI KHÔNG ĐỀ NỔ LẠI:</strong> Với ô tô, việc đề
+                  nổ khi nước đã lọt vào buồng đốt sẽ gây hiện tượng
+                  <em>thủy kích</em> làm cong tay biên, vỡ lốc máy (thiệt hại
+                  hàng trăm triệu đồng).
+                </li>
+                <li>
+                  <strong>TẮT KHÓA ĐIỆN NGAY LẬP TỨC:</strong> Rút chìa khóa
+                  điện để ngắt nguồn, tránh chập cháy hộp điều khiển ECU và hệ
+                  thống dây điện.
+                </li>
+                <li>
+                  <strong>ĐẨY XE LÊN KHU VỰC CAO RÁO:</strong> Nếu an toàn, đẩy
+                  xe máy/ô tô lên vỉa hè hoặc đoạn đường dốc cao hơn mép nước.
+                </li>
+                <li>
+                  <strong>GỌI CỨU HỘ KÉO VỀ GARA:</strong> Để thợ kỹ thuật tháo
+                  bugi, xả nước buồng đốt, thay dầu nhớt trước khi khởi động lại
+                  động cơ.
+                </li>
+              </ol>
+            </details>
             <div class="rescue-main-grid">
               <div class="rescue-services-col">
-                <h3>Các đơn vị cứu hộ uy tín tại Hà Nội</h3>
-                <article class="rescue-card">
-                  <div class="rescue-card-top">
-                    <span class="tag tag-teal">Xe máy lưu động</span>
-                    <h4>Cứu Hộ Xe Máy 247</h4>
-                    <a
-                      href="https://cuuhoxemay247.com/"
-                      target="_blank"
-                      rel="noopener"
-                      class="service-link"
-                      >cuuhoxemay247.com <svg><use href="#i-external" /></svg
-                    ></a>
+                <section
+                  class="rescue-distance-search"
+                  aria-labelledby="rescue-distance-title"
+                >
+                  <h3 id="rescue-distance-title">Tìm đơn vị cứu hộ gần bạn</h3>
+                  <button
+                    type="button"
+                    class="button secondary"
+                    id="rescue-sort-gps"
+                  >
+                    <svg><use href="#i-target" /></svg>Dùng vị trí hiện tại
+                  </button>
+                  <label for="rescue-origin-address"
+                    >Hoặc nhập địa điểm của bạn</label
+                  >
+                  <div class="rescue-address-search-wrap">
+                    <input
+                      id="rescue-origin-address"
+                      type="search"
+                      maxlength="150"
+                      placeholder="Ví dụ: Cầu Giấy, Đường Láng"
+                      autocomplete="off"
+                    />
+                    <div
+                      id="rescue-origin-suggestions"
+                      class="rescue-origin-suggestions"
+                      hidden
+                    ></div>
                   </div>
-                  <p>
-                    Hỗ trợ tận nơi khi xe máy đi vào vùng ngập sâu bị chết máy,
-                    kích bình ắc quy, vệ sinh bugi, xả nước buồng đốt, thay nhớt
-                    chống bó máy tại chỗ cho tất cả dòng xe số, xe ga, xe côn
-                    tay.
-                  </p>
-                  <div class="rescue-info-row">
-                    <span
-                      >📍 Có mặt sau 15–20 phút tại 12 quận nội thành Hà
-                      Nội</span
-                    ><span
-                      >⏰ Phục vụ 24/7 trong mọi điều kiện mưa bão ngập
-                      lụt</span
-                    >
-                  </div>
-                  <div class="rescue-btn-row">
-                    <a href="tel:0944883288" class="button primary full"
-                      ><svg><use href="#i-phone" /></svg>Hotline khẩn cấp:
-                      0944.883.288</a
-                    >
-                  </div>
-                </article>
-                <article class="rescue-card">
-                  <div class="rescue-card-top">
-                    <span class="tag tag-blue">Ô tô con & Du lịch</span>
-                    <h4>Cứu Hộ Ô Tô 24h</h4>
-                    <a
-                      href="https://cuuho24h.vn/"
-                      target="_blank"
-                      rel="noopener"
-                      class="service-link"
-                      >cuuho24h.vn <svg><use href="#i-external" /></svg
-                    ></a>
-                  </div>
-                  <p>
-                    Đội xe kéo chở sàn trượt chuyên dụng, hỗ trợ đưa ô tô ngập
-                    nước chết máy về gara uy tín hoặc chính hãng an toàn tuyệt
-                    đối. Cứu hộ kích bình ắc quy, vá lốp lưu động, cẩu xe kẹt
-                    dải phân cách.
-                  </p>
-                  <div class="rescue-info-row">
-                    <span
-                      >📍 Điểm chốt trực: Cầu Giấy, Nam Từ Liêm, Thanh Xuân,
-                      Hoàn Kiếm, Long Biên, Hoàng Mai</span
-                    ><span>⏰ Luôn trực máy 24/24 giờ xuyên đêm</span>
-                  </div>
-                  <div class="rescue-btn-row">
-                    <a href="tel:0967119119" class="button primary full"
-                      ><svg><use href="#i-phone" /></svg>Hotline khẩn cấp:
-                      0967.119.119</a
-                    >
-                  </div>
-                </article>
-                <article class="rescue-card">
-                  <div class="rescue-card-top">
-                    <span class="tag tag-red">Tổng đài cứu hộ 116</span>
-                    <h4>Trung Tâm Cứu Hộ Giao Thông 116</h4>
-                    <a
-                      href="https://trungtamcuuho116.vn/dich-vu-cuu-ho-giao-thong-116/"
-                      target="_blank"
-                      rel="noopener"
-                      class="service-link"
-                      >trungtamcuuho116.vn <svg><use href="#i-external" /></svg
-                    ></a>
-                  </div>
-                  <p>
-                    Tổng đài cứu hộ giao thông lâu năm với trang thiết bị cứu hộ
-                    hạng nặng: xe cẩu 3 chức năng, tời kéo xe ngập sâu dưới hầm
-                    chung cư, cứu hộ tai nạn giao thông trên các trục vành đai
-                    và cao tốc.
-                  </p>
-                  <div class="rescue-info-row">
-                    <span
-                      >📍 Quy mô phủ rộng toàn bộ Hà Nội và các tỉnh thành lân
-                      cận</span
-                    ><span>⏰ Tổng đài tiếp nhận ứng cứu giao thông 24/7</span>
-                  </div>
-                  <div class="rescue-btn-row">
-                    <a href="tel:0896116116" class="button primary full"
-                      ><svg><use href="#i-phone" /></svg>Hotline khẩn cấp:
-                      0896.116.116</a
-                    >
-                  </div>
-                </article>
+                  <button
+                    type="button"
+                    class="button secondary"
+                    id="rescue-search-address"
+                  >
+                    Tìm theo địa điểm
+                  </button>
+                  <p
+                    id="rescue-distance-status"
+                    class="rescue-distance-status"
+                    role="status"
+                    aria-live="polite"
+                  ></p>
+                </section>
+                <h3>Danh sách cứu hộ</h3>
+                <div
+                  id="rescue-service-list"
+                  aria-label="Danh sách đơn vị cứu hộ, cuộn để xem thêm"
+                  aria-live="polite"
+                  tabindex="0"
+                >
+                  <p class="muted">Đang tải danh sách cứu hộ…</p>
+                </div>
               </div>
               <div class="rescue-side-col">
                 <div class="rescue-form-box">
                   <div class="form-box-head">
-                    <h3>Yêu cầu ứng cứu nhanh</h3>
-                    <p>Gửi thông tin sự cố để kết nối đội cứu hộ phù hợp</p>
+                    <h3>Biểu mẫu ứng cứu</h3>
                   </div>
                   <form id="rescue-request-form">
-                    <label for="rescue-vehicle"
-                      >Loại phương tiện gặp sự cố</label
-                    >
-                    <select id="rescue-vehicle">
-                      <option value="motorbike">
-                        Xe máy (Xe ga, Xe số, Phân khối lớn)
-                      </option>
-                      <option value="car">Ô tô con 4–7 chỗ</option>
-                      <option value="truck">Xe tải / Xe khách</option>
-                    </select>
-                    <label for="rescue-type" style="margin-top: 10px"
-                      >Tình trạng sự cố</label
-                    >
-                    <select id="rescue-type">
-                      <option value="flood_dead">
-                        Chết máy do đi qua vùng ngập nước
-                      </option>
-                      <option value="hydro">
-                        Nghi ngờ thủy kích (ô tô chết máy trong nước sâu)
-                      </option>
-                      <option value="battery">
-                        Hỏng ắc quy / Không đề nổ được
-                      </option>
-                      <option value="tire">Hỏng lốp / Nổ lốp giữa đường</option>
-                      <option value="accident">
-                        Va chạm / Tai nạn giao thông
-                      </option>
-                    </select>
-                    <label for="rescue-address" style="margin-top: 10px"
-                      >Vị trí hiện tại của bạn</label
-                    >
-                    <input
-                      id="rescue-address"
-                      placeholder="Ví dụ: Trước cổng ĐH Giao thông Vận tải, Cầu Giấy"
-                      required
-                    />
-                    <div class="rescue-loc-row">
-                      <button
-                        type="button"
-                        id="rescue-loc-btn"
-                        class="text-button"
-                      >
-                        <svg><use href="#i-target" /></svg>Lấy vị trí GPS hiện
-                        tại
-                      </button>
+                    <div class="rescue-form-pair">
+                      <div class="rescue-form-field">
+                        <label for="rescue-vehicle"
+                          >Loại phương tiện gặp sự cố</label
+                        >
+                        <select id="rescue-vehicle">
+                          <option value="motorbike">
+                            Xe máy (Xe ga, Xe số, Phân khối lớn)
+                          </option>
+                          <option value="car">Ô tô con 4–7 chỗ</option>
+                          <option value="truck">Xe tải / Xe khách</option>
+                        </select>
+                      </div>
+                      <div class="rescue-form-field">
+                        <label for="rescue-type">Tình trạng sự cố</label>
+                        <select id="rescue-type">
+                          <option value="flood_dead">
+                            Chết máy do đi qua vùng ngập nước
+                          </option>
+                          <option value="hydro">
+                            Nghi ngờ thủy kích (ô tô chết máy trong nước sâu)
+                          </option>
+                          <option value="battery">
+                            Hỏng ắc quy / Không đề nổ được
+                          </option>
+                          <option value="tire">
+                            Hỏng lốp / Nổ lốp giữa đường
+                          </option>
+                          <option value="accident">
+                            Va chạm / Tai nạn giao thông
+                          </option>
+                        </select>
+                      </div>
                     </div>
-                    <label for="rescue-phone" style="margin-top: 10px"
-                      >Số điện thoại liên hệ</label
-                    >
-                    <input
-                      id="rescue-phone"
-                      type="tel"
-                      placeholder="Nhập số điện thoại để cứu hộ gọi lại"
-                      pattern="[0-9]{10,11}"
-                      required
-                    />
-                    <label for="rescue-note" style="margin-top: 10px"
-                      >Ghi chú thêm</label
-                    >
-                    <textarea
-                      id="rescue-note"
-                      rows="2"
-                      placeholder="Biển số, màu xe, mực nước ngập đến đâu..."
-                    ></textarea>
+                    <div class="rescue-form-field rescue-form-location">
+                      <label for="rescue-address"
+                        >Vị trí hiện tại của bạn</label
+                      >
+                      <input
+                        id="rescue-address"
+                        placeholder="Ví dụ: Trước cổng ĐH Giao thông Vận tải, Cầu Giấy"
+                        required
+                      />
+                      <div class="rescue-loc-row">
+                        <button
+                          type="button"
+                          id="rescue-loc-btn"
+                          class="text-button"
+                        >
+                          <svg><use href="#i-target" /></svg>Lấy vị trí GPS hiện
+                          tại
+                        </button>
+                      </div>
+                    </div>
+                    <div class="rescue-form-pair">
+                      <div class="rescue-form-field">
+                        <label for="rescue-phone">Số điện thoại (*)</label>
+                        <input
+                          id="rescue-phone"
+                          type="tel"
+                          placeholder="Số điện thoại của bạn"
+                          pattern="[0-9]{10,11}"
+                          required
+                        />
+                      </div>
+                      <div class="rescue-form-field">
+                        <label for="rescue-note">Ghi chú thêm</label>
+                        <textarea
+                          id="rescue-note"
+                          rows="2"
+                          placeholder="Biển số, màu xe, mực nước ngập đến đâu..."
+                        ></textarea>
+                      </div>
+                    </div>
                     <button
                       type="submit"
                       class="button primary full"
-                      style="margin-top: 14px"
                       id="submit-rescue-btn"
                     >
-                      <svg><use href="#i-rescue" /></svg>Gửi yêu cầu & Kết nối
-                      cứu hộ
+                      <svg><use href="#i-rescue" /></svg>Gửi yêu cầu cứu hộ
                     </button>
                   </form>
                   <div
@@ -797,32 +796,6 @@
                     class="rescue-form-result"
                     hidden
                   ></div>
-                </div>
-                <div class="safety-box">
-                  <h4>⚠️ 4 NGUYÊN TẮC VÀNG KHI XE BỊ NGẬP NƯỚC</h4>
-                  <ol>
-                    <li>
-                      <strong>TUYỆT ĐỐI KHÔNG ĐỀ NỔ LẠI:</strong> Với ô tô, việc
-                      đề nổ khi nước đã lọt vào buồng đốt sẽ gây hiện tượng
-                      <em>thủy kích</em> làm cong tay biên, vỡ lốc máy (thiệt
-                      hại hàng trăm triệu đồng).
-                    </li>
-                    <li>
-                      <strong>TẮT KHÓA ĐIỆN NGAY LẬP TỨC:</strong> Rút chìa khóa
-                      điện để ngắt nguồn, tránh chập cháy hộp điều khiển ECU và
-                      hệ thống dây điện.
-                    </li>
-                    <li>
-                      <strong>ĐẨY XE LÊN KHU VỰC CAO RÁO:</strong> Nếu an toàn,
-                      đẩy xe máy/ô tô lên vỉa hè hoặc đoạn đường dốc cao hơn mép
-                      nước.
-                    </li>
-                    <li>
-                      <strong>GỌI CỨU HỘ KÉO VỀ GARA:</strong> Để thợ kỹ thuật
-                      tháo bugi, xả nước buồng đốt, thay dầu nhớt trước khi khởi
-                      động lại động cơ.
-                    </li>
-                  </ol>
                 </div>
               </div>
             </div>
@@ -889,7 +862,20 @@
                 hạn sau 2 giờ.</span
               >
             </div>
+            <div
+              id="report-status-counts"
+              class="report-status-counts"
+              aria-label="Số lượng phản ánh theo trạng thái"
+              aria-live="polite"
+            ></div>
             <div class="report-filter">
+              <label class="report-search"
+                >Tìm phản ánh<input
+                  id="report-search"
+                  type="search"
+                  placeholder="Địa chỉ hoặc nội dung phản ánh"
+                  autocomplete="off"
+              /></label>
               <label
                 >Trạng thái<select id="report-status-filter">
                   <option value="all">Tất cả phản ánh</option>
@@ -899,11 +885,84 @@
                   <option value="rejected">Đã từ chối</option>
                   <option value="expired">Hết hạn</option>
                 </select></label
+              ><label
+                >Mức độ<select id="report-severity-filter">
+                  <option value="">Tất cả</option>
+                  <option value="1">Nhẹ</option>
+                  <option value="2">Trung bình</option>
+                  <option value="3">Nghiêm trọng</option>
+                </select></label
+              ><label>Từ ngày<input id="report-date-from" type="date" /></label
+              ><label>Đến ngày<input id="report-date-to" type="date" /></label
+              ><label
+                >Sắp xếp<select id="report-sort">
+                  <option value="newest">Mới nhất</option>
+                  <option value="severity">Mức độ cao nhất</option>
+                  <option value="oldest">Cũ nhất</option>
+                </select></label
+              ><label class="toggle-label"
+                ><input type="checkbox" id="only-pending-toggle" /> Chỉ xem chờ
+                xử lý</label
               ><button class="button secondary" id="refresh-reports">
                 Làm mới
               </button>
             </div>
+            <div id="bulk-actions-bar" class="bulk-actions-bar" hidden>
+              <span
+                ><input type="checkbox" id="bulk-select-all" />
+                <strong id="bulk-selected-count">0</strong> đã chọn</span
+              >
+              <button
+                class="button small"
+                id="bulk-verify"
+                data-bulk-action="verified"
+              >
+                Xác minh
+              </button>
+              <button
+                class="button small"
+                id="bulk-reject"
+                data-bulk-action="rejected"
+              >
+                Từ chối
+              </button>
+              <button
+                class="button small"
+                id="bulk-resolve"
+                data-bulk-action="resolved"
+              >
+                Đã xử lý
+              </button>
+            </div>
             <div id="reports-list"></div>
+            <div id="reports-pagination" class="reports-pagination"></div>
+          </div>
+        </section>
+        <section id="my-reports-view" class="view" hidden>
+          <div class="section-card">
+            <div class="section-title">
+              <div>
+                <h2>Phản ánh của tôi</h2>
+                <p>Theo dõi trạng thái phản ánh bạn đã gửi.</p>
+              </div>
+              <button class="button secondary" id="refresh-my-reports">
+                Làm mới
+              </button>
+            </div>
+            <div id="my-reports-stats" class="my-reports-stats"></div>
+            <div class="report-filter">
+              <label
+                >Trạng thái<select id="my-reports-filter">
+                  <option value="all">Tất cả</option>
+                  <option value="pending">Chờ xác minh</option>
+                  <option value="verified">Đã xác minh</option>
+                  <option value="resolved">Đã xử lý</option>
+                  <option value="rejected">Đã từ chối</option>
+                  <option value="expired">Hết hạn</option>
+                </select></label
+              >
+            </div>
+            <div id="my-reports-list"></div>
           </div>
         </section>
         <footer>
@@ -937,20 +996,20 @@
         <label>Loại phản ánh</label>
         <div class="report-types">
           <label
-            ><input type="radio" name="type" value="flood" checked /><span
+            ><input type="checkbox" name="type" value="flood" checked /><span
               ><svg><use href="#i-water" /></svg>Ngập đường</span
             ></label
           ><label
-            ><input type="radio" name="type" value="traffic" /><span
+            ><input type="checkbox" name="type" value="traffic" /><span
               ><svg><use href="#i-car" /></svg>Ùn tắc</span
             ></label
           ><label
-            ><input type="radio" name="type" value="incident" /><span
+            ><input type="checkbox" name="type" value="incident" /><span
               ><svg><use href="#i-alert" /></svg>Sự cố</span
             ></label
           >
         </div>
-        <label for="report-address">Vị trí / địa chỉ cụ thể</label
+        <label for="report-address">Vị trí / địa chỉ cụ thể (*)</label
         ><input
           id="report-address"
           list="address-options"
@@ -962,20 +1021,17 @@
           <button type="button" id="report-gps">
             <svg><use href="#i-target" /></svg>Vị trí của tôi</button
           ><button type="button" id="report-pick">
-            <svg><use href="#i-map" /></svg>Chọn trên bản đồ</button
-          ><button type="button" id="report-find">
-            <svg><use href="#i-search" /></svg>Định vị địa chỉ
-          </button>
+            <svg><use href="#i-map" /></svg>Chọn trên bản đồ</button>
         </div>
         <p id="report-coordinates" class="field-hint">
-          Chọn địa điểm gợi ý, định vị địa chỉ hoặc đặt ghim để xác định tọa độ.
+          Nhập địa chỉ để tự định vị, dùng GPS hoặc đặt ghim trên bản đồ.
         </p>
         <label for="report-severity">Mức độ ảnh hưởng</label
         ><select id="report-severity">
           <option value="1">Nhẹ — vẫn lưu thông</option>
           <option value="2" selected>Trung bình — di chuyển khó khăn</option>
           <option value="3">Nghiêm trọng — không thể lưu thông</option></select
-        ><label for="report-description">Mô tả hiện trường</label
+        ><label for="report-description">Mô tả hiện trường (*)</label
         ><textarea
           id="report-description"
           rows="3"
@@ -984,23 +1040,108 @@
           placeholder="Ví dụ: Nước ngập gần nửa bánh xe, xe máy di chuyển chậm…"
           required
         ></textarea
+        ><span id="report-char-count" class="char-count">0/1200</span
         ><label for="report-image"
           >Ảnh hiện trường <span class="optional">(không bắt buộc)</span></label
-        ><input
-          id="report-image"
-          type="file"
-          accept="image/jpeg,image/png,image/webp"
-        />
+        >
+        <div id="report-image-preview" class="image-preview" hidden></div>
+        <div class="report-image-actions">
+          <input
+            id="report-camera"
+            type="file"
+            accept="image/jpeg,image/png,image/webp"
+            capture="environment"
+            hidden
+          />
+          <input
+            id="report-image"
+            type="file"
+            accept="image/jpeg,image/png,image/webp"
+            hidden
+          />
+          <button type="button" class="button secondary" id="report-take-photo">
+            Chụp ảnh
+          </button>
+          <button
+            type="button"
+            class="button secondary"
+            id="report-choose-image"
+          >
+            Chọn ảnh
+          </button>
+        </div>
+        <div class="report-image-selection">
+          <p
+            id="report-image-status"
+            class="field-hint"
+            role="status"
+            aria-live="polite"
+          >
+            Chưa có ảnh được thêm.
+          </p>
+          <button
+            type="button"
+            class="text-button"
+            id="report-remove-image"
+            aria-label="Xóa ảnh đã chọn"
+            hidden
+          >
+            Xóa ảnh
+          </button>
+        </div>
         <p class="field-hint">
           JPG, PNG hoặc WebP · Tối đa 1,5 MB · Tránh ảnh có thông tin cá nhân.
         </p>
         <p id="report-error" class="form-error" role="alert" hidden></p>
         <div class="dialog-footer">
+          <p
+            id="report-submit-status"
+            class="report-submit-status"
+            role="status"
+            aria-live="polite"
+            hidden
+          ></p>
           <span
             ><svg><use href="#i-shield" /></svg>Chờ xác minh trước khi dùng cho
             định tuyến</span
           ><button type="submit" class="button primary" id="submit-report">
             Gửi phản ánh <svg><use href="#i-arrow" /></svg>
+          </button>
+        </div>
+      </form>
+    </dialog>
+    <dialog id="reject-dialog">
+      <form id="reject-form">
+        <div class="dialog-heading">
+          <div>
+            <div class="eyebrow red-text">TỪ CHỐI PHẢN ÁNH</div>
+            <h2>Nhập lý do từ chối</h2>
+          </div>
+          <button
+            type="button"
+            class="icon-button close-dialog"
+            aria-label="Đóng"
+          >
+            <svg><use href="#i-close" /></svg>
+          </button>
+        </div>
+        <p class="dialog-intro">Lý do từ chối sẽ được gửi cho người dùng.</p>
+        <label for="reject-reason">Lý do từ chối</label>
+        <textarea
+          id="reject-reason"
+          rows="3"
+          maxlength="240"
+          placeholder="Ví dụ: Không đủ thông tin xác minh, trùng lặp..."
+          required
+        ></textarea>
+        <span id="reject-char-count" class="char-count">0/240</span>
+        <p id="reject-error" class="form-error" role="alert" hidden></p>
+        <div class="dialog-footer">
+          <button type="button" class="button secondary" id="reject-cancel">
+            Hủy
+          </button>
+          <button type="submit" class="button primary" id="reject-submit">
+            Từ chối phản ánh
           </button>
         </div>
       </form>

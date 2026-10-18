@@ -57,14 +57,15 @@ def _apply_reports(state, reports, at):
     for report in sorted(reports, key=lambda r: r["created_at"]):
         if report["road_id"] != state["id"] or report["status"] != "verified" or report["expires_at"] <= at or report["created_at"] > at:
             continue
-        state.update(known=True, event_type=report["type"], severity=report["severity"], updated_at=report["created_at"], origin="local_report", report_id=report["id"])
+        types = [t for t in str(report["type"]).split(",") if t]
+        state.update(known=True, event_type=",".join(types), severity=report["severity"], updated_at=report["created_at"], origin="local_report", report_id=report["id"])
         state["sources"] = ["Phản ánh tại máy • đã xác minh thủ công"]
         state["evidence"] = [report["description"]]
-        if report["type"] == "flood":
+        if "flood" in types:
             state.update(flood_risk=max(state["flood_risk"], report["severity"] * 28), blocked=state["blocked"] or report["severity"] == 3)
-        elif report["type"] == "incident":
+        if "incident" in types:
             state.update(incident=True, blocked=state["blocked"] or report["severity"] == 3)
-        elif report["type"] == "traffic":
+        if "traffic" in types:
             state["speed"] = min(state["speed"], 22 - report["severity"] * 5)
             state["simulated_speed"] = state["speed"]
 
@@ -160,7 +161,7 @@ def build_snapshot(scenario="rain", reports=(), now=None):
         events=events,
         nodes=list(NODES.values()),
         counts={
-            t: sum(e["type"] == t and e["status"] == "verified" for e in events)
+            t: sum(t in str(e["type"]).split(",") and e["status"] == "verified" for e in events)
             for t in ("flood", "traffic", "incident")
         },
         pending=sum(r["status"] == "pending" and r["expires_at"] > real_now for r in reports),

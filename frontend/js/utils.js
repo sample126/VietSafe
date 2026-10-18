@@ -29,6 +29,15 @@ export const ago = (unix) => {
   return s < 60 ? "Vừa cập nhật" : `${Math.floor(s / 60)} phút trước`;
 };
 
+/** Alias cho các view port từ nhánh cũ: "N giây/phút/giờ/ngày trước". */
+export function timeAgo(unix) {
+  const seconds = Math.floor(Date.now() / 1000 - unix);
+  if (seconds < 60) return `${Math.max(0, seconds)} giây trước`;
+  if (seconds < 3600) return `${Math.floor(seconds / 60)} phút trước`;
+  if (seconds < 86400) return `${Math.floor(seconds / 3600)} giờ trước`;
+  return `${Math.floor(seconds / 86400)} ngày trước`;
+}
+
 let toastTimer;
 
 /** Hiện thông báo nhỏ ở góc màn hình trong ~5 giây. */
